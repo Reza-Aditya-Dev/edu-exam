@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Kelas sekolah (X IPA 1, XI IPS 2, dll) per tahun ajaran
+     */
+    public function up(): void
+    {
+        Schema::create('classrooms', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
+            $table->foreignId('homeroom_teacher_id')->nullable()->constrained('users')->nullOnDelete()
+                  ->comment('Wali kelas');
+            $table->string('name')->comment('Contoh: X IPA 1');
+            $table->integer('grade')->comment('Tingkat: 10, 11, 12');
+            $table->string('major')->nullable()->comment('Jurusan: IPA, IPS, Bahasa');
+            $table->integer('capacity')->default(36);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->index('academic_year_id');
+            $table->index('grade');
+            $table->index('is_active');
+            $table->unique(['academic_year_id', 'name']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('classrooms');
+    }
+};
