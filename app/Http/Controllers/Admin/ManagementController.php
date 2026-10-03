@@ -17,14 +17,85 @@ class ManagementController extends Controller
 
     public function classrooms(Request $request)
     {
-        $query = Classroom::with(['academicYear', 'homeroomTeacher'])
+        // Support CSV export if requested
+        if ($request->get('export') === 'csv') {
+            $rows = Classroom::with(['academicYear', 'homeroomTeacher'])->withCount('students')->orderBy('grade')->orderBy('name')->get();
+            $csvFileName = 'rekap_rombel_kelas_' . date('Ymd_His') . '.csv';
+            $headers = [
+                "Content-type"        => "text/csv; charset=UTF-8",
+                "Content-Disposition" => "attachment; filename=$csvFileName",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+            return response()->stream(function() use($rows) {
+                $file = fopen('php://output', 'w');
+                // UTF-8 BOM for Excel compatibility
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+                fputcsv($file, ['ID', 'Nama Kelas', 'Tingkat', 'Jurusan', 'Tahun Ajaran', 'Wali Kelas', 'NIP Wali Kelas', 'Jumlah Siswa', 'Kapasitas']);
+                foreach ($rows as $c) {
+                    fputcsv($file, [
+                        $c->id,
+                        $c->name,
+                        'Kelas ' . $c->grade,
+                        $c->major ?? 'Umum',
+                        $c->academicYear ? $c->academicYear->name . ' - Smt ' . $c->academicYear->semester : '-',
+                        $c->homeroomTeacher?->name ?? 'Belum Ditugaskan',
+                        $c->homeroomTeacher?->nip ?? '-',
+                        $c->students_count,
+                        $c->capacity,
+                    ]);
+                }
+                fclose($file);
+            }, 200, $headers);
+        }
+
+        $query = Classroom::with(['academicYear', 'homeroomTeacher', 'exams' => function($q) {
+                $q->whereIn('status', ['active', 'scheduled'])->latest();
+            }])
             ->withCount('students');
-        if ($request->academic_year_id) {
+
+        if ($request->filled('academic_year_id') && $request->academic_year_id !== 'all') {
             $query->where('academic_year_id', $request->academic_year_id);
         }
-        $classrooms   = $query->orderBy('grade')->orderBy('name')->paginate(20);
-        $academicYears = AcademicYear::orderByDesc('start_year')->get();
-        return view('admin.classroom.index', compact('classrooms', 'academicYears'));
+
+        if ($request->filled('grade') && $request->grade !== 'all') {
+            $query->where('grade', $request->grade);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('major', 'like', "%{$search}%")
+                  ->orWhereHas('homeroomTeacher', function($t) use ($search) {
+                      $t->where('name', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $perPage = in_array((int)$request->per_page, [6, 9, 12, 24]) ? (int)$request->per_page : 9;
+        $classrooms = $query->orderBy('grade')->orderBy('name')->paginate($perPage)->withQueryString();
+
+        $totalClassrooms    = Classroom::count();
+        $totalStudents      = \Illuminate\Support\Facades\DB::table('classroom_student')->distinct('student_id')->count();
+        $avgPerClassroom    = $totalClassrooms > 0 ? round($totalStudents / $totalClassrooms, 0) : 0;
+        $assignedHomerooms  = Classroom::whereNotNull('homeroom_teacher_id')->count();
+
+        $countGrade10       = Classroom::where('grade', 10)->count();
+        $countGrade11       = Classroom::where('grade', 11)->count();
+        $countGrade12       = Classroom::where('grade', 12)->count();
+
+        $academicYears      = AcademicYear::orderByDesc('is_active')->orderByDesc('start_year')->get();
+        $activeAcademicYear = AcademicYear::where('is_active', true)->first() ?? $academicYears->first();
+        $teachers           = \App\Models\User::teachers()->active()->orderBy('name')->get();
+
+        return view('admin.classroom.index', compact(
+            'classrooms', 'academicYears', 'activeAcademicYear', 'teachers',
+            'totalClassrooms', 'totalStudents', 'avgPerClassroom', 'assignedHomerooms',
+            'countGrade10', 'countGrade11', 'countGrade12'
+        ));
     }
 
     public function createClassroom()
@@ -36,17 +107,39 @@ class ManagementController extends Controller
 
     public function storeClassroom(Request $request)
     {
+        // Fallback default academic year if omitted in quick modal
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::where('is_active', true)->first();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            }
+        }
+
         $request->validate([
             'academic_year_id'    => 'required|exists:academic_years,id',
             'name'                => 'required|string|max:50',
             'grade'               => 'required|in:10,11,12',
+            'major'               => 'nullable|string|max:30',
             'homeroom_teacher_id' => 'nullable|exists:users,id',
             'capacity'            => 'nullable|integer|min:1|max:60',
+        ], [
+            'name.required' => 'Nama rombel/kelas wajib diisi.',
+            'grade.required' => 'Tingkat kelas wajib dipilih.',
+            'academic_year_id.required' => 'Tahun ajaran wajib ditentukan.',
         ]);
 
-        $classroom = Classroom::create($request->all());
+        $classroom = Classroom::create([
+            'academic_year_id'    => $request->academic_year_id,
+            'homeroom_teacher_id' => $request->homeroom_teacher_id ?: null,
+            'name'                => $request->name,
+            'grade'               => $request->grade,
+            'major'               => $request->major,
+            'capacity'            => $request->capacity ?: 36,
+            'is_active'           => true,
+        ]);
+
         ActivityLog::log('classroom_created', "Kelas dibuat: {$classroom->name}", $classroom);
-        return redirect()->route('admin.classrooms')->with('success', 'Kelas berhasil ditambahkan.');
+        return redirect()->route('admin.classrooms')->with('success', "Rombel kelas {$classroom->name} berhasil ditambahkan.");
     }
 
     public function editClassroom(Classroom $classroom)

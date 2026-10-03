@@ -1,169 +1,214 @@
 @extends('layouts.app')
 
 @push('admin-styles')
-<style>
-    /* Responsive mobile drawer */
-    @media (max-width: 1024px) {
-        #sidebar { transform: translateX(-100%); }
-        #sidebar.open { transform: translateX(0); }
-        #sidebarOverlay.show { display: block; }
+<script>
+    if (typeof tailwind !== 'undefined') {
+        tailwind.config.theme.extend.colors['primary'] = '#3525cd';
+        tailwind.config.theme.extend.colors['primary-container'] = '#4f46e5';
+        tailwind.config.theme.extend.colors['on-primary'] = '#ffffff';
+        tailwind.config.theme.extend.colors['on-primary-container'] = '#dad7ff';
+        tailwind.config.theme.extend.colors['primary-fixed'] = '#e0e7ff';
+        tailwind.config.theme.extend.colors['on-primary-fixed'] = '#312e81';
+        tailwind.config.theme.extend.colors['secondary'] = '#006c49';
+        tailwind.config.theme.extend.colors['secondary-container'] = '#6cf8bb';
+        tailwind.config.theme.extend.colors['on-secondary-container'] = '#00714d';
+        tailwind.config.theme.extend.colors['surface-container-lowest'] = '#ffffff';
+        tailwind.config.theme.extend.colors['surface-container-low'] = '#eff4ff';
+        tailwind.config.theme.extend.colors['surface-container'] = '#e5eeff';
+        tailwind.config.theme.extend.colors['surface-container-high'] = '#dce9ff';
+        tailwind.config.theme.extend.colors['surface-container-highest'] = '#d3e4fe';
     }
+</script>
+<style>
+    ::-webkit-scrollbar { display: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 @endpush
 
 @section('content')
-<div class="min-h-screen flex bg-slate-50 text-slate-900 font-sans">
-    
+<div class="min-h-screen bg-surface text-on-surface font-body-md antialiased">
+
     <!-- Sidebar Overlay for Mobile -->
-    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-35 hidden transition-opacity" onclick="toggleSidebar()"></div>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed top-0 bottom-0 left-0 w-68 bg-[#0b1c30] border-r border-slate-800/80 flex flex-col z-40 transition-transform duration-300 ease-in-out lg:translate-x-0">
-        <!-- Brand Header -->
-        <div class="h-16 flex items-center px-6 border-b border-slate-800/80 bg-[#081525]">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 text-white no-underline">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-extrabold text-lg text-white shadow-md shadow-indigo-600/30">
-                    E
-                </div>
-                <div>
-                    <div class="font-headline font-extrabold text-base tracking-tight text-white leading-none">EduExam</div>
-                    <div class="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto px-4 py-5 space-y-1">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
-                <span>Dashboard</span>
-            </a>
-            
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3.5 pt-4 pb-1 font-headline">
-                Master Data
-            </div>
-            
-            <a href="{{ route('admin.students') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.students*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">school</span>
-                <span>Data Siswa</span>
-            </a>
-            
-            <a href="{{ route('admin.teachers') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.teachers*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">badge</span>
-                <span>Data Guru</span>
-            </a>
-            
-            <a href="{{ route('admin.classrooms') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.classrooms*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">meeting_room</span>
-                <span>Kelas & Ruangan</span>
-            </a>
-            
-            <a href="{{ route('admin.subjects') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.subjects*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">menu_book</span>
-                <span>Mata Pelajaran</span>
-            </a>
-            
-            <a href="{{ route('admin.academic-years') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.academic-years*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">calendar_month</span>
-                <span>Tahun Ajaran</span>
-            </a>
-            
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3.5 pt-4 pb-1 font-headline">
-                Monitoring & Audit
-            </div>
-            
-            <a href="{{ route('admin.exams') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.exams*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">assignment</span>
-                <span>Semua Ujian</span>
-            </a>
-            
-            <a href="{{ route('admin.logs') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.logs*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">history</span>
-                <span>Log Aktivitas</span>
-            </a>
-            
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3.5 pt-4 pb-1 font-headline">
-                Konfigurasi
-            </div>
-            
-            <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition {{ request()->routeIs('admin.settings') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                <span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
-                <span>Pengaturan Sistem</span>
-            </a>
-        </nav>
-
-        <!-- Sidebar Footer User Profile -->
-        <div class="p-4 border-t border-slate-800/80 bg-[#081525]">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <img src="{{ auth()->user()->avatar_url }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-slate-700 flex-shrink-0">
-                    <div class="min-w-0">
-                        <div class="text-xs font-bold text-white truncate">{{ auth()->user()->name }}</div>
-                        <div class="text-[10px] text-slate-400 font-medium truncate">Administrator</div>
+    <!-- Aside Sidebar (Navbar Admin) -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+        <div class="flex flex-col min-h-0 flex-1">
+            <!-- Brand Header -->
+            <div class="h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-space-sm no-underline min-w-0">
+                    <div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md flex-shrink-0">
+                        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
                     </div>
-                </div>
-                <form action="{{ route('logout') }}" method="POST" class="m-0 flex-shrink-0">
-                    @csrf
-                    <button type="submit" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition" title="Keluar">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
-                    </button>
-                </form>
+
+                    <div class="flex flex-col ml-space-xs min-w-0">
+                        <div class="flex items-center gap-space-xs">
+                            <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">EduExam</span>
+                            <span class="px-space-xs py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">Portal Admin</span>
+                        </div>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
+                    </div>
+                </a>
+                <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container" onclick="toggleSidebar()" title="Tutup Menu">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
             </div>
+
+            <!-- Scrollable Nav List -->
+            <div class="px-space-md py-space-sm overflow-y-auto flex-1 no-scrollbar">
+                <!-- Section: Menu Utama -->
+                <div class="px-space-md py-space-xs mb-space-xs">
+                    <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Menu Utama</span>
+                </div>
+                <nav class="flex flex-col gap-1">
+                    <!-- Dashboard -->
+                    @php $isDashboard = request()->routeIs('admin.dashboard'); @endphp
+                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-space-md py-2.5 transition-colors rounded-lg font-label-lg text-label-lg {{ $isDashboard ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <!-- Data Siswa -->
+                    @php $isStudent = request()->routeIs('admin.students*'); @endphp
+                    <a href="{{ route('admin.students') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isStudent ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">group</span>
+                        <span>Data Siswa</span>
+                    </a>
+
+                    <!-- Data Guru -->
+                    @php $isTeacher = request()->routeIs('admin.teachers*'); @endphp
+                    <a href="{{ route('admin.teachers') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isTeacher ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">school</span>
+                        <span>Data Guru</span>
+                    </a>
+
+                    <!-- Data Kelas -->
+                    @php $isClassroom = request()->routeIs('admin.classrooms*'); @endphp
+                    <a href="{{ route('admin.classrooms') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isClassroom ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">meeting_room</span>
+                        <span>Data Kelas</span>
+                    </a>
+
+                    <!-- Mata Pelajaran -->
+                    @php $isSubject = request()->routeIs('admin.subjects*'); @endphp
+                    <a href="{{ route('admin.subjects') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSubject ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        <span>Mata Pelajaran</span>
+                    </a>
+
+                    <!-- Semua Ujian -->
+                    @php $isExam = request()->routeIs('admin.exams*'); @endphp
+                    <a href="{{ route('admin.exams') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isExam ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">description</span>
+                        <span>Semua Ujian</span>
+                    </a>
+
+                    <!-- Tahun Ajaran -->
+                    @php $isYear = request()->routeIs('admin.academic-years*'); @endphp
+                    <a href="{{ route('admin.academic-years') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isYear ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+                        <span>Tahun Ajaran</span>
+                    </a>
+                </nav>
+
+                <!-- Section: Sistem -->
+                <div class="px-space-md pt-space-md pb-space-xs mt-space-sm">
+                    <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Sistem</span>
+                </div>
+                <nav class="flex flex-col gap-1">
+                    <!-- Pengaturan Sistem -->
+                    @php $isSetting = request()->routeIs('admin.settings*'); @endphp
+                    <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSetting ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                        <span>Pengaturan Sistem</span>
+                    </a>
+
+                    <!-- Log Aktivitas -->
+                    @php $isLog = request()->routeIs('admin.logs*'); @endphp
+                    <a href="{{ route('admin.logs') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isLog ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px]">schedule</span>
+                        <span>Log Aktivitas</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Bottom School & Logout Bar -->
+        <div class="p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between shrink-0 border border-slate-100">
+            <div class="flex items-center gap-space-sm min-w-0">
+                <span class="material-symbols-outlined text-secondary text-[22px] shrink-0" style="font-variation-settings: 'FILL' 1;">verified</span>
+                <div class="flex flex-col min-w-0">
+                    <span class="font-label-md text-label-md text-on-surface truncate font-semibold">{{ \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant truncate">NPSN: {{ \App\Models\SchoolSetting::get('school_npsn', '20103482') }}</span>
+                </div>
+            </div>
+            <form action="{{ route('logout') }}" method="POST" class="m-0 shrink-0">
+                @csrf
+                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors" title="Keluar" onclick="return confirm('Keluar dari portal administrator?')">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 lg:pl-68">
-        <!-- Topbar -->
-        <header class="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-3">
-                <button type="button" class="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100" onclick="toggleSidebar()">
-                    <span class="material-symbols-outlined">menu</span>
+    <!-- Main Content Wrapper -->
+    <div class="lg:pl-72 flex flex-col min-h-screen">
+        <!-- Topbar / Header -->
+        <header class="fixed top-0 left-0 lg:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-md md:px-space-lg">
+            <div class="flex items-center flex-1 max-w-lg mr-space-md">
+                <button type="button" class="lg:hidden mr-2.5 p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" onclick="toggleSidebar()" title="Buka Menu">
+                    <span class="material-symbols-outlined text-[22px]">menu</span>
                 </button>
-                <h1 class="font-headline font-bold text-slate-900 text-base md:text-lg leading-tight">
-                    @yield('page_title', 'Admin Panel')
-                </h1>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold uppercase tracking-wider">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                    Admin
-                </span>
-                <span class="text-xs font-semibold text-slate-700 hidden md:inline-block">
-                    {{ auth()->user()->name }}
-                </span>
-                <form action="{{ route('logout') }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn btn-secondary btn-sm text-xs font-semibold px-3 py-1.5 flex items-center gap-1 hover:text-rose-600" onclick="return confirm('Keluar dari sistem?')">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
-                        <span class="hidden sm:inline">Keluar</span>
-                    </button>
+                <form action="{{ route('admin.students') }}" method="GET" class="w-full flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary-container transition-all">
+                    <span class="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
+                    <input name="search" class="w-full bg-transparent border-none outline-none font-body-sm text-body-sm text-on-surface placeholder:text-outline" placeholder="Cari data siswa (nama, NIS, email)..." type="text" value="{{ request('search') }}"/>
                 </form>
             </div>
+            <div class="flex items-center gap-space-md">
+                @php
+                    $headerActiveYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                @endphp
+                <div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
+                    <span class="material-symbols-outlined text-[16px]">school</span>
+                    <span>Tahun Ajaran {{ $headerActiveYear ? $headerActiveYear->name : '2026/2027' }} • {{ ($headerActiveYear && $headerActiveYear->semester == 2) ? 'Genap' : 'Ganjil' }} (Aktif)</span>
+                </div>
+                <button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button" title="Notifikasi Sistem">
+                    <span class="material-symbols-outlined text-[22px]">notifications</span>
+                    <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full ring-2 ring-surface-container-lowest"></span>
+                </button>
+                <div class="h-8 w-px bg-surface-container-high hidden sm:block"></div>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col text-right hidden sm:flex">
+                        <span class="font-label-lg text-label-lg text-on-surface leading-tight font-semibold">{{ auth()->user()?->name ?? 'Administrator' }}</span>
+                        <span class="font-label-sm text-label-sm text-secondary leading-tight font-medium">{{ auth()->user()?->role === 'admin' ? 'Administrator Sistem' : 'Staff Admin' }}</span>
+                    </div>
+                    <img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="{{ auth()->user()?->avatar_url ?? 'https://lh3.googleusercontent.com/aida-public/AB6AXuBgUVH_R0crxrhsjBVkSdY1Slm5HWJBUN8t9o3-Zl2Flebi-ObCvjt5o6TXQ6idNvsgaU3CdsU-JeLfIiIkJvfuzoloKrSaE25Cw8uAyEMnEPXfee6PwgtmsMmhIlMfR28q7uiS1oa-5eIOChjdrUyl8krMY8TMFeh7fPu06m5GVkMwQoESxWwyoWmLf_1d30NaFmhojZWbkswxQxQ1rdLoe3rFHqb82HmobLdYpexSOLIfo_J9oRMC' }}"/>
+                </div>
+            </div>
         </header>
-        
-        <!-- Page Body -->
-        <main class="flex-1 p-4 sm:p-6 md:p-8">
+
+        <!-- Main Body -->
+        <main class="w-full pt-20 bg-surface min-h-screen px-space-md md:px-space-lg py-space-lg flex-1">
             @if(session('success'))
-                <div class="alert alert-success">
-                    <span class="material-symbols-outlined text-emerald-600" style="font-size: 20px;">check_circle</span>
-                    <span class="font-medium text-xs">{{ session('success') }}</span>
+                <div class="mb-space-md p-space-md rounded-xl bg-secondary-container text-on-secondary-container flex items-center gap-2 text-xs font-semibold shadow-sm">
+                    <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                    <span>{{ session('success') }}</span>
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-error">
-                    <span class="material-symbols-outlined text-rose-600" style="font-size: 20px;">error</span>
-                    <span class="font-medium text-xs">{{ session('error') }}</span>
+                <div class="mb-space-md p-space-md rounded-xl bg-error-container text-on-error-container flex items-center gap-2 text-xs font-semibold shadow-sm">
+                    <span class="material-symbols-outlined text-[20px]">error</span>
+                    <span>{{ session('error') }}</span>
                 </div>
             @endif
             @if(session('info'))
-                <div class="alert alert-info">
-                    <span class="material-symbols-outlined text-indigo-600" style="font-size: 20px;">info</span>
-                    <span class="font-medium text-xs">{{ session('info') }}</span>
+                <div class="mb-space-md p-space-md rounded-xl bg-surface-container-high text-primary flex items-center gap-2 text-xs font-semibold shadow-sm">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span>{{ session('info') }}</span>
                 </div>
             @endif
-            
+
             @yield('admin-content')
         </main>
     </div>
@@ -171,8 +216,12 @@
 
 <script>
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('sidebarOverlay').classList.toggle('show');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
     }
 </script>
 @endsection

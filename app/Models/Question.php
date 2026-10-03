@@ -45,4 +45,18 @@ class Question extends Model
             default           => '-',
         };
     }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->question_image) {
+            return null;
+        }
+
+        if (filter_var($this->question_image, FILTER_VALIDATE_URL)) {
+            return $this->question_image;
+        }
+
+        $cleanPath = ltrim(str_replace('storage/', '', $this->question_image), '/');
+        return asset('storage/' . $cleanPath);
+    }
 }

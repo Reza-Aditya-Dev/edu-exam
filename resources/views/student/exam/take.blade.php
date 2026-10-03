@@ -211,7 +211,7 @@
 
                 @if($currentExamQuestion->question->question_image)
                     <div class="w-full bg-surface-container-low rounded-xl p-2.5 flex flex-col items-center">
-                        <img src="{{ Storage::url($currentExamQuestion->question->question_image) }}" alt="Gambar Soal {{ $currentIndex }}" class="rounded-lg max-h-72 object-contain shadow-sm">
+                        <img src="{{ asset('storage/' . $currentExamQuestion->question->question_image) }}" alt="Gambar Soal {{ $currentIndex }}" class="rounded-lg max-h-72 object-contain shadow-sm">
                         <span class="text-[11px] text-on-surface-variant mt-1.5">Gambar Lampiran Soal {{ $currentIndex }}</span>
                     </div>
                 @endif
@@ -237,7 +237,7 @@
                                     <div class="option-text text-xs md:text-sm {{ $isSelected ? 'text-primary font-bold' : 'text-on-surface' }} leading-relaxed flex-1">
                                         {!! $option->option_text !!}
                                         @if($option->option_image)
-                                            <img src="{{ Storage::url($option->option_image) }}" alt="Opsi {{ $option->label }}" class="max-h-36 rounded-md mt-1.5 block">
+                                            <img src="{{ asset('storage/' . $option->option_image) }}" alt="Opsi {{ $option->label }}" class="max-h-36 rounded-md mt-1.5 block">
                                         @endif
                                     </div>
                                 </div>

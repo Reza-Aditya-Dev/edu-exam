@@ -250,6 +250,7 @@ class ExamController extends Controller
     public function studentAnswerDetail(Exam $exam, $studentId)
     {
         $this->authorizeExam($exam);
+        $exam->load(['subject', 'classroom', 'teacher']);
         $student = \App\Models\User::findOrFail($studentId);
         $participant = \App\Models\ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $studentId)->firstOrFail();

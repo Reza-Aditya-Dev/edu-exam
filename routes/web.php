@@ -89,7 +89,10 @@ Route::middleware(['auth', 'role:teacher'])->prefix('guru')->name('teacher.')->g
     Route::get('/api/soal', [Teacher\ExamController::class, 'getQuestions'])->name('api.questions');
 
     // Profil guru
-    Route::get('/profil', function() { return view('teacher.profile'); })->name('profile');
+    Route::get('/profil',             [Teacher\ProfileController::class, 'index'])->name('profile');
+    Route::put('/profil',             [Teacher\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profil/password',    [Teacher\ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('/profil/preferensi', [Teacher\ProfileController::class, 'updatePreferences'])->name('profile.preferences');
 });
 
 // ═══════════════════════════════════════════════════

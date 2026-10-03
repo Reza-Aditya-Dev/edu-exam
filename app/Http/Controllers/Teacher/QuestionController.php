@@ -149,6 +149,9 @@ class QuestionController extends Controller
             if ($request->hasFile('question_image')) {
                 if ($imagePath) Storage::disk('public')->delete($imagePath);
                 $imagePath = $request->file('question_image')->store('questions', 'public');
+            } elseif ($request->boolean('remove_image')) {
+                if ($imagePath) Storage::disk('public')->delete($imagePath);
+                $imagePath = null;
             }
 
             $question->update([

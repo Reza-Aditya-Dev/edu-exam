@@ -86,4 +86,13 @@ class Exam extends Model
     {
         return $this->participants()->where('status', 'submitted')->count();
     }
+
+    public function getTokenAttribute(): string
+    {
+        if (!empty($this->attributes['token'] ?? null)) {
+            return $this->attributes['token'];
+        }
+        $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $this->subject->code ?? $this->subject->name ?? $this->title ?? 'CBT'), 0, 3));
+        return ($prefix ?: 'CBT') . '-' . str_pad($this->id, 3, '0', STR_PAD_LEFT);
+    }
 }
