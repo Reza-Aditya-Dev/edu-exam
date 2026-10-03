@@ -23,10 +23,10 @@
                 <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Nonaktif</option>
             </select>
             
-            <button type="submit" class="btn btn-secondary">Cari</button>
+            <button type="submit" class="btn btn-secondary"><i class="bi bi-search me-1"></i> Cari</button>
         </form>
         
-        <a href="{{ route('admin.students.create') }}" class="btn btn-primary font-bold">+ Tambah Siswa</a>
+        <a href="{{ route('admin.students.create') }}" class="btn btn-primary font-bold"><i class="bi bi-person-plus-fill me-1"></i> Tambah Siswa</a>
     </div>
 </div>
 
@@ -75,7 +75,7 @@
                     </td>
                     <td style="text-align: right;">
                         <div class="flex justify-end gap-2">
-                            <a href="{{ route('admin.students.edit', $student) }}" class="btn btn-secondary btn-sm">Edit</a>
+                            <a href="{{ route('admin.students.edit', $student) }}" class="btn btn-secondary btn-sm"><i class="bi bi-pencil-square me-1"></i> Edit</a>
                             <form action="{{ route('admin.students.toggle', $student) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn {{ $student->is_active ? 'btn-danger' : 'btn-success' }} btn-sm">

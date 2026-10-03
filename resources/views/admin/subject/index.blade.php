@@ -11,7 +11,7 @@
     <div class="card" style="position: sticky; top: 90px;">
         <div class="card-header" style="background: var(--primary-light);">
             <h3 class="card-title flex items-center gap-2" style="color: var(--primary-dark);">
-                <span>➕</span> Tambah Mapel Baru
+                <i class="bi bi-plus-circle me-1"></i> Tambah Mapel Baru
             </h3>
         </div>
         <div class="card-body">
@@ -36,7 +36,7 @@
 
                 <div class="mt-6">
                     <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-size: 1rem;">
-                        <span>💾</span> Simpan
+                        <i class="bi bi-check2-circle me-1"></i> Simpan
                     </button>
                 </div>
             </form>
@@ -47,7 +47,7 @@
     <div class="card">
         <div class="card-header flex justify-between items-center">
             <h3 class="card-title flex items-center gap-2">
-                <span>📚</span> Daftar Mata Pelajaran
+                <i class="bi bi-book-half text-primary me-1"></i> Daftar Mata Pelajaran
             </h3>
             <span class="badge badge-gray font-bold">{{ count($subjects) }} Total</span>
         </div>
@@ -73,17 +73,17 @@
                         <td>
                             <div class="font-bold text-gray-900" style="font-size: 1.05rem;">{{ $subject->name }}</div>
                             <div class="text-xs text-muted mt-1 flex items-center gap-1">
-                                <span>🕒</span> Ditambahkan {{ $subject->created_at ? $subject->created_at->diffForHumans() : '-' }}
+                                <i class="bi bi-clock me-1"></i> Ditambahkan {{ $subject->created_at ? $subject->created_at->diffForHumans() : '-' }}
                             </div>
                         </td>
                         <td class="text-center">
                             <div class="badge badge-primary" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.85rem;">
-                                📝 {{ $subject->questions_count ?? 0 }} Soal
+                                <i class="bi bi-journal-text me-1"></i> {{ $subject->questions_count ?? 0 }} Soal
                             </div>
                         </td>
                         <td class="text-center">
                             <div class="badge badge-warning" style="background: var(--warning-light); color: var(--warning); font-size: 0.85rem;">
-                                📋 {{ $subject->exams_count ?? 0 }} Ujian
+                                <i class="bi bi-file-earmark-check me-1"></i> {{ $subject->exams_count ?? 0 }} Ujian
                             </div>
                         </td>
                         <td class="text-right">
@@ -92,7 +92,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger btn-icon" title="Hapus Mata Pelajaran">
-                                        🗑️ Hapus
+                                        <i class="bi bi-trash-fill me-1"></i> Hapus
                                     </button>
                                 </form>
                             </div>
@@ -102,7 +102,7 @@
                     <tr>
                         <td colspan="5">
                             <div class="empty-state">
-                                <div class="empty-icon" style="font-size: 4rem;">📚</div>
+                                <div class="empty-icon" style="font-size: 4rem;"><i class="bi bi-book text-muted"></i></div>
                                 <h3 style="font-size: 1.25rem;">Belum Ada Mata Pelajaran</h3>
                                 <p style="font-size: 1rem; color: var(--gray-500);">Silakan tambah mata pelajaran pertama Anda melalui form di sebelah kiri.</p>
                             </div>

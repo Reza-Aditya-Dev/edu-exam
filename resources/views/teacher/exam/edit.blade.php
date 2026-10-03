@@ -177,8 +177,8 @@
                     <div id="emptySelectedMsg" class="text-center text-muted" style="margin-top:40px;">Belum ada soal terpilih. Klik + pada daftar soal di sebelah kiri.</div>
                 </div>
                 <div style="padding: 16px; border-top: 1px solid var(--gray-200); background: white; display: flex; justify-content: space-between;">
-                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)">← Kembali</button>
-                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">Selanjutnya: Konfirmasi ➔</button>
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)"><i class="bi bi-arrow-left me-1"></i> Kembali</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">Selanjutnya: Konfirmasi <i class="bi bi-arrow-right ms-1"></i></button>
                 </div>
             </div>
             
@@ -192,7 +192,7 @@
             <div class="card-body">
                 
                 <div class="alert alert-info">
-                    ℹ️ Ujian Anda telah memiliki <strong id="finalQCount">0</strong> butir soal. Silakan atur preferensi di bawah sebelum menyimpan.
+                    <i class="bi bi-info-circle-fill me-2"></i> Ujian Anda telah memiliki <strong id="finalQCount">0</strong> butir soal. Silakan atur preferensi di bawah sebelum menyimpan.
                 </div>
                 
                 <h4 class="font-bold mb-4 mt-6">Pengaturan Tambahan Ujian</h4>

@@ -7,6 +7,7 @@
     <title>{{ $exam->title }} — EduExam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
             --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #eff6ff;
@@ -122,7 +123,7 @@
 
 <header class="header">
     <div class="brand">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        <i class="bi bi-mortarboard-fill fs-4 text-primary"></i>
         EduExam
     </div>
     <div class="exam-info">
@@ -130,7 +131,7 @@
         <div class="exam-meta">{{ $exam->subject->name ?? 'Mata Pelajaran' }} • Guru: {{ $exam->teacher->name ?? '-' }}</div>
     </div>
     <div class="timer-badge" id="timer">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <i class="bi bi-clock-history"></i>
         <span id="time-display">--:--:--</span>
     </div>
 </header>
@@ -152,7 +153,7 @@
 
     @if(!$currentExamQuestion)
         <div class="question-card" style="text-align: center; padding: 60px 20px;">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin: 0 auto 16px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <i class="bi bi-file-earmark-x fs-1 text-muted d-block mb-3"></i>
             <h2 style="font-family: 'Outfit'; font-size: 1.5rem; margin-bottom: 8px;">Ujian Belum Memiliki Soal</h2>
             <p style="color: var(--text-muted);">Silakan hubungi guru yang bersangkutan karena soal ujian belum ditambahkan.</p>
         </div>
@@ -165,7 +166,7 @@
                 </div>
                 <label class="q-mark {{ isset($answers[$currentExamQuestion->id]) && $answers[$currentExamQuestion->id]->is_marked ? 'marked' : '' }}">
                     <input type="checkbox" id="mark-btn" {{ isset($answers[$currentExamQuestion->id]) && $answers[$currentExamQuestion->id]->is_marked ? 'checked' : '' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    <i class="bi bi-flag-fill me-1"></i>
                     Tandai Ragu
                 </label>
             </div>
@@ -217,29 +218,29 @@
     <div class="nav-wrapper">
         @if($currentIndex > 1)
             <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex - 1]) }}" class="btn btn-outline" style="min-width: 120px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <i class="bi bi-arrow-left me-1"></i>
                 Kembali
             </a>
         @else
             <button class="btn btn-outline" disabled style="min-width: 120px; opacity: 0.4; cursor: not-allowed;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <i class="bi bi-arrow-left me-1"></i>
                 Kembali
             </button>
         @endif
         
         <button class="btn btn-nav-grid" onclick="toggleGrid()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <i class="bi bi-grid-3x3-gap-fill me-1"></i>
             Daftar Soal (<span id="answered-count-btn">{{ $answeredCount }}</span>/{{ $totalQ }})
         </button>
         
         @if($currentIndex < $totalQ)
             <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex + 1]) }}" class="btn btn-primary" style="min-width: 120px;">
                 Lanjut
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                <i class="bi bi-arrow-right ms-1"></i>
             </a>
         @else
             <button type="button" class="btn btn-primary" style="min-width: 140px; background: #16a34a; border-color: #16a34a; color: white;" onclick="confirmSubmit()">
-                Kumpulkan ✓
+                Kumpulkan <i class="bi bi-check-circle-fill ms-1"></i>
             </button>
         @endif
     </div>
@@ -250,7 +251,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2 class="modal-title">Navigasi Soal</h2>
-            <button class="btn-close" onclick="toggleGrid()">×</button>
+            <button class="btn-close" onclick="toggleGrid()" style="display:flex;align-items:center;justify-content:center;"><i class="bi bi-x-lg"></i></button>
         </div>
         
         <div class="grid-legend">
@@ -278,7 +279,7 @@
             <form action="{{ route('student.exam.submit', $exam->id) }}" method="POST" id="submit-form">
                 @csrf
                 <button type="button" class="btn btn-primary" style="width: 100%; background: var(--secondary); padding: 16px; font-size: 1.125rem;" onclick="confirmSubmit()">
-                    Kumpulkan Ujian Sekarang
+                    <i class="bi bi-send-check-fill me-2"></i> Kumpulkan Ujian Sekarang
                 </button>
             </form>
         </div>
@@ -286,7 +287,7 @@
 </div>
 
 <div class="toast" id="toast">
-    <div class="toast-icon">✓</div>
+    <div class="toast-icon"><i class="bi bi-check-lg"></i></div>
     <span>Jawaban tersimpan otomatis</span>
 </div>
 

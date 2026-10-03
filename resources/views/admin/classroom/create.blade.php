@@ -90,10 +90,10 @@
 
             <div class="flex justify-between items-center">
                 <a href="{{ route('admin.classrooms') }}" class="btn btn-secondary">
-                    <span>⬅️</span> Kembali
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
                 <button type="submit" class="btn btn-primary" style="padding-left: 24px; padding-right: 24px;">
-                    <span>💾</span> Simpan Kelas
+                    <i class="bi bi-check2-circle me-1"></i> Simpan Kelas
                 </button>
             </div>
         </form>

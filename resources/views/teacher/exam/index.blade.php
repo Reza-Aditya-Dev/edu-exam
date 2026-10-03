@@ -14,7 +14,7 @@
         <a href="{{ route('teacher.exams.index', ['status' => 'completed']) }}" class="btn {{ request('status') == 'completed' ? 'btn-primary' : 'btn-secondary' }}">Selesai</a>
     </div>
     
-    <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary btn-lg font-bold">+ Buat Ujian Baru</a>
+    <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary btn-lg font-bold"><i class="bi bi-plus-lg me-1"></i> Buat Ujian Baru</a>
 </div>
 
 <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
@@ -40,19 +40,19 @@
             
             <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                 <div style="font-size: 0.8125rem;">
-                    <div class="text-muted mb-1">📅 Jadwal</div>
+                    <div class="text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> Jadwal</div>
                     <div class="font-semibold">{{ $exam->exam_date->format('d/m/Y') }}</div>
                 </div>
                 <div style="font-size: 0.8125rem;">
-                    <div class="text-muted mb-1">⏱ Waktu</div>
+                    <div class="text-muted mb-1"><i class="bi bi-clock me-1"></i> Waktu</div>
                     <div class="font-semibold">{{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}</div>
                 </div>
                 <div style="font-size: 0.8125rem;">
-                    <div class="text-muted mb-1">📋 Soal</div>
+                    <div class="text-muted mb-1"><i class="bi bi-file-earmark-text me-1"></i> Soal</div>
                     <div class="font-semibold">{{ $exam->total_questions }} Butir</div>
                 </div>
                 <div style="font-size: 0.8125rem;">
-                    <div class="text-muted mb-1">👥 Peserta</div>
+                    <div class="text-muted mb-1"><i class="bi bi-people me-1"></i> Peserta</div>
                     <div class="font-semibold">{{ $exam->participant_count }} Orang</div>
                 </div>
             </div>
@@ -61,26 +61,26 @@
         <div style="padding: 16px 20px; background: var(--gray-50); border-top: 1px solid var(--gray-200); display: flex; gap: 8px;">
             
             @if($exam->status === 'draft')
-                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary flex-1">✏️ Edit</a>
+                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary flex-1"><i class="bi bi-pencil-square me-1"></i> Edit</a>
                 <form action="{{ route('teacher.exams.publish', $exam) }}" method="POST" style="flex: 1;">
                     @csrf
                     <button type="submit" class="btn btn-primary btn-block">Terbitkan</button>
                 </form>
             @elseif($exam->status === 'scheduled')
-                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary flex-1">✏️ Edit</a>
+                <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary flex-1"><i class="bi bi-pencil-square me-1"></i> Edit</a>
                 <form action="{{ route('teacher.exams.activate', $exam) }}" method="POST" style="flex: 1;">
                     @csrf
                     <button type="submit" class="btn btn-success btn-block" onclick="return confirm('Mulai ujian ini sekarang?')">Mulai Ujian</button>
                 </form>
             @elseif($exam->status === 'active')
-                <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-secondary flex-1">Live Monitor</a>
+                <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-secondary flex-1"><i class="bi bi-activity me-1"></i> Monitor</a>
                 <form action="{{ route('teacher.exams.complete', $exam) }}" method="POST" style="flex: 1;">
                     @csrf
                     <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('Tutup ujian secara paksa sekarang?')">Tutup Ujian</button>
                 </form>
             @elseif($exam->status === 'completed')
-                <a href="{{ route('teacher.exams.analytics', $exam) }}" class="btn btn-secondary flex-1">Analitik</a>
-                <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-primary flex-1">Hasil Ujian</a>
+                <a href="{{ route('teacher.exams.analytics', $exam) }}" class="btn btn-secondary flex-1"><i class="bi bi-bar-chart me-1"></i> Analitik</a>
+                <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-primary flex-1"><i class="bi bi-award me-1"></i> Hasil Ujian</a>
             @endif
             
         </div>
@@ -88,10 +88,10 @@
     @empty
     <div class="card" style="grid-column: 1 / -1;">
         <div class="empty-state">
-            <div class="empty-icon">📝</div>
+            <div class="empty-icon"><i class="bi bi-journal-x" style="font-size: 3rem;"></i></div>
             <h3>Belum Ada Ujian</h3>
             <p>Anda belum membuat jadwal ujian apapun.</p>
-            <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary mt-4">Buat Ujian Sekarang</a>
+            <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary mt-4"><i class="bi bi-plus-lg me-1"></i> Buat Ujian Sekarang</a>
         </div>
     </div>
     @endforelse

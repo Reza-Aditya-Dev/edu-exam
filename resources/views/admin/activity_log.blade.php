@@ -148,7 +148,7 @@
         </div>
         <div>
             <button type="submit" class="btn btn-primary" style="padding: 10px 24px; height: 42px;">
-                <span>🔍</span> Terapkan Filter
+                <i class="bi bi-search me-1"></i> Terapkan Filter
             </button>
             @if(request('user_id') || request('action'))
                 <a href="{{ route('admin.logs') }}" class="btn btn-secondary ml-2" style="height: 42px;">Reset</a>
@@ -165,29 +165,29 @@
                 
                 // Menentukan icon dan style berdasarkan action string
                 $iconClass = 'icon-default';
-                $icon = '📌';
+                $icon = 'bi bi-pin-angle-fill';
                 
                 if (str_contains($actionType, 'create') || str_contains($actionType, 'store') || str_contains($actionType, 'add')) {
                     $iconClass = 'icon-create';
-                    $icon = '✨';
+                    $icon = 'bi bi-plus-circle-fill';
                 } elseif (str_contains($actionType, 'update') || str_contains($actionType, 'edit') || str_contains($actionType, 'modify')) {
                     $iconClass = 'icon-update';
-                    $icon = '✏️';
+                    $icon = 'bi bi-pencil-fill';
                 } elseif (str_contains($actionType, 'delete') || str_contains($actionType, 'remove') || str_contains($actionType, 'destroy')) {
                     $iconClass = 'icon-delete';
-                    $icon = '🗑️';
+                    $icon = 'bi bi-trash-fill';
                 } elseif (str_contains($actionType, 'login') || str_contains($actionType, 'auth')) {
                     $iconClass = 'icon-update';
-                    $icon = '🔐';
+                    $icon = 'bi bi-box-arrow-in-right';
                 } elseif (str_contains($actionType, 'archive')) {
                     $iconClass = 'icon-update';
-                    $icon = '📦';
+                    $icon = 'bi bi-archive-fill';
                 }
             @endphp
             
             <div class="timeline-item">
                 <div class="timeline-icon {{ $iconClass }}">
-                    {{ $icon }}
+                    <i class="{{ $icon }}"></i>
                 </div>
                 <div class="timeline-content">
                     <div class="log-header">
@@ -195,14 +195,14 @@
                             {{ str_replace('_', ' ', $log->action) }}
                         </div>
                         <div class="log-meta">
-                            <span>🕒</span> {{ $log->created_at ? $log->created_at->format('d M Y, H:i') : '-' }} 
+                            <i class="bi bi-clock me-1"></i> {{ $log->created_at ? $log->created_at->format('d M Y, H:i') : '-' }} 
                             <span class="text-xs">({{ $log->created_at ? $log->created_at->diffForHumans() : '' }})</span>
                         </div>
                     </div>
                     
                     <div class="user-badge mb-2 mt-1">
-                        <div style="width: 20px; height: 20px; border-radius: 50%; background: var(--gray-300); display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">
-                            👤
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background: var(--gray-300); display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">
+                            <i class="bi bi-person-fill"></i>
                         </div>
                         {{ $log->user->name ?? 'Sistem' }}
                         <span class="badge badge-gray text-xs" style="padding: 2px 6px; margin-left: 4px;">{{ $log->user->role ?? 'Sistem' }}</span>

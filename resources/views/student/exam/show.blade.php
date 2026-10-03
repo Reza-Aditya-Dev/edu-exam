@@ -24,11 +24,12 @@
         box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
     }
     .exam-header::after {
-        content: '📝';
+        content: '\F3EE';
+        font-family: 'bootstrap-icons';
         position: absolute;
-        right: -10px;
+        right: 10px;
         bottom: -20px;
-        font-size: 8rem;
+        font-size: 7rem;
         opacity: 0.12;
         transform: rotate(-15deg);
         pointer-events: none;
@@ -285,36 +286,36 @@
     <span class="exam-badge">{{ $exam->subject->name ?? 'Mata Pelajaran' }}</span>
     <h1>{{ $exam->title }}</h1>
     <div class="exam-teacher">
-        <span>👨‍🏫</span>
+        <i class="bi bi-person-workspace me-1"></i>
         <span>Guru Pengampu: {{ $exam->teacher->name ?? '-' }}</span>
     </div>
 </div>
 
 <div class="info-grid">
     <div class="info-box">
-        <div class="info-icon">📅</div>
+        <div class="info-icon"><i class="bi bi-calendar3"></i></div>
         <div class="info-label">Tanggal Pelaksanaan</div>
         <div class="info-value">{{ $exam->exam_date ? $exam->exam_date->format('d M Y') : '-' }}</div>
     </div>
     <div class="info-box">
-        <div class="info-icon">⏱</div>
+        <div class="info-icon"><i class="bi bi-stopwatch"></i></div>
         <div class="info-label">Durasi Ujian</div>
         <div class="info-value">{{ $exam->duration_minutes }} Menit</div>
     </div>
     <div class="info-box">
-        <div class="info-icon">📋</div>
+        <div class="info-icon"><i class="bi bi-list-check"></i></div>
         <div class="info-label">Jumlah Soal</div>
         <div class="info-value">{{ $exam->total_questions ?? $exam->questions()->count() }} Butir</div>
     </div>
     <div class="info-box">
-        <div class="info-icon">🎯</div>
+        <div class="info-icon"><i class="bi bi-award-fill"></i></div>
         <div class="info-label">Standar KKM</div>
         <div class="info-value">{{ $exam->passing_grade }}</div>
     </div>
 </div>
 
 <div class="instructions-card">
-    <h3>⚠️ Peraturan & Petunjuk Pengerjaan</h3>
+    <h3><i class="bi bi-exclamation-triangle-fill me-2"></i> Peraturan & Petunjuk Pengerjaan</h3>
     <div class="instructions-content">
         @if($exam->instructions)
             {!! nl2br(e($exam->instructions)) !!}
@@ -340,11 +341,11 @@
             </span>
         @elseif($exam->status === 'scheduled')
             <span class="action-status-badge status-badge-scheduled">
-                ⏳ Belum Dibuka (Terjadwal)
+                <i class="bi bi-hourglass-split me-1"></i> Belum Dibuka (Terjadwal)
             </span>
         @else
             <span class="action-status-badge status-badge-ended">
-                🔒 Telah Berakhir
+                <i class="bi bi-lock-fill me-1"></i> Telah Berakhir
             </span>
         @endif
     </div>
@@ -352,30 +353,30 @@
     @if($exam->status === 'active')
         @if($participant && $participant->status === 'in_progress')
             <a href="{{ route('student.exam.take', $exam->id) }}" class="btn-start btn-start-primary">
-                ⚡ Lanjutkan Pengerjaan Ujian Sekarang →
+                <i class="bi bi-lightning-charge-fill me-1"></i> Lanjutkan Pengerjaan Ujian Sekarang →
             </a>
         @elseif(!$participant || $participant->status === 'not_started')
             <form action="{{ route('student.exam.start', $exam->id) }}" method="POST">
                 @csrf
                 <button type="submit" class="btn-start btn-start-primary" onclick="return confirm('Apakah Anda yakin sudah siap untuk memulai ujian ini sekarang?\n\nWaktu pengerjaan akan langsung dihitung mundur.')">
-                    🚀 Mulai Ujian Sekarang
+                    <i class="bi bi-rocket-takeoff-fill me-2"></i> Mulai Ujian Sekarang
                 </button>
             </form>
         @else
             <a href="{{ route('student.exam.result', $exam->id) }}" class="btn-start btn-start-success">
-                ✓ Anda Telah Mengumpulkan Ujian (Lihat Hasil)
+                <i class="bi bi-check-circle-fill me-2"></i> Anda Telah Mengumpulkan Ujian (Lihat Hasil)
             </a>
         @endif
     @elseif($exam->status === 'scheduled')
         <div class="status-notice warning">
-            <span>⏳ Ujian belum dimulai oleh guru. Tombol mulai akan aktif ketika guru membuka ujian.</span>
+            <span><i class="bi bi-info-circle-fill me-1"></i> Ujian belum dimulai oleh guru. Tombol mulai akan aktif ketika guru membuka ujian.</span>
         </div>
         <button class="btn-start btn-start-disabled" disabled>
             Ujian Belum Dibuka
         </button>
     @else
         <div class="status-notice danger">
-            <span>🔒 Ujian ini telah berakhir atau ditutup oleh guru pengampu.</span>
+            <span><i class="bi bi-slash-circle me-1"></i> Ujian ini telah berakhir atau ditutup oleh guru pengampu.</span>
         </div>
         <button class="btn-start btn-start-disabled" disabled>
             Ujian Sudah Selesai
@@ -383,7 +384,7 @@
     @endif
 
     <a href="{{ route('student.dashboard') }}" class="btn-back-dashboard">
-        ← Kembali ke Halaman Dashboard
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Halaman Dashboard
     </a>
 </div>
 @endsection

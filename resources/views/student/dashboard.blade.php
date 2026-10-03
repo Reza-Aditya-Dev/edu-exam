@@ -88,8 +88,8 @@
 <div class="student-header">
     <img src="{{ $student->avatar_url }}" alt="{{ $student->name }}" class="student-avatar">
     <div class="student-info">
-        <h2>Halo, {{ explode(' ', $student->name)[0] }} 👋</h2>
-        <span class="class-badge">📚 {{ $classroom ? $classroom->name : 'Belum ada kelas' }}</span>
+        <h2>Halo, {{ explode(' ', $student->name)[0] }}</h2>
+        <span class="class-badge"><i class="bi bi-mortarboard-fill me-1"></i> {{ $classroom ? $classroom->name : 'Belum ada kelas' }}</span>
     </div>
 </div>
 
@@ -101,15 +101,19 @@
             <span class="live-dot"></span>
             <div class="exam-info">
                 <h3>{{ $activeExam->title }}</h3>
-                <p>⏰ Sedang berlangsung — {{ $activeExam->duration_minutes }} menit</p>
+                <p><i class="bi bi-clock-history me-1"></i> Sedang berlangsung — {{ $activeExam->duration_minutes }} menit</p>
             </div>
         </div>
         @if($activeExam->my_participant && $activeExam->my_participant->status === 'in_progress')
-            <a href="{{ route('student.exam.take', ['exam' => $activeExam->id]) }}" class="btn-masuk">Lanjutkan →</a>
+            <a href="{{ route('student.exam.take', ['exam' => $activeExam->id]) }}" class="btn-masuk">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Lanjutkan →
+            </a>
         @elseif(!$activeExam->my_participant || $activeExam->my_participant->status === 'not_started')
-            <a href="{{ route('student.exam.show', $activeExam) }}" class="btn-masuk">Mulai →</a>
+            <a href="{{ route('student.exam.show', $activeExam) }}" class="btn-masuk">
+                <i class="bi bi-play-circle-fill me-1"></i> Mulai →
+            </a>
         @else
-            <span style="font-size:.8125rem; opacity:.8;">✓ Selesai</span>
+            <span style="font-size:.8125rem; opacity:.9;"><i class="bi bi-check-circle-fill text-white me-1"></i> Selesai</span>
         @endif
     </div>
     @endforeach
@@ -117,13 +121,13 @@
 
 {{-- UJIAN MENDATANG --}}
 <div class="section-title">
-    <span>📅 Ujian Mendatang</span>
+    <span><i class="bi bi-calendar-event me-2 text-primary"></i> Ujian Mendatang</span>
 </div>
 
 @if($upcomingExams->isEmpty())
     <div class="card" style="margin-bottom:12px;">
         <div class="card-body empty-state" style="padding: 24px;">
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon"><i class="bi bi-inbox text-muted"></i></div>
             <h3>Belum ada ujian</h3>
             <p>Ujian mendatang akan muncul di sini.</p>
         </div>
@@ -132,21 +136,23 @@
     @foreach($upcomingExams as $exam)
     <div class="exam-card">
         <div class="exam-top">
-            <div class="exam-icon">📝</div>
+            <div class="exam-icon"><i class="bi bi-journal-text fs-4"></i></div>
             <div class="exam-meta">
                 <div class="exam-title">{{ $exam->title }}</div>
                 <div class="exam-type">{{ $exam->exam_type }} • {{ $exam->subject->name }}</div>
                 <div class="exam-details">
-                    <span>📅 {{ $exam->exam_date->format('d M Y') }}</span>
-                    <span>⏰ {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}</span>
-                    <span>📋 {{ $exam->total_questions }} Soal</span>
-                    <span>⏱ {{ $exam->duration_minutes }} Menit</span>
+                    <span><i class="bi bi-calendar3 me-1"></i> {{ $exam->exam_date->format('d M Y') }}</span>
+                    <span><i class="bi bi-clock me-1"></i> {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}</span>
+                    <span><i class="bi bi-list-check me-1"></i> {{ $exam->total_questions }} Soal</span>
+                    <span><i class="bi bi-stopwatch me-1"></i> {{ $exam->duration_minutes }} Menit</span>
                 </div>
             </div>
         </div>
         <div class="exam-footer">
-            <span class="exam-date">KKM: {{ $exam->passing_grade }}</span>
-            <a href="{{ route('student.exam.show', $exam) }}" class="btn btn-primary btn-sm">Detail Ujian</a>
+            <span class="exam-date"><i class="bi bi-award-fill text-warning me-1"></i> KKM: {{ $exam->passing_grade }}</span>
+            <a href="{{ route('student.exam.show', $exam) }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-eye me-1"></i> Detail Ujian
+            </a>
         </div>
     </div>
     @endforeach
@@ -155,7 +161,7 @@
 {{-- HASIL TERBARU --}}
 @if($recentResults->isNotEmpty())
 <div class="section-title">
-    <span>🏆 Hasil Terbaru</span>
+    <span><i class="bi bi-trophy-fill text-warning me-2"></i> Hasil Terbaru</span>
     <a href="{{ route('student.history') }}">Lihat Semua</a>
 </div>
 
@@ -166,7 +172,10 @@
         <div class="result-title">{{ $result->exam->subject->name ?? '-' }}</div>
         <div class="result-sub">{{ $result->exam->title }} • {{ $result->exam->exam_date?->format('d M Y') ?? '-' }}</div>
     </div>
-    <span class="result-status {{ $result->pass_status }}">{{ $result->pass_label }}</span>
+    <span class="result-status {{ $result->pass_status }}">
+        <i class="bi {{ $result->pass_status === 'pass' ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }} me-1"></i>
+        {{ $result->pass_label }}
+    </span>
 </div>
 @endforeach
 @endif

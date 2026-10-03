@@ -59,7 +59,7 @@
             
             <div class="flex justify-end gap-3 mt-6">
                 <a href="{{ route('admin.students') }}" class="btn btn-secondary">Batal</a>
-                <button type="submit" class="btn btn-primary">Simpan Data Siswa</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i> Simpan Data Siswa</button>
             </div>
         </form>
     </div>

@@ -40,7 +40,7 @@
 @section('student-content')
 <div class="result-header {{ $result->pass_status }}">
     <div class="status-icon {{ $result->pass_status }}">
-        {{ $result->pass_status === 'pass' ? '🎉' : '😔' }}
+        {!! $result->pass_status === 'pass' ? '<i class="bi bi-trophy-fill"></i>' : '<i class="bi bi-emoji-frown-fill"></i>' !!}
     </div>
     
     <div class="score-display {{ $result->pass_status }}">
@@ -71,7 +71,7 @@
 </div>
 
 <div class="details-card">
-    <div class="card-header">Rincian Ujian</div>
+    <div class="card-header"><i class="bi bi-info-circle-fill me-2 text-primary"></i> Rincian Ujian</div>
     <div class="detail-row">
         <span class="detail-label">Mata Pelajaran</span>
         <span class="detail-value">{{ $exam->subject->name }}</span>
@@ -90,5 +90,7 @@
     </div>
 </div>
 
-<a href="{{ route('student.dashboard') }}" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 24px;">Kembali ke Beranda</a>
+<a href="{{ route('student.dashboard') }}" class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center gap-2" style="margin-bottom: 24px;">
+    <i class="bi bi-house-door-fill"></i> Kembali ke Beranda
+</a>
 @endsection

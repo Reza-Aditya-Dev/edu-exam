@@ -31,19 +31,25 @@
 
 @section('student-content')
 <div class="history-header">
-    <h1>Riwayat Ujian</h1>
+    <h1><i class="bi bi-clock-history me-2 text-primary"></i> Riwayat Ujian</h1>
 </div>
 
 <div class="filter-tabs">
-    <a href="{{ route('student.history') }}" class="filter-tab {{ !request('filter') ? 'active' : '' }}">Semua</a>
-    <a href="{{ route('student.history', ['filter' => 'pass']) }}" class="filter-tab {{ request('filter') === 'pass' ? 'active' : '' }}">Lulus</a>
-    <a href="{{ route('student.history', ['filter' => 'fail']) }}" class="filter-tab {{ request('filter') === 'fail' ? 'active' : '' }}">Tidak Lulus</a>
+    <a href="{{ route('student.history') }}" class="filter-tab {{ !request('filter') ? 'active' : '' }}">
+        <i class="bi bi-collection me-1"></i> Semua
+    </a>
+    <a href="{{ route('student.history', ['filter' => 'pass']) }}" class="filter-tab {{ request('filter') === 'pass' ? 'active' : '' }}">
+        <i class="bi bi-check-circle-fill me-1"></i> Lulus
+    </a>
+    <a href="{{ route('student.history', ['filter' => 'fail']) }}" class="filter-tab {{ request('filter') === 'fail' ? 'active' : '' }}">
+        <i class="bi bi-x-circle-fill me-1"></i> Tidak Lulus
+    </a>
 </div>
 
 @if($results->isEmpty())
     <div class="card">
         <div class="card-body empty-state">
-            <div class="empty-icon">📂</div>
+            <div class="empty-icon"><i class="bi bi-folder2-open text-muted"></i></div>
             <h3>Belum Ada Riwayat</h3>
             <p>Anda belum menyelesaikan ujian apapun.</p>
         </div>
@@ -60,14 +66,14 @@
                 <div class="hc-title">{{ $result->exam->title }}</div>
                 <div class="hc-subject">{{ $result->exam->subject->name ?? '-' }}</div>
                 <div class="hc-meta">
-                    <span>📅 {{ $result->created_at->format('d/m/Y') }}</span>
-                    <span>⏱ {{ $result->time_spent_minutes }} mnt</span>
+                    <span><i class="bi bi-calendar3 me-1"></i> {{ $result->created_at->format('d/m/Y') }}</span>
+                    <span><i class="bi bi-clock me-1"></i> {{ $result->time_spent_minutes }} mnt</span>
                 </div>
             </div>
             
             <div class="hc-action">
                 <a href="{{ route('student.exam.result', $result->exam_id) }}" class="hc-btn" title="Lihat Detail">
-                    ➔
+                    <i class="bi bi-chevron-right"></i>
                 </a>
             </div>
         </div>

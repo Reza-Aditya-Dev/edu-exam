@@ -20,42 +20,42 @@
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">👨‍🎓</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);"><i class="bi bi-people-fill"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['total_students'] }}</div>
             <div class="stat-lbl">Total Siswa</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">👨‍🏫</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);"><i class="bi bi-person-workspace"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['total_teachers'] }}</div>
             <div class="stat-lbl">Total Guru</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">🏫</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);"><i class="bi bi-building"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['total_classrooms'] }}</div>
             <div class="stat-lbl">Total Kelas</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">📚</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);"><i class="bi bi-book-half"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['total_subjects'] }}</div>
             <div class="stat-lbl">Mata Pelajaran</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">📝</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);"><i class="bi bi-lightning-charge-fill"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['active_exams'] }}</div>
             <div class="stat-lbl">Ujian Berlangsung</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">📋</div>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);"><i class="bi bi-file-earmark-text-fill"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $stats['total_exams'] }}</div>
             <div class="stat-lbl">Total Ujian</div>
@@ -110,11 +110,11 @@
                 @forelse($recentLogs as $log)
                 <div style="padding: 12px 16px; border-bottom: 1px solid var(--gray-100);">
                     <div style="display: flex; gap: 10px;">
-                        <div style="font-size: 1.25rem;">
-                            @if(str_contains($log->action, 'create')) 🟢
-                            @elseif(str_contains($log->action, 'update')) 🔵
-                            @elseif(str_contains($log->action, 'delete')) 🔴
-                            @else ⚪ @endif
+                        <div style="font-size: 1.1rem; line-height: 1.2;">
+                            @if(str_contains($log->action, 'create')) <i class="bi bi-plus-circle-fill text-success"></i>
+                            @elseif(str_contains($log->action, 'update')) <i class="bi bi-pencil-fill text-primary"></i>
+                            @elseif(str_contains($log->action, 'delete')) <i class="bi bi-trash-fill text-danger"></i>
+                            @else <i class="bi bi-info-circle-fill text-secondary"></i> @endif
                         </div>
                         <div>
                             <div style="font-size: 0.8125rem; color: var(--gray-800); line-height: 1.4;">

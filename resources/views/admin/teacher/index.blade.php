@@ -9,10 +9,10 @@
     <div class="card-body flex justify-between items-center flex-wrap gap-4">
         <form action="{{ route('admin.teachers') }}" method="GET" class="flex gap-4 items-center">
             <input type="text" name="search" class="form-control" placeholder="Cari nama, NIP, atau email..." value="{{ request('search') }}" style="width: 300px;">
-            <button type="submit" class="btn btn-secondary">Cari</button>
+            <button type="submit" class="btn btn-secondary"><i class="bi bi-search me-1"></i> Cari</button>
         </form>
         
-        <a href="{{ route('admin.teachers.create') }}" class="btn btn-primary font-bold">+ Tambah Guru</a>
+        <a href="{{ route('admin.teachers.create') }}" class="btn btn-primary font-bold"><i class="bi bi-person-plus-fill me-1"></i> Tambah Guru</a>
     </div>
 </div>
 
@@ -61,7 +61,7 @@
                     </td>
                     <td style="text-align: right;">
                         <div class="flex justify-end gap-2">
-                            <a href="{{ route('admin.teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm">Edit</a>
+                            <a href="{{ route('admin.teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm"><i class="bi bi-pencil-square me-1"></i> Edit</a>
                             <form action="{{ route('admin.teachers.toggle', $teacher) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn {{ $teacher->is_active ? 'btn-danger' : 'btn-success' }} btn-sm">

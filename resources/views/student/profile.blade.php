@@ -32,13 +32,13 @@
     <div class="profile-name">{{ $user->name }}</div>
     <div class="profile-nis">{{ $user->nis }}</div>
     <div>
-        <span class="profile-class">{{ $classroom ? $classroom->name : 'Belum Terdaftar di Kelas' }}</span>
+        <span class="profile-class"><i class="bi bi-mortarboard-fill me-1"></i> {{ $classroom ? $classroom->name : 'Belum Terdaftar di Kelas' }}</span>
     </div>
 </div>
 
 <div class="details-card">
     <div class="card-header">
-        <span>📋</span> Informasi Akun
+        <i class="bi bi-person-lines-fill text-primary"></i> Informasi Akun
     </div>
     <div class="detail-row">
         <span class="detail-label">Username</span>
@@ -54,13 +54,15 @@
     </div>
     <div class="detail-row">
         <span class="detail-label">Status Akun</span>
-        <span class="detail-value" style="color: var(--success)">Aktif</span>
+        <span class="detail-value" style="color: var(--success)"><i class="bi bi-check-circle-fill me-1"></i> Aktif</span>
     </div>
 </div>
 
 <form method="POST" action="{{ route('logout') }}" style="margin-bottom: 24px;">
     @csrf
-    <button type="submit" class="btn btn-danger btn-block btn-lg" onclick="return confirm('Apakah Anda yakin ingin keluar?')">Keluar dari Aplikasi</button>
+    <button type="submit" class="btn btn-danger btn-block btn-lg d-flex align-items-center justify-content-center gap-2" onclick="return confirm('Apakah Anda yakin ingin keluar?')">
+        <i class="bi bi-box-arrow-right"></i> Keluar dari Aplikasi
+    </button>
 </form>
 
 <div style="height: 16px;"></div>

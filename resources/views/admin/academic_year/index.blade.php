@@ -11,13 +11,11 @@
     <div class="card" style="position: sticky; top: 90px;">
         <div class="card-header" style="background: var(--primary-light);">
             <h3 class="card-title flex items-center gap-2" style="color: var(--primary-dark);">
-                <span>➕</span> Tambah Tahun Ajaran
+                <i class="bi bi-plus-circle me-1"></i> Tambah Tahun Ajaran
             </h3>
         </div>
         <div class="card-body">
             <form action="{{ route('admin.academic-years') }}" method="POST">
-                <!-- Using the same route for POST per Laravel's typical resource structure, or explicitly admin.academic-years.store if exists. 
-                     Assuming the route is admin.academic-years.store from previous pattern, but if not we can use /admin/tahun-ajaran directly -->
                 @csrf
                 <div class="form-group">
                     <label class="form-label" for="name">Nama Tahun Ajaran <span class="text-danger">*</span></label>
@@ -58,7 +56,7 @@
 
                 <div class="mt-6">
                     <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-size: 1rem;">
-                        <span>💾</span> Simpan Tahun Ajaran
+                        <i class="bi bi-check2-circle me-1"></i> Simpan Tahun Ajaran
                     </button>
                 </div>
             </form>
@@ -69,7 +67,7 @@
     <div class="card">
         <div class="card-header flex justify-between items-center">
             <h3 class="card-title flex items-center gap-2">
-                <span>📅</span> Daftar Tahun Ajaran
+                <i class="bi bi-calendar-week text-primary me-1"></i> Daftar Tahun Ajaran
             </h3>
             <span class="badge badge-gray font-bold">{{ count($years) }} Total</span>
         </div>
@@ -100,12 +98,12 @@
                         </td>
                         <td class="text-center">
                             <div class="badge badge-gray" style="font-size: 0.85rem;">
-                                🏫 {{ $year->classrooms_count ?? 0 }}
+                                <i class="bi bi-building me-1"></i> {{ $year->classrooms_count ?? 0 }}
                             </div>
                         </td>
                         <td class="text-center">
                             <div class="badge badge-warning" style="background: var(--warning-light); color: var(--warning); font-size: 0.85rem;">
-                                📋 {{ $year->exams_count ?? 0 }}
+                                <i class="bi bi-file-earmark-text me-1"></i> {{ $year->exams_count ?? 0 }}
                             </div>
                         </td>
                         <td class="text-right">
@@ -114,7 +112,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger btn-icon" title="Hapus Tahun Ajaran">
-                                        🗑️ Hapus
+                                        <i class="bi bi-trash-fill me-1"></i> Hapus
                                     </button>
                                 </form>
                             </div>
@@ -124,7 +122,7 @@
                     <tr>
                         <td colspan="5">
                             <div class="empty-state">
-                                <div class="empty-icon" style="font-size: 4rem;">📅</div>
+                                <div class="empty-icon" style="font-size: 4rem;"><i class="bi bi-calendar-x text-muted"></i></div>
                                 <h3 style="font-size: 1.25rem;">Belum Ada Data Tahun Ajaran</h3>
                                 <p style="font-size: 1rem; color: var(--gray-500);">Silakan tambah data pertama Anda melalui form di sebelah kiri.</p>
                             </div>

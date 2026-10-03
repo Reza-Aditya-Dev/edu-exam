@@ -100,11 +100,11 @@
 
             <div class="flex justify-between items-center">
                 <!-- Using generic URL if standard route name is unavailable -->
-                <a href="{{ url('admin/siswa') }}" class="btn btn-secondary" style="height: 44px; padding: 0 24px;">
-                    <span>⬅️</span> Kembali
+                <a href="{{ url('admin/siswa') }}" class="btn btn-secondary" style="height: 44px; padding: 0 24px; display: inline-flex; align-items: center;">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
                 <button type="submit" class="btn btn-primary" style="height: 44px; padding: 0 32px; font-size: 1rem;">
-                    <span>💾</span> Simpan Perubahan
+                    <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan
                 </button>
             </div>
         </form>

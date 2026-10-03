@@ -41,7 +41,7 @@
 
 @section('teacher-content')
 <div class="mb-4">
-    <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-secondary btn-sm">← Kembali ke Daftar Nilai</a>
+    <a href="{{ route('teacher.exams.results', $exam) }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Nilai</a>
 </div>
 
 <div class="student-header">
@@ -50,7 +50,7 @@
         <div class="student-name">{{ $student->name }}</div>
         <div class="student-nis">{{ $student->nis }} • {{ $exam->classroom->name }}</div>
         <div class="text-sm text-muted mt-2">
-            ⏱ Waktu Pengerjaan: {{ $participant->time_spent_minutes }} Menit | 
+            <i class="bi bi-clock me-1"></i> Waktu Pengerjaan: {{ $participant->time_spent_minutes }} Menit | 
             Dikumpulkan: {{ $participant->submitted_at->format('d M Y, H:i') }}
         </div>
     </div>

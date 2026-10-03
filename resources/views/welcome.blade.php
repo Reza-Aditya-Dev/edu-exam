@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduExam — Platform Ujian Digital Sekolah</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
             --primary: #3155D9;
@@ -301,26 +302,26 @@
         <div class="portals-grid">
             <!-- Student -->
             <a href="{{ route('login') }}?role=student" class="portal-card portal-student">
-                <div class="portal-icon">👨‍🎓</div>
+                <div class="portal-icon"><i class="bi bi-mortarboard-fill"></i></div>
                 <h3 class="portal-title">Portal Siswa</h3>
                 <p class="portal-desc">Ikuti ujian, lihat riwayat nilai, dan pantau progres belajar Anda di satu tempat yang bebas distraksi.</p>
-                <div class="portal-btn">Masuk sebagai Siswa ➔</div>
+                <div class="portal-btn">Masuk sebagai Siswa <i class="bi bi-arrow-right ms-1"></i></div>
             </a>
             
             <!-- Teacher -->
             <a href="{{ route('login') }}?role=teacher" class="portal-card portal-teacher">
-                <div class="portal-icon">👨‍🏫</div>
+                <div class="portal-icon"><i class="bi bi-person-video3"></i></div>
                 <h3 class="portal-title">Portal Guru</h3>
                 <p class="portal-desc">Kelola bank soal, jadwalkan ujian, dan dapatkan analisis daya serap siswa secara otomatis.</p>
-                <div class="portal-btn">Masuk sebagai Guru ➔</div>
+                <div class="portal-btn">Masuk sebagai Guru <i class="bi bi-arrow-right ms-1"></i></div>
             </a>
             
             <!-- Admin -->
             <a href="{{ route('login') }}?role=admin" class="portal-card portal-admin">
-                <div class="portal-icon">🏫</div>
+                <div class="portal-icon"><i class="bi bi-shield-lock-fill"></i></div>
                 <h3 class="portal-title">Administrator</h3>
                 <p class="portal-desc">Kelola data master (Siswa, Guru, Kelas) dan pantau seluruh aktivitas sistem secara menyeluruh.</p>
-                <div class="portal-btn">Masuk sebagai Admin ➔</div>
+                <div class="portal-btn">Masuk sebagai Admin <i class="bi bi-arrow-right ms-1"></i></div>
             </a>
         </div>
     </section>
@@ -332,28 +333,28 @@
                 <h2>Dirancang untuk Memudahkan Seluruh Ekosistem Sekolah</h2>
                 <ul class="feature-list">
                     <li class="feature-item">
-                        <div class="feature-check">✓</div>
+                        <div class="feature-check"><i class="bi bi-check-lg"></i></div>
                         <div class="feature-text">
                             <h4>Antarmuka Mobile-First untuk Siswa</h4>
                             <p>Desain ujian yang responsif, bersih, dan bebas distraksi. Sangat optimal diakses menggunakan smartphone.</p>
                         </div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-check">✓</div>
+                        <div class="feature-check"><i class="bi bi-check-lg"></i></div>
                         <div class="feature-text">
                             <h4>Analisis Nilai Otomatis</h4>
                             <p>Sistem langsung mengoreksi soal pilihan ganda dan menyajikan grafik analisis daya serap untuk evaluasi guru.</p>
                         </div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-check">✓</div>
+                        <div class="feature-check"><i class="bi bi-check-lg"></i></div>
                         <div class="feature-text">
                             <h4>Manajemen Data Terpusat</h4>
                             <p>Admin dapat dengan mudah mengatur data siswa, guru, kelas, dan mata pelajaran dalam satu dashboard komprehensif.</p>
                         </div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-check">✓</div>
+                        <div class="feature-check"><i class="bi bi-check-lg"></i></div>
                         <div class="feature-text">
                             <h4>Bank Soal Terstruktur</h4>
                             <p>Guru dapat membuat, menyimpan, dan menggunakan kembali butir soal dari bank soal yang terorganisir per mata pelajaran.</p>

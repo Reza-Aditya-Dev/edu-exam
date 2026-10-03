@@ -20,7 +20,7 @@
                 </select>
             </form>
             <a href="{{ route('admin.classrooms.create') }}" class="btn btn-primary" style="height: 38px;">
-                <span>➕</span> Tambah Kelas
+                <i class="bi bi-plus-lg me-1"></i> Tambah Kelas
             </a>
         </div>
     </div>
@@ -47,8 +47,8 @@
                     </td>
                     <td>
                         <div class="flex items-center gap-2">
-                            <div style="background: var(--gray-100); padding: 8px; border-radius: 8px;">
-                                👥
+                            <div style="background: var(--gray-100); padding: 8px; border-radius: 8px; line-height: 1;">
+                                <i class="bi bi-people-fill text-primary"></i>
                             </div>
                             <span class="font-medium" style="font-size: 0.95rem;">
                                 {{ $classroom->students_count ?? 0 }} Siswa
@@ -58,13 +58,13 @@
                     <td class="text-right">
                         <div class="flex items-center justify-end gap-2">
                             <a href="{{ route('admin.classrooms.edit', $classroom->id) }}" class="btn btn-sm btn-secondary" title="Edit">
-                                ✏️ Edit
+                                <i class="bi bi-pencil-square me-1"></i> Edit
                             </a>
                             <form action="{{ route('admin.classrooms.destroy', $classroom->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kelas ini? Data yang terkait mungkin akan terpengaruh.')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                    🗑️ Hapus
+                                    <i class="bi bi-trash-fill me-1"></i> Hapus
                                 </button>
                             </form>
                         </div>
@@ -74,10 +74,10 @@
                 <tr>
                     <td colspan="4">
                         <div class="empty-state">
-                            <div class="empty-icon">🏫</div>
+                            <div class="empty-icon"><i class="bi bi-building text-muted" style="font-size: 3.5rem;"></i></div>
                             <h3>Belum Ada Data Kelas</h3>
                             <p>Silakan tambah kelas baru untuk tahun ajaran yang dipilih.</p>
-                            <a href="{{ route('admin.classrooms.create') }}" class="btn btn-primary mt-4">Tambah Kelas Pertama</a>
+                            <a href="{{ route('admin.classrooms.create') }}" class="btn btn-primary mt-4"><i class="bi bi-plus-lg me-1"></i> Tambah Kelas Pertama</a>
                         </div>
                     </td>
                 </tr>

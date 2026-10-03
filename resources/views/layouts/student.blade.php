@@ -77,7 +77,7 @@
         </div>
         <div class="header-actions">
             <button class="notif-btn" onclick="window.location='#notifications'" title="Notifikasi">
-                🔔
+                <i class="bi bi-bell-fill"></i>
                 @if(isset($unreadCount) && $unreadCount > 0)
                     <span class="notif-badge">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
                 @endif
@@ -89,13 +89,13 @@
     <!-- Flash Messages -->
     <div class="flash-container">
         @if(session('success'))
-            <div class="alert alert-success">✓ {{ session('success') }}</div>
+            <div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-error">⚠️ {{ session('error') }}</div>
+            <div class="alert alert-error d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}</div>
         @endif
         @if(session('info'))
-            <div class="alert alert-info">ℹ️ {{ session('info') }}</div>
+            <div class="alert alert-info d-flex align-items-center gap-2"><i class="bi bi-info-circle-fill"></i> {{ session('info') }}</div>
         @endif
     </div>
 
@@ -108,22 +108,22 @@
     <nav class="bottom-nav">
         <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
             <div class="nav-dot"></div>
-            <span class="nav-icon">🏠</span>
+            <i class="bi bi-house-door-fill nav-icon"></i>
             <span class="nav-label">Beranda</span>
         </a>
         <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.exam.*') ? 'active' : '' }}">
             <div class="nav-dot"></div>
-            <span class="nav-icon">📝</span>
+            <i class="bi bi-journal-text nav-icon"></i>
             <span class="nav-label">Ujian</span>
         </a>
         <a href="{{ route('student.history') }}" class="nav-item {{ request()->routeIs('student.history') ? 'active' : '' }}">
             <div class="nav-dot"></div>
-            <span class="nav-icon">📊</span>
+            <i class="bi bi-bar-chart-line-fill nav-icon"></i>
             <span class="nav-label">Riwayat</span>
         </a>
         <a href="{{ route('student.profile') }}" class="nav-item {{ request()->routeIs('student.profile') ? 'active' : '' }}">
             <div class="nav-dot"></div>
-            <span class="nav-icon">👤</span>
+            <i class="bi bi-person-circle nav-icon"></i>
             <span class="nav-label">Profil</span>
         </a>
     </nav>

@@ -65,7 +65,7 @@
                     <td class="font-monospace text-sm text-muted">{{ $result->student->nis }}</td>
                     <td>
                         <div class="text-sm">
-                            ⏱ {{ $result->time_spent_minutes }} Menit
+                            <i class="bi bi-clock me-1"></i> {{ $result->time_spent_minutes }} Menit
                         </div>
                         <div class="text-xs text-muted">
                             Dikumpulkan: {{ $result->created_at->format('H:i') }}
@@ -87,7 +87,7 @@
                         </span>
                     </td>
                     <td style="text-align: right;">
-                        <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm">Lihat Jawaban</a>
+                        <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm"><i class="bi bi-eye me-1"></i> Lihat Jawaban</a>
                     </td>
                 </tr>
                 @empty

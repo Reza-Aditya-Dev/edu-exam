@@ -27,7 +27,7 @@
                 </select>
             </div>
             
-            <a href="{{ route('teacher.questions.create') }}" class="btn btn-primary">+ Tambah Soal</a>
+            <a href="{{ route('teacher.questions.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Tambah Soal</a>
         </form>
     </div>
 </div>
@@ -63,16 +63,16 @@
                     </td>
                     <td style="text-align: right;">
                         <div class="flex gap-2" style="justify-content: flex-end;">
-                            <a href="{{ route('teacher.questions.edit', $question) }}" class="btn btn-secondary btn-sm" title="Edit">✏️ Edit</a>
+                            <a href="{{ route('teacher.questions.edit', $question) }}" class="btn btn-secondary btn-sm" title="Edit"><i class="bi bi-pencil-square me-1"></i> Edit</a>
                             
                             <form action="{{ route('teacher.questions.duplicate', $question) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="btn btn-secondary btn-sm" title="Duplikat">📄</button>
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Duplikat"><i class="bi bi-copy"></i></button>
                             </form>
                             
                             <form action="{{ route('teacher.questions.destroy', $question) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus soal ini?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm" title="Hapus">🗑</button>
+                                <button type="submit" class="btn btn-danger btn-sm" title="Hapus"><i class="bi bi-trash-fill"></i></button>
                             </form>
                         </div>
                     </td>
@@ -80,10 +80,10 @@
                 @empty
                 <tr>
                     <td colspan="4" class="empty-state">
-                        <div class="empty-icon">📚</div>
+                        <div class="empty-icon"><i class="bi bi-journal-album" style="font-size: 3rem;"></i></div>
                         <h3>Bank Soal Kosong</h3>
                         <p>Anda belum membuat soal apapun.</p>
-                        <a href="{{ route('teacher.questions.create') }}" class="btn btn-primary mt-4">Buat Soal Pertama</a>
+                        <a href="{{ route('teacher.questions.create') }}" class="btn btn-primary mt-4"><i class="bi bi-plus-lg me-1"></i> Buat Soal Pertama</a>
                     </td>
                 </tr>
                 @endforelse

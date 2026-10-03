@@ -75,17 +75,17 @@
         
         <nav class="sidebar-nav">
             <a href="{{ route('teacher.dashboard') }}" class="nav-item {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> Dashboard
+                <i class="bi bi-grid-1x2-fill nav-icon"></i> Dashboard
             </a>
             
             <div class="nav-header">Manajemen Ujian</div>
             <a href="{{ route('teacher.exams.index') }}" class="nav-item {{ request()->routeIs('teacher.exams.*') ? 'active' : '' }}">
-                <span class="nav-icon">📝</span> Data Ujian
+                <i class="bi bi-file-earmark-text-fill nav-icon"></i> Data Ujian
             </a>
             
             <div class="nav-header">Bank Soal</div>
             <a href="{{ route('teacher.questions.index') }}" class="nav-item {{ request()->routeIs('teacher.questions.*') ? 'active' : '' }}">
-                <span class="nav-icon">📚</span> Semua Soal
+                <i class="bi bi-collection-fill nav-icon"></i> Semua Soal
             </a>
         </nav>
         
@@ -104,24 +104,26 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list fs-5"></i></button>
                 <h1 class="page-title">@yield('page_title', 'Dashboard Guru')</h1>
             </div>
             
             <div class="topbar-right">
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Keluar dari sistem?')">Keluar</button>
+                    <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Keluar dari sistem?')">
+                        <i class="bi bi-box-arrow-right me-1"></i> Keluar
+                    </button>
                 </form>
             </div>
         </header>
         
         <div class="content-area">
             @if(session('success'))
-                <div class="alert alert-success">✓ {{ session('success') }}</div>
+                <div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
             @endif
             @if(session('error'))
-                <div class="alert alert-error">⚠️ {{ session('error') }}</div>
+                <div class="alert alert-error d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}</div>
             @endif
             
             @yield('teacher-content')

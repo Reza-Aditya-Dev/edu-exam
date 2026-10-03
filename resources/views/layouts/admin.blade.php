@@ -68,37 +68,37 @@
         
         <nav class="sidebar-nav">
             <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> Dashboard
+                <i class="bi bi-speedometer2 nav-icon"></i> Dashboard
             </a>
             
             <div class="nav-header">Master Data</div>
             <a href="{{ route('admin.students') }}" class="nav-item {{ request()->routeIs('admin.students*') ? 'active' : '' }}">
-                <span class="nav-icon">👨‍🎓</span> Data Siswa
+                <i class="bi bi-people-fill nav-icon"></i> Data Siswa
             </a>
             <a href="{{ route('admin.teachers') }}" class="nav-item {{ request()->routeIs('admin.teachers*') ? 'active' : '' }}">
-                <span class="nav-icon">👨‍🏫</span> Data Guru
+                <i class="bi bi-person-workspace nav-icon"></i> Data Guru
             </a>
             <a href="{{ route('admin.classrooms') }}" class="nav-item {{ request()->routeIs('admin.classrooms*') ? 'active' : '' }}">
-                <span class="nav-icon">🏫</span> Kelas & Ruangan
+                <i class="bi bi-building nav-icon"></i> Kelas & Ruangan
             </a>
             <a href="{{ route('admin.subjects') }}" class="nav-item {{ request()->routeIs('admin.subjects*') ? 'active' : '' }}">
-                <span class="nav-icon">📚</span> Mata Pelajaran
+                <i class="bi bi-book-half nav-icon"></i> Mata Pelajaran
             </a>
             <a href="{{ route('admin.academic-years') }}" class="nav-item {{ request()->routeIs('admin.academic-years*') ? 'active' : '' }}">
-                <span class="nav-icon">📅</span> Tahun Ajaran
+                <i class="bi bi-calendar-range-fill nav-icon"></i> Tahun Ajaran
             </a>
             
             <div class="nav-header">Monitoring</div>
             <a href="{{ route('admin.exams') }}" class="nav-item {{ request()->routeIs('admin.exams*') ? 'active' : '' }}">
-                <span class="nav-icon">📝</span> Semua Ujian
+                <i class="bi bi-file-earmark-text-fill nav-icon"></i> Semua Ujian
             </a>
             <a href="{{ route('admin.logs') }}" class="nav-item {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
-                <span class="nav-icon">📋</span> Log Aktivitas
+                <i class="bi bi-clock-history nav-icon"></i> Log Aktivitas
             </a>
             
             <div class="nav-header">Sistem</div>
             <a href="{{ route('admin.settings') }}" class="nav-item {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
-                <span class="nav-icon">⚙️</span> Pengaturan
+                <i class="bi bi-gear-fill nav-icon"></i> Pengaturan
             </a>
         </nav>
     </aside>
@@ -107,7 +107,7 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list fs-5"></i></button>
                 <h1 class="page-title">@yield('page_title', 'Admin Panel')</h1>
             </div>
             
@@ -116,17 +116,19 @@
                 <span class="font-bold mr-2">{{ auth()->user()->name }}</span>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Keluar dari sistem?')">Keluar</button>
+                    <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Keluar dari sistem?')">
+                        <i class="bi bi-box-arrow-right me-1"></i> Keluar
+                    </button>
                 </form>
             </div>
         </header>
         
         <div class="content-area">
             @if(session('success'))
-                <div class="alert alert-success">✓ {{ session('success') }}</div>
+                <div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
             @endif
             @if(session('error'))
-                <div class="alert alert-error">⚠️ {{ session('error') }}</div>
+                <div class="alert alert-error d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}</div>
             @endif
             
             @yield('admin-content')

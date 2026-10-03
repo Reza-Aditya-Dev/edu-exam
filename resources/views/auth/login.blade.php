@@ -86,10 +86,10 @@
 
         <!-- Session alerts -->
         @if(session('error'))
-            <div class="alert alert-error">⚠️ {{ session('error') }}</div>
+            <div class="alert alert-error"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ session('error') }}</div>
         @endif
         @if(session('success'))
-            <div class="alert alert-success">✓ {{ session('success') }}</div>
+            <div class="alert alert-success"><i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}</div>
         @endif
 
         <form method="POST" action="{{ route('login.submit') }}" id="loginForm">
@@ -98,7 +98,7 @@
             <div class="form-group">
                 <label class="form-label" for="login">Username / Email</label>
                 <div class="input-group">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon"><i class="bi bi-person"></i></span>
                     <input type="text" name="login" id="login"
                            class="form-control @error('login') is-error @enderror"
                            value="{{ old('login') }}"
@@ -113,13 +113,13 @@
             <div class="form-group">
                 <label class="form-label" for="password">Password</label>
                 <div class="input-group">
-                    <span class="input-icon">🔒</span>
+                    <span class="input-icon"><i class="bi bi-lock"></i></span>
                     <input type="password" name="password" id="password"
                            class="form-control @error('password') is-error @enderror"
                            placeholder="Masukkan password"
                            autocomplete="current-password" required>
                     <button type="button" class="input-toggle" onclick="togglePassword()" title="Tampilkan password">
-                        <span id="eye-icon">👁️</span>
+                        <i id="eye-icon" class="bi bi-eye"></i>
                     </button>
                 </div>
                 @error('password')
@@ -137,13 +137,13 @@
 
             <button type="submit" class="login-btn" id="loginBtn">
                 <span id="btnText">Masuk</span>
-                <span id="btnLoader" style="display:none">⏳ Memproses...</span>
+                <span id="btnLoader" style="display:none"><i class="bi bi-arrow-repeat spin me-1"></i> Memproses...</span>
             </button>
         </form>
     </div>
 
     <div class="school-footer">
-        🏫 <span>SMA Nusantara</span> &nbsp;•&nbsp; EduExam v1.0
+        <i class="bi bi-building me-1"></i> <span>SMA Nusantara</span> &nbsp;•&nbsp; EduExam v1.0
     </div>
 </div>
 @endsection
@@ -155,10 +155,10 @@ function togglePassword() {
     const icon  = document.getElementById('eye-icon');
     if (input.type === 'password') {
         input.type = 'text';
-        icon.textContent = '🙈';
+        icon.className = 'bi bi-eye-slash';
     } else {
         input.type = 'password';
-        icon.textContent = '👁️';
+        icon.className = 'bi bi-eye';
     }
 }
 

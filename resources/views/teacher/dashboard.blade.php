@@ -32,28 +32,28 @@
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $totalStudents }}</div>
             <div class="stat-lbl">Total Siswa</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon green">📝</div>
+        <div class="stat-icon green"><i class="bi bi-journal-check"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $totalExams }}</div>
             <div class="stat-lbl">Ujian Dibuat</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon orange">📚</div>
+        <div class="stat-icon orange"><i class="bi bi-collection-fill"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ $totalQuestions }}</div>
             <div class="stat-lbl">Bank Soal</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon">📈</div>
+        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
         <div class="stat-info">
             <div class="stat-val">{{ round($avgScore ?? 0, 1) }}</div>
             <div class="stat-lbl">Rata-rata Nilai</div>
@@ -66,9 +66,11 @@
     <!-- Bagian Kiri: Ujian Aktif & Terjadwal -->
     <div class="main-column">
         <div class="card mb-6">
-            <div class="card-header">
-                <h3 class="card-title">Ujian Aktif & Terjadwal</h3>
-                <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary btn-sm">+ Buat Ujian</a>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title m-0"><i class="bi bi-calendar2-week me-2 text-primary"></i> Ujian Aktif & Terjadwal</h3>
+                <a href="{{ route('teacher.exams.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Buat Ujian
+                </a>
             </div>
             
             <div class="table-wrap">
@@ -89,21 +91,25 @@
                                 <div class="font-bold">{{ $exam->title }}</div>
                                 <div class="text-sm text-muted">{{ $exam->subject->name }}</div>
                             </td>
-                            <td>{{ $exam->classroom->name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ $exam->classroom->name }}</span></td>
                             <td>
-                                <div>{{ $exam->exam_date->format('d M Y') }}</div>
-                                <div class="text-xs text-muted">{{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}</div>
+                                <div><i class="bi bi-calendar3 me-1"></i> {{ $exam->exam_date->format('d M Y') }}</div>
+                                <div class="text-xs text-muted"><i class="bi bi-clock me-1"></i> {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}</div>
                             </td>
                             <td>
                                 <span class="badge badge-{{ $exam->status_color }}">{{ $exam->status_label }}</span>
                             </td>
                             <td>
                                 <div class="flex gap-2">
-                                    <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary btn-sm">Edit</a>
+                                    <a href="{{ route('teacher.exams.edit', $exam) }}" class="btn btn-secondary btn-sm" title="Edit Ujian">
+                                        <i class="bi bi-pencil-square me-1"></i> Edit
+                                    </a>
                                     @if($exam->status === 'scheduled')
                                     <form action="{{ route('teacher.exams.activate', $exam) }}" method="POST">
                                         @csrf
-                                        <button type="submit" class="btn btn-success btn-sm">Mulai</button>
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-play-fill me-1"></i> Mulai
+                                        </button>
                                     </form>
                                     @endif
                                 </div>
@@ -112,6 +118,7 @@
                         @empty
                         <tr>
                             <td colspan="5" class="text-center text-muted" style="padding: 30px;">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
                                 Belum ada ujian yang aktif atau terjadwal.
                             </td>
                         </tr>

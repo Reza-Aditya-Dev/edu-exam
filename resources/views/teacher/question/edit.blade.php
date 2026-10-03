@@ -14,7 +14,7 @@
         <div class="card" style="box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);">
             <div class="card-header" style="background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 24px 28px;">
                 <h3 class="card-title flex items-center gap-2" style="font-weight: 800; color: var(--gray-900); font-size: 1.2rem;">
-                    <span>📝</span> Detail Pertanyaan
+                    <i class="bi bi-file-earmark-text text-primary"></i> Detail Pertanyaan
                 </h3>
             </div>
             
@@ -64,7 +64,7 @@
             <div class="card" style="box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);">
                 <div class="card-header" style="background: var(--gray-50); border-bottom: 1px solid var(--gray-200); padding: 18px 24px;">
                     <h3 class="card-title flex items-center gap-2" style="font-size: 1.05rem; font-weight: 800; color: var(--gray-800);">
-                        <span>⚙️</span> Konfigurasi Soal
+                        <i class="bi bi-gear-fill text-primary"></i> Konfigurasi Soal
                     </h3>
                 </div>
                 
@@ -113,7 +113,7 @@
                     <hr style="border: 0; border-top: 1px solid var(--gray-200); margin: 24px 0;">
                     
                     <button type="submit" class="btn btn-primary btn-block" style="padding: 14px; font-size: 1rem; font-weight: 700; height: auto;">
-                        <span>💾</span> Simpan Perubahan
+                        <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan
                     </button>
                     <!-- Menggunakan url yang standar untuk fallback -->
                     <a href="{{ url('guru/soal') }}" class="btn btn-secondary btn-block mt-3 text-center" style="padding: 14px; height: auto;">

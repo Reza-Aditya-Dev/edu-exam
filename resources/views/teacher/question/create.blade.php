@@ -7,7 +7,7 @@
 <div class="card" style="max-width: 900px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);">
     <div class="card-header" style="background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 24px 32px;">
         <div>
-            <h3 class="card-title" style="font-size: 1.25rem; font-weight: 800; color: var(--gray-900);">📝 Formulir Pembuatan Soal Baru</h3>
+            <h3 class="card-title" style="font-size: 1.25rem; font-weight: 800; color: var(--gray-900);"><i class="bi bi-file-earmark-plus me-2 text-primary"></i> Formulir Pembuatan Soal Baru</h3>
             <div class="text-sm text-muted mt-1">Lengkapi data soal di bawah ini. Anda bisa langsung membuat soal berikutnya setelah menyimpan.</div>
         </div>
     </div>
@@ -110,14 +110,14 @@
             
             <div class="flex justify-between items-center mt-6">
                 <button type="button" class="btn btn-secondary" onclick="window.history.back()" style="padding: 12px 24px;">
-                    <span>⬅️</span> Kembali
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
                 </button>
                 <div class="flex gap-3">
                     <button type="submit" name="save_and_add_another" value="1" class="btn btn-success" style="padding: 12px 24px; font-weight: 700; background: var(--success); color: white; border: none;">
-                        <span>➕</span> Simpan & Buat Soal Lagi
+                        <i class="bi bi-plus-circle me-1"></i> Simpan & Buat Soal Lagi
                     </button>
                     <button type="submit" class="btn btn-primary" style="padding: 12px 32px; font-weight: 700;">
-                        <span>💾</span> Simpan & Selesai
+                        <i class="bi bi-check2-circle me-1"></i> Simpan & Selesai
                     </button>
                 </div>
             </div>
