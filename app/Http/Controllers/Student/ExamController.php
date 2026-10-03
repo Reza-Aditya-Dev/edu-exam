@@ -244,8 +244,8 @@ class ExamController extends Controller
     // Validasi akses ujian
     private function authorizeExam(Exam $exam, $student)
     {
-        $classroom = $student->currentClassroom();
-        if (!$classroom || $classroom->id !== $exam->classroom_id) {
+        $isEnrolled = $student->classrooms()->where('classrooms.id', $exam->classroom_id)->exists();
+        if (!$isEnrolled) {
             abort(403, 'Anda tidak terdaftar di kelas ujian ini.');
         }
     }

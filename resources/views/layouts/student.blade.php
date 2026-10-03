@@ -82,10 +82,7 @@
                     <span class="notif-badge">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
                 @endif
             </button>
-            <form method="POST" action="{{ route('logout') }}" style="display:inline">
-                @csrf
-                <button type="submit" class="notif-btn" title="Keluar" onclick="return confirm('Yakin ingin keluar?')">🚪</button>
-            </form>
+           
         </div>
     </header>
 

@@ -177,30 +177,37 @@
             @endif
 
             <div class="q-content">
-                <!-- MENGGUNAKAN {!! !!} KARENA TEXT MENGANDUNG HTML DARI SUMMERNOTE EDITOR -->
+                {{-- Raw HTML dari Summernote editor --}}
                 {!! $currentExamQuestion->question->question_text !!}
             </div>
 
             <form id="answer-form">
                 <input type="hidden" name="exam_question_id" value="{{ $currentExamQuestion->id }}">
                 
-                <div class="options-grid">
-                    @foreach($currentExamQuestion->question->options as $option)
-                        <div class="option-item">
-                            <input type="radio" name="selected_option_id" id="opt-{{ $option->id }}" value="{{ $option->id }}" class="option-input"
-                                {{ (isset($answers[$currentExamQuestion->id]) && $answers[$currentExamQuestion->id]->selected_option_id == $option->id) ? 'checked' : '' }}>
-                            <label for="opt-{{ $option->id }}" class="option-label">
-                                <span class="option-char">{{ $option->label }}</span>
-                                <div class="option-text">
-                                    {!! $option->option_text !!}
-                                    @if($option->option_image)
-                                        <img src="{{ Storage::url($option->option_image) }}" alt="Gambar Opsi">
-                                    @endif
-                                </div>
-                            </label>
-                        </div>
-                    @endforeach
-                </div>
+                @if(in_array($currentExamQuestion->question->type, ['multiple_choice', 'true_false']))
+                    <div class="options-grid">
+                        @foreach($currentExamQuestion->question->options as $option)
+                            <div class="option-item">
+                                <input type="radio" name="selected_option_id" id="opt-{{ $option->id }}" value="{{ $option->id }}" class="option-input"
+                                    {{ (isset($answers[$currentExamQuestion->id]) && $answers[$currentExamQuestion->id]->selected_option_id == $option->id) ? 'checked' : '' }}>
+                                <label for="opt-{{ $option->id }}" class="option-label">
+                                    <span class="option-char">{{ $option->label }}</span>
+                                    <div class="option-text">
+                                        {!! $option->option_text !!}
+                                        @if($option->option_image)
+                                            <img src="{{ Storage::url($option->option_image) }}" alt="Gambar Opsi">
+                                        @endif
+                                    </div>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="essay-box" style="margin-top: 16px;">
+                        <label style="font-weight: 700; margin-bottom: 8px; display: block; color: var(--secondary);">Tuliskan Jawaban Anda:</label>
+                        <textarea name="answer_text" id="answer-text-input" rows="6" style="width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-md); font-family: inherit; font-size: 1rem; line-height: 1.6; resize: vertical;" placeholder="Ketik jawaban lengkap di sini...">{{ isset($answers[$currentExamQuestion->id]) ? $answers[$currentExamQuestion->id]->answer_text : '' }}</textarea>
+                    </div>
+                @endif
             </form>
         </div>
     @endif
@@ -208,20 +215,33 @@
 
 <nav class="nav-bottom">
     <div class="nav-wrapper">
-        <a href="{{ $currentIndex > 1 ? route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex - 1]) : '#' }}" class="btn btn-outline" {{ $currentIndex == 1 ? 'disabled' : '' }} style="min-width: 120px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Kembali
-        </a>
+        @if($currentIndex > 1)
+            <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex - 1]) }}" class="btn btn-outline" style="min-width: 120px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                Kembali
+            </a>
+        @else
+            <button class="btn btn-outline" disabled style="min-width: 120px; opacity: 0.4; cursor: not-allowed;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                Kembali
+            </button>
+        @endif
         
         <button class="btn btn-nav-grid" onclick="toggleGrid()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Navigasi (<span id="answered-count-btn">{{ $answeredCount }}</span>/{{ $totalQ }})
+            Daftar Soal (<span id="answered-count-btn">{{ $answeredCount }}</span>/{{ $totalQ }})
         </button>
         
-        <a href="{{ $currentIndex < $totalQ ? route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex + 1]) : '#' }}" class="btn btn-primary" {{ $currentIndex == $totalQ ? 'disabled' : '' }} style="min-width: 120px;">
-            Lanjut
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
+        @if($currentIndex < $totalQ)
+            <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex + 1]) }}" class="btn btn-primary" style="min-width: 120px;">
+                Lanjut
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+        @else
+            <button type="button" class="btn btn-primary" style="min-width: 140px; background: #16a34a; border-color: #16a34a; color: white;" onclick="confirmSubmit()">
+                Kumpulkan ✓
+            </button>
+        @endif
     </div>
 </nav>
 
@@ -311,7 +331,7 @@
             const formData = new FormData(document.getElementById('answer-form'));
             formData.append('is_marked', markBtn.checked ? 1 : 0);
             
-            fetch(`/siswa/ujian/${examId}/jawab`, {
+            fetch("{{ route('student.exam.answer', $exam->id) }}", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -334,6 +354,14 @@
             });
         });
 
+        const essayInput = document.getElementById('answer-text-input');
+        if (essayInput) {
+            essayInput.addEventListener('input', () => {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveAnswer, 600);
+            });
+        }
+
         markBtn.addEventListener('change', function() {
             this.parentElement.classList.toggle('marked', this.checked);
             clearTimeout(saveTimeout);
@@ -344,7 +372,8 @@
     function updateGridState(answer) {
         const box = document.getElementById(`grid-box-${eqId}`);
         if(box) {
-            if(answer.selected_option_id) box.classList.add('answered');
+            const hasAnswer = answer.selected_option_id || (answer.answer_text && answer.answer_text.trim() !== '');
+            if(hasAnswer) box.classList.add('answered');
             else box.classList.remove('answered');
             
             if(answer.is_marked) box.classList.add('marked');

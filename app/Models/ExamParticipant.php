@@ -28,7 +28,7 @@ class ExamParticipant extends Model
     public function getRemainingSecondsAttribute(): int
     {
         if (!$this->started_at) return 0;
-        $endTime = $this->started_at->addMinutes($this->exam->duration_minutes);
-        return max(0, now()->diffInSeconds($endTime, false));
+        $endTime = $this->started_at->copy()->addMinutes($this->exam->duration_minutes);
+        return max(0, (int) now()->diffInSeconds($endTime, false));
     }
 }
