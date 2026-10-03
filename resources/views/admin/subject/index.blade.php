@@ -5,136 +5,117 @@
 
 @section('admin-content')
 
-<div class="grid" style="grid-template-columns: 1fr 2.5fr; gap: 24px; align-items: start;">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Kolom Kiri: Form Tambah -->
-    <div class="card" style="position: sticky; top: 90px;">
-        <div class="card-header" style="background: var(--primary-light);">
-            <h3 class="card-title flex items-center gap-2" style="color: var(--primary-dark);">
-                <span>➕</span> Tambah Mapel Baru
-            </h3>
-        </div>
-        <div class="card-body">
-            <form action="{{ route('admin.subjects.store') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label class="form-label" for="code">Kode Mata Pelajaran <span class="text-danger">*</span></label>
-                    <input type="text" name="code" id="code" class="form-control" placeholder="Contoh: MTK, IPA" value="{{ old('code') }}" required maxlength="10" style="text-transform: uppercase;">
-                    <div class="text-xs text-muted mt-1">Kode harus unik. Maksimal 10 karakter.</div>
-                    @error('code')
-                        <div class="form-error">{{ $message }}</div>
-                    @enderror
-                </div>
+    <!-- Kolom Kiri: Form Tambah (4 cols) -->
+    <div class="lg:col-span-4 sticky top-24">
+        <div class="card overflow-hidden">
+            <div class="card-header p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600" style="font-size: 20px;">add_circle</span>
+                <h3 class="font-headline font-bold text-slate-900 text-sm">Tambah Mapel Baru</h3>
+            </div>
+            <div class="card-body p-5 md:p-6">
+                <form action="{{ route('admin.subjects.store') }}" method="POST">
+                    @csrf
+                    
+                    <div class="mb-4">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block" for="code">
+                            Kode Mapel <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text" name="code" id="code" class="form-control font-mono uppercase text-sm" placeholder="MTK, BINA, BING" value="{{ old('code') }}" required maxlength="10">
+                        <p class="text-[11px] text-slate-400 mt-1">Kode unik singkatan mapel (maks. 10 karakter).</p>
+                        @error('code') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
+                    </div>
 
-                <div class="form-group mt-4">
-                    <label class="form-label" for="name">Nama Mata Pelajaran <span class="text-danger">*</span></label>
-                    <input type="text" name="name" id="name" class="form-control" placeholder="Contoh: Matematika Wajib" value="{{ old('name') }}" required maxlength="100">
-                    @error('name')
-                        <div class="form-error">{{ $message }}</div>
-                    @enderror
-                </div>
+                    <div class="mb-6">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block" for="name">
+                            Nama Mata Pelajaran <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text" name="name" id="name" class="form-control text-sm" placeholder="Contoh: Matematika Wajib" value="{{ old('name') }}" required maxlength="100">
+                        @error('name') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
+                    </div>
 
-                <div class="mt-6">
-                    <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-size: 1rem;">
-                        <span>💾</span> Simpan
+                    <button type="submit" class="btn btn-primary w-full text-xs font-bold py-3 flex items-center justify-center gap-1.5 shadow-sm">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                        Simpan Mata Pelajaran
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Kolom Kanan: Tabel Data -->
-    <div class="card">
-        <div class="card-header flex justify-between items-center">
-            <h3 class="card-title flex items-center gap-2">
-                <span>📚</span> Daftar Mata Pelajaran
-            </h3>
-            <span class="badge badge-gray font-bold">{{ count($subjects) }} Total</span>
-        </div>
-        <div class="table-wrap" style="border-radius: 0 0 var(--radius-lg) var(--radius-lg); border: none;">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="15%">Kode</th>
-                        <th>Mata Pelajaran</th>
-                        <th class="text-center" width="15%">Bank Soal</th>
-                        <th class="text-center" width="15%">Ujian</th>
-                        <th class="text-right" width="15%">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($subjects as $subject)
-                    <tr>
-                        <td>
-                            <span class="badge badge-gray font-bold text-sm" style="letter-spacing: 0.5px; border: 1px solid var(--gray-300);">
-                                {{ strtoupper($subject->code) }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="font-bold text-gray-900" style="font-size: 1.05rem;">{{ $subject->name }}</div>
-                            <div class="text-xs text-muted mt-1 flex items-center gap-1">
-                                <span>🕒</span> Ditambahkan {{ $subject->created_at ? $subject->created_at->diffForHumans() : '-' }}
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <div class="badge badge-primary" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.85rem;">
-                                📝 {{ $subject->questions_count ?? 0 }} Soal
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <div class="badge badge-warning" style="background: var(--warning-light); color: var(--warning); font-size: 0.85rem;">
-                                📋 {{ $subject->exams_count ?? 0 }} Ujian
-                            </div>
-                        </td>
-                        <td class="text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <form action="{{ route('admin.subjects.destroy', $subject->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus mata pelajaran ini?\n\nPERINGATAN: Semua bank soal dan data ujian yang menggunakan mata pelajaran ini juga akan ikut terhapus!')">
+    <!-- Kolom Kanan: Tabel Data (8 cols) -->
+    <div class="lg:col-span-8">
+        <div class="card overflow-hidden">
+            <div class="card-header p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600" style="font-size: 20px;">menu_book</span>
+                    <h3 class="font-headline font-bold text-slate-900 text-sm">Daftar Mata Pelajaran</h3>
+                </div>
+                <span class="badge badge-gray text-xs font-semibold">{{ count($subjects) }} Total Mapel</span>
+            </div>
+            
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Kode</th>
+                            <th>Mata Pelajaran</th>
+                            <th class="text-center" style="width: 120px;">Bank Soal</th>
+                            <th class="text-center" style="width: 100px;">Ujian</th>
+                            <th style="text-align: right; width: 80px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($subjects as $subject)
+                        <tr class="hover:bg-slate-50/70 transition">
+                            <td>
+                                <span class="badge badge-gray font-mono font-bold text-xs uppercase">
+                                    {{ strtoupper($subject->code) }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="font-bold text-slate-900 text-sm">{{ $subject->name }}</div>
+                                <div class="text-[11px] text-slate-400 mt-0.5">
+                                    Ditambahkan: {{ $subject->created_at ? $subject->created_at->format('d M Y') : '-' }}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">description</span>
+                                    {{ $subject->questions_count ?? 0 }} Soal
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">assignment</span>
+                                    {{ $subject->exams_count ?? 0 }}
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <form action="{{ route('admin.subjects.destroy', $subject->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus mata pelajaran ini?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger btn-icon" title="Hapus Mata Pelajaran">
-                                        🗑️ Hapus
+                                    <button type="submit" class="btn btn-danger btn-sm text-xs font-medium px-2.5 py-1" title="Hapus Mata Pelajaran">
+                                        Hapus
                                     </button>
                                 </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5">
-                            <div class="empty-state">
-                                <div class="empty-icon" style="font-size: 4rem;">📚</div>
-                                <h3 style="font-size: 1.25rem;">Belum Ada Mata Pelajaran</h3>
-                                <p style="font-size: 1rem; color: var(--gray-500);">Silakan tambah mata pelajaran pertama Anda melalui form di sebelah kiri.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-slate-400 py-12 text-sm">
+                                <span class="material-symbols-outlined text-slate-300 block text-4xl mb-2">menu_book</span>
+                                Belum ada mata pelajaran terdaftar.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
 </div>
-
-@push('admin-styles')
-<style>
-    @media (max-width: 1024px) {
-        .grid {
-            grid-template-columns: 1fr !important;
-        }
-        .card[style*="position: sticky"] {
-            position: relative !important;
-            top: 0 !important;
-        }
-    }
-    
-    .btn-icon {
-        padding: 6px 12px !important;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-</style>
-@endpush
 
 @endsection

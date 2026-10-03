@@ -2,93 +2,200 @@
 
 @section('title', 'Hasil Ujian — EduExam')
 
-@push('mobile-styles')
-<style>
-    .result-header { text-align: center; padding: 40px 20px 30px; background: white; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); margin-bottom: 24px; position: relative; overflow: hidden; }
-    .result-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px; }
-    .result-header.pass::before { background: var(--success); }
-    .result-header.fail::before { background: var(--danger); }
-    
-    .status-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 16px; }
-    .status-icon.pass { background: var(--success-light); color: var(--success); }
-    .status-icon.fail { background: var(--danger-light); color: var(--danger); }
-    
-    .score-display { font-size: 4rem; font-weight: 800; line-height: 1; margin-bottom: 8px; }
-    .score-display.pass { color: var(--success); }
-    .score-display.fail { color: var(--danger); }
-    
-    .result-title { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
-    .result-subtitle { font-size: 0.875rem; color: var(--gray-500); }
-    
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
-    .stat-box { background: white; border-radius: var(--radius-lg); padding: 16px; text-align: center; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); }
-    .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
-    .stat-lbl { font-size: 0.75rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase; }
-    
-    .stat-box.correct .stat-val { color: var(--success); }
-    .stat-box.wrong .stat-val { color: var(--danger); }
-    
-    .details-card { background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 24px; }
-    .details-card .card-header { padding: 16px; border-bottom: 1px solid var(--gray-100); font-weight: 700; background: var(--gray-50); }
-    .detail-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--gray-100); font-size: 0.875rem; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { color: var(--gray-500); }
-    .detail-value { font-weight: 600; color: var(--gray-900); }
-</style>
-@endpush
-
 @section('student-content')
-<div class="result-header {{ $result->pass_status }}">
-    <div class="status-icon {{ $result->pass_status }}">
-        {{ $result->pass_status === 'pass' ? '🎉' : '😔' }}
-    </div>
-    
-    <div class="score-display {{ $result->pass_status }}">
-        {{ round($result->total_score) }}
-    </div>
-    
-    <div class="result-title">{{ $result->pass_label }}</div>
-    <div class="result-subtitle">Batas Kelulusan: {{ $exam->passing_grade }}</div>
-</div>
+@php
+    $score = round($result->total_score);
+    $kkm = $exam->passing_grade ?? 75;
+    $diff = $score - $kkm;
+    $isPassed = $result->pass_status === 'pass';
+    // Circumference for r=68 is 2 * pi * 68 = 427.25
+    $circumference = 427.25;
+    $offset = $circumference * (1 - min(1, max(0, $score / 100)));
+@endphp
 
-<div class="stats-grid">
-    <div class="stat-box correct">
-        <div class="stat-val">{{ $result->correct_answers }}</div>
-        <div class="stat-lbl">Benar</div>
+<div class="flex flex-col w-full pb-8">
+    <!-- Celebration Top Hero Section -->
+    <div class="relative pt-2 pb-5 flex flex-col items-center text-center overflow-hidden">
+        <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-72 h-72 {{ $isPassed ? 'bg-secondary-container/30' : 'bg-error-container/30' }} rounded-full blur-3xl pointer-events-none -z-10"></div>
+        
+        <!-- School Badge & Status Pill Row -->
+        <div class="flex items-center justify-between w-full mb-3 px-1">
+            <div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-full shadow-sm border border-surface-container">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">SMA Nusantara</span>
+            </div>
+            <div class="flex items-center gap-1 bg-secondary-container px-2.5 py-1 rounded-full shadow-sm text-on-secondary-container text-xs font-semibold">
+                <span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                <span>Terverifikasi</span>
+            </div>
+        </div>
+
+        <!-- Celebration Chip & Title -->
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full {{ $isPassed ? 'bg-secondary-fixed text-on-secondary-fixed' : 'bg-error-container text-error' }} mb-2.5 shadow-sm text-xs font-semibold">
+            <span class="text-sm leading-none">{{ $isPassed ? '🎉' : '📋' }}</span>
+            <span>{{ $isPassed ? 'Ujian Berhasil Diselesaikan' : 'Ujian Telah Selesai' }}</span>
+        </div>
+
+        <h2 class="font-headline-sm text-lg md:text-xl text-on-surface font-bold tracking-tight mb-0.5">
+            {{ $exam->title }}
+        </h2>
+        <p class="font-body-sm text-xs text-on-surface-variant mb-1">
+            Kelas {{ $exam->classroom->name ?? '-' }} • {{ $exam->subject->name ?? 'Mata Pelajaran' }}
+        </p>
+        <div class="inline-flex items-center gap-1 text-on-surface-variant text-[11px]">
+            <span class="material-symbols-outlined text-[14px]">schedule</span>
+            <span>{{ $result->created_at->translatedFormat('d F Y • H:i') }} WIB</span>
+        </div>
     </div>
-    <div class="stat-box wrong">
-        <div class="stat-val">{{ $result->wrong_answers }}</div>
-        <div class="stat-lbl">Salah</div>
+
+    <!-- Score Showcase Card with Circular Gauge -->
+    <div class="mb-5">
+        <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container flex flex-col items-center text-center relative overflow-hidden">
+            <div class="absolute -top-16 -right-16 w-36 h-36 {{ $isPassed ? 'bg-secondary-container/20' : 'bg-error-container/20' }} rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- Circular Score Ring SVG -->
+            <div class="relative w-40 h-40 flex items-center justify-center my-2">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" fill="none" r="68" stroke="#E5EEFF" stroke-width="12"></circle>
+                    <circle class="transition-all duration-1000 ease-out" cx="80" cy="80" fill="none" r="68"
+                            stroke="{{ $isPassed ? '#006c49' : '#ba1a1a' }}"
+                            stroke-dasharray="{{ $circumference }}"
+                            stroke-dashoffset="{{ $offset }}"
+                            stroke-linecap="round" stroke-width="12"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span class="text-4xl font-headline-lg {{ $isPassed ? 'text-secondary' : 'text-error' }} font-extrabold tracking-tight leading-none">
+                        {{ $score }}
+                    </span>
+                    <span class="text-[10px] text-on-surface-variant mt-1 font-semibold uppercase tracking-wider">
+                        Nilai Ujian
+                    </span>
+                </div>
+            </div>
+
+            <!-- Status Badge "LULUS" or "REMEDIAL" -->
+            <div class="mt-1 mb-3 inline-flex items-center gap-1 px-4 py-1.5 rounded-full shadow-sm text-white {{ $isPassed ? 'bg-secondary' : 'bg-error' }}">
+                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                    {{ $isPassed ? 'check_circle' : 'cancel' }}
+                </span>
+                <span class="font-label-lg text-xs font-bold tracking-wide">
+                    {{ $isPassed ? 'LULUS' : 'REMEDIAL' }}
+                </span>
+            </div>
+
+            <!-- KKM Benchmark Container -->
+            <div class="w-full bg-surface-container-low rounded-xl py-2 px-3 flex items-center justify-between border border-surface-container">
+                <div class="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px]">flag</span>
+                    <span>Target Kelulusan (KKM): <strong class="font-semibold text-on-surface">{{ $kkm }}</strong></span>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $diff >= 0 ? 'text-secondary bg-secondary-container/60' : 'text-error bg-error-container/60' }}">
+                    {{ $diff >= 0 ? "+$diff poin" : "$diff poin" }}
+                </span>
+            </div>
+        </div>
     </div>
-    <div class="stat-box">
-        <div class="stat-val">{{ $result->unanswered }}</div>
-        <div class="stat-lbl">Kosong</div>
+
+    <!-- Performance Breakdown Grid (2x2) -->
+    <div class="mb-5">
+        <h3 class="font-headline-sm text-sm font-bold text-on-surface mb-2.5 px-1">
+            Ringkasan Jawaban
+        </h3>
+        <div class="grid grid-cols-2 gap-2.5">
+            <!-- Card 1: Benar -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-on-surface-variant font-medium">Jawaban Benar</span>
+                    <div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[16px] text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">check</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="font-headline-sm text-xl font-bold text-secondary">{{ $result->correct_answers }}</span>
+                    <span class="text-xs text-on-surface-variant font-medium">soal</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Salah -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-on-surface-variant font-medium">Jawaban Salah</span>
+                    <div class="w-7 h-7 rounded-full bg-error-container flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[16px] text-error" style="font-variation-settings: 'FILL' 1;">close</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="font-headline-sm text-xl font-bold text-error">{{ $result->wrong_answers }}</span>
+                    <span class="text-xs text-on-surface-variant font-medium">soal</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Kosong -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-on-surface-variant font-medium">Tidak Dijawab</span>
+                    <div class="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">remove</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="font-headline-sm text-xl font-bold text-on-surface">{{ $result->unanswered }}</span>
+                    <span class="text-xs text-on-surface-variant font-medium">soal</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Waktu -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-on-surface-variant font-medium">Waktu Pengerjaan</span>
+                    <div class="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[16px] text-primary">timer</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="font-headline-sm text-xl font-bold text-primary">{{ $result->time_spent_minutes }}'</span>
+                    <span class="text-xs text-on-surface-variant font-medium">menit</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="stat-box">
-        <div class="stat-val">{{ $result->time_spent_minutes }}'</div>
-        <div class="stat-lbl">Waktu (Mnt)</div>
+
+    <!-- Details Card -->
+    <div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container p-4 mb-5">
+        <h3 class="font-headline-sm text-sm font-bold text-on-surface mb-3 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-[18px]">receipt_long</span>
+            <span>Rincian Evaluasi Ujian</span>
+        </h3>
+        <div class="flex flex-col divide-y divide-surface-container text-xs">
+            <div class="py-2.5 flex justify-between items-center">
+                <span class="text-on-surface-variant">Mata Pelajaran</span>
+                <span class="font-semibold text-on-surface">{{ $exam->subject->name }}</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+                <span class="text-on-surface-variant">Guru Pengampu</span>
+                <span class="font-semibold text-on-surface">{{ $exam->teacher->name ?? 'Guru Pengampu' }}</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+                <span class="text-on-surface-variant">Tipe Ujian</span>
+                <span class="font-semibold text-on-surface">{{ $exam->exam_type ?? 'Ujian Digital' }}</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+                <span class="text-on-surface-variant">Waktu Pengumpulan</span>
+                <span class="font-semibold text-on-surface">{{ $result->created_at->format('d/m/Y H:i') }} WIB</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-2.5">
+        <a href="{{ route('student.dashboard') }}" class="w-full h-12 bg-primary hover:bg-primary-container text-on-primary rounded-xl flex items-center justify-center font-label-lg text-sm font-bold shadow-md active:scale-[0.98] transition-all gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">home</span>
+            <span>Kembali ke Beranda</span>
+        </a>
+        <a href="{{ route('student.history') }}" class="w-full h-11 bg-surface-container-low hover:bg-surface-container text-primary rounded-xl flex items-center justify-center font-label-lg text-xs font-semibold shadow-sm active:scale-[0.98] transition-all gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">history_edu</span>
+            <span>Lihat Riwayat Nilai</span>
+        </a>
     </div>
 </div>
-
-<div class="details-card">
-    <div class="card-header">Rincian Ujian</div>
-    <div class="detail-row">
-        <span class="detail-label">Mata Pelajaran</span>
-        <span class="detail-value">{{ $exam->subject->name }}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Judul Ujian</span>
-        <span class="detail-value">{{ $exam->title }}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Tipe Ujian</span>
-        <span class="detail-value">{{ $exam->exam_type }}</span>
-    </div>
-    <div class="detail-row">
-        <span class="detail-label">Tanggal Pengumpulan</span>
-        <span class="detail-value">{{ $result->created_at->format('d M Y, H:i') }}</span>
-    </div>
-</div>
-
-<a href="{{ route('student.dashboard') }}" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 24px;">Kembali ke Beranda</a>
 @endsection

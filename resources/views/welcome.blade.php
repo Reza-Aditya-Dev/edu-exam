@@ -1,407 +1,260 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduExam — Platform Ujian Digital Sekolah</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #3155D9;
-            --primary-dark: #233e9f;
-            --primary-light: #eef2ff;
-            --success: #10B981;
-            --success-light: #ecfdf5;
-            --warning: #F59E0B;
-            --warning-light: #fffbeb;
-            --danger: #EF4444;
-            --danger-light: #fef2f2;
-            
-            --gray-50: #f8fafc;
-            --gray-100: #f1f5f9;
-            --gray-200: #e2e8f0;
-            --gray-300: #cbd5e1;
-            --gray-400: #94a3b8;
-            --gray-500: #64748b;
-            --gray-600: #475569;
-            --gray-700: #334155;
-            --gray-800: #1e293b;
-            --gray-900: #0f172a;
-            
-            --radius-md: 8px;
-            --radius-lg: 12px;
-            --radius-xl: 16px;
-            --radius-2xl: 24px;
-            
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
+    <title>EduExam — Platform Ujian Digital Sekolah Terintegrasi</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--gray-50);
-            color: var(--gray-800);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        /* NAVBAR */
-        .navbar {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-            z-index: 100;
-            padding: 16px 5%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
-        
-        .brand-logo {
-            width: 40px; height: 40px;
-            background: var(--primary);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: 800; font-size: 1.25rem;
-        }
-        
-        .brand-text {
-            font-size: 1.5rem; font-weight: 800;
-            color: var(--gray-900); letter-spacing: -0.5px;
-        }
-
-        .nav-links { display: flex; gap: 32px; align-items: center; }
-        .nav-link { text-decoration: none; color: var(--gray-600); font-weight: 600; transition: color 0.2s; }
-        .nav-link:hover { color: var(--primary); }
-
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            padding: 12px 24px; border-radius: 100px; font-weight: 700;
-            text-decoration: none; transition: all 0.3s; cursor: pointer; border: none;
-        }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px rgba(49, 85, 217, 0.3); }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(49, 85, 217, 0.4); }
-        .btn-outline { background: transparent; color: var(--gray-700); border: 2px solid var(--gray-200); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-
-        /* HERO SECTION */
-        .hero {
-            padding: 160px 5% 100px;
-            min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center;
-            background: linear-gradient(180deg, var(--primary-light) 0%, rgba(255,255,255,0) 100%);
-            position: relative;
-        }
-
-        .hero::before {
-            content: ''; position: absolute;
-            top: -100px; left: -100px; width: 400px; height: 400px;
-            background: var(--primary); filter: blur(150px); opacity: 0.1; border-radius: 50%;
-        }
-
-        .hero-badge {
-            background: white; border: 1px solid var(--gray-200); padding: 8px 16px;
-            border-radius: 100px; font-size: 0.875rem; font-weight: 600; color: var(--primary);
-            margin-bottom: 24px; box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; gap: 8px;
-        }
-
-        .hero-title {
-            font-size: 4.5rem; font-weight: 800; color: var(--gray-900);
-            line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 24px; max-width: 900px;
-        }
-        
-        .hero-title span { color: var(--primary); position: relative; }
-
-        .hero-desc {
-            font-size: 1.25rem; color: var(--gray-600); max-width: 700px;
-            margin-bottom: 48px; line-height: 1.6;
-        }
-
-        .hero-actions { display: flex; gap: 16px; margin-bottom: 80px; }
-        .hero-actions .btn { font-size: 1.125rem; padding: 16px 36px; }
-
-        /* PORTALS GRID */
-        .portals { padding: 40px 5% 100px; background: white; }
-        .section-header { text-align: center; margin-bottom: 64px; }
-        .section-title { font-size: 2.5rem; font-weight: 800; color: var(--gray-900); margin-bottom: 16px; }
-        .section-desc { font-size: 1.125rem; color: var(--gray-600); max-width: 600px; margin: 0 auto; }
-
-        .portals-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 1200px; margin: 0 auto;
-        }
-
-        .portal-card {
-            background: white; border-radius: var(--radius-2xl); border: 1px solid var(--gray-200);
-            padding: 40px 32px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-align: center; position: relative; overflow: hidden; z-index: 1; text-decoration: none; color: inherit;
-        }
-
-        .portal-card::before {
-            content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.02) 100%);
-            z-index: -1;
-        }
-
-        .portal-card:hover {
-            transform: translateY(-10px); border-color: var(--primary); box-shadow: var(--shadow-xl);
-        }
-
-        .portal-icon {
-            width: 80px; height: 80px; border-radius: var(--radius-xl);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2.5rem; margin: 0 auto 24px; transition: all 0.3s;
-        }
-
-        /* Student Portal */
-        .portal-student .portal-icon { background: var(--primary-light); color: var(--primary); }
-        .portal-student:hover .portal-icon { background: var(--primary); color: white; transform: scale(1.1); }
-        .portal-student:hover { border-color: var(--primary); }
-
-        /* Teacher Portal */
-        .portal-teacher .portal-icon { background: var(--success-light); color: var(--success); }
-        .portal-teacher:hover .portal-icon { background: var(--success); color: white; transform: scale(1.1); }
-        .portal-teacher:hover { border-color: var(--success); }
-
-        /* Admin Portal */
-        .portal-admin .portal-icon { background: var(--gray-100); color: var(--gray-900); }
-        .portal-admin:hover .portal-icon { background: var(--gray-900); color: white; transform: scale(1.1); }
-        .portal-admin:hover { border-color: var(--gray-900); }
-
-        .portal-title { font-size: 1.5rem; font-weight: 800; color: var(--gray-900); margin-bottom: 12px; }
-        .portal-desc { font-size: 1rem; color: var(--gray-600); margin-bottom: 32px; }
-        
-        .portal-btn {
-            display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--primary);
-            background: transparent; border: none; font-size: 1rem; transition: gap 0.2s;
-        }
-        .portal-student .portal-btn { color: var(--primary); }
-        .portal-teacher .portal-btn { color: var(--success); }
-        .portal-admin .portal-btn { color: var(--gray-900); }
-        
-        .portal-card:hover .portal-btn { gap: 12px; }
-
-        /* FEATURES */
-        .features { padding: 100px 5%; background: var(--gray-50); }
-        .features-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 64px; align-items: center; max-width: 1200px; margin: 0 auto;
-        }
-        
-        .feature-img {
-            background: white; border-radius: var(--radius-2xl); border: 1px solid var(--gray-200);
-            box-shadow: var(--shadow-lg); overflow: hidden; position: relative; padding: 24px;
-        }
-        .feature-img-inner {
-            background: var(--gray-50); border-radius: var(--radius-lg); height: 400px; border: 1px dashed var(--gray-300);
-            display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
-        }
-        .mockup-item { width: 80%; height: 40px; background: white; border-radius: 8px; box-shadow: var(--shadow-sm); }
-
-        .feature-content h2 { font-size: 2.5rem; font-weight: 800; color: var(--gray-900); margin-bottom: 24px; line-height: 1.2; }
-        .feature-list { list-style: none; display: flex; flex-direction: column; gap: 20px; }
-        .feature-item { display: flex; gap: 16px; align-items: flex-start; }
-        .feature-check {
-            width: 28px; height: 28px; border-radius: 50%; background: var(--success-light);
-            color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;
-        }
-        .feature-text h4 { font-size: 1.125rem; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
-        .feature-text p { font-size: 0.9375rem; color: var(--gray-600); }
-
-        /* FOOTER */
-        .footer { background: var(--gray-900); color: white; padding: 64px 5% 32px; }
-        .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 64px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 48px; margin-bottom: 32px; }
-        .footer-brand { margin-bottom: 24px; }
-        .footer-logo { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; }
-        .footer-desc { color: var(--gray-400); max-width: 300px; }
-        .footer-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 24px; }
-        .footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .footer-links a { color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
-        .footer-links a:hover { color: white; }
-        .copyright { text-align: center; color: var(--gray-500); font-size: 0.875rem; }
-
-        @media (max-width: 1024px) {
-            .hero-title { font-size: 3.5rem; }
-            .portals-grid { grid-template-columns: 1fr; max-width: 500px; }
-            .features-grid { grid-template-columns: 1fr; }
-            .feature-img { order: 2; }
-            .feature-content { order: 1; }
-            .footer-content { grid-template-columns: 1fr; gap: 32px; }
-        }
-        @media (max-width: 768px) {
-            .nav-links { display: none; }
-            .hero-title { font-size: 2.5rem; }
-            .hero-desc { font-size: 1.125rem; }
-            .hero-actions { flex-direction: column; width: 100%; max-width: 300px; }
-        }
-    </style>
+    <!-- Tailwind CSS Engine -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#4f46e5',
+                            dark: '#3730a3',
+                            light: '#eef2ff',
+                        },
+                        secondary: {
+                            DEFAULT: '#006c49',
+                            dark: '#005236',
+                            light: '#ecfdf5',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        headline: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
 </head>
-<body>
+<body class="bg-[#f8f9ff] text-slate-800 font-sans antialiased overflow-x-hidden">
 
     <!-- NAVBAR -->
-    <nav class="navbar">
-        <a href="#" class="brand">
-            <div class="brand-logo">E</div>
-            <div class="brand-text">EduExam</div>
-        </a>
-        <div class="nav-links">
-            <a href="#fitur" class="nav-link">Fitur</a>
-            <a href="#akses" class="nav-link">Portal Akses</a>
-            @if (Route::has('login'))
-                @auth
-                    @if(auth()->user()->role === 'student')
-                        <a href="{{ route('student.dashboard') }}" class="btn btn-primary">Dashboard Siswa</a>
-                    @elseif(auth()->user()->role === 'teacher')
-                        <a href="{{ route('teacher.dashboard') }}" class="btn btn-primary">Dashboard Guru</a>
+    <nav class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-slate-200/80 z-50 transition-all">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+            <a href="#" class="flex items-center gap-3 no-underline">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-indigo-600/30">
+                    E
+                </div>
+                <div class="font-headline font-extrabold text-2xl text-slate-900 tracking-tight">
+                    EduExam
+                </div>
+            </a>
+            
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#fitur" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition">Fitur Unggulan</a>
+                <a href="#akses" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition">Portal Masuk</a>
+                
+                @if (Route::has('login'))
+                    @auth
+                        @if(auth()->user()->role === 'student')
+                            <a href="{{ route('student.dashboard') }}" class="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition shadow-sm">
+                                Dashboard Siswa ➔
+                            </a>
+                        @elseif(auth()->user()->role === 'teacher')
+                            <a href="{{ route('teacher.dashboard') }}" class="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-sm">
+                                Dashboard Guru ➔
+                            </a>
+                        @else
+                            <a href="{{ route('admin.dashboard') }}" class="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-sm">
+                                Admin Panel ➔
+                            </a>
+                        @endif
                     @else
-                        <a href="{{ route('admin.dashboard') }}" class="btn btn-primary">Admin Panel</a>
-                    @endif
-                @else
-                    <a href="{{ route('login') }}" class="btn btn-primary">Masuk ke Sistem</a>
-                @endauth
-            @endif
+                        <a href="{{ route('login') }}" class="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">login</span>
+                            Masuk ke Sistem
+                        </a>
+                    @endauth
+                @endif
+            </div>
         </div>
     </nav>
 
     <!-- HERO SECTION -->
-    <section class="hero">
-        <div class="hero-badge">
-            <span style="display:inline-block;width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></span>
-            Sistem Aktif & Berjalan
-        </div>
-        <h1 class="hero-title">Platform <span>Ujian Digital</span> Sekolah Terintegrasi</h1>
-        <p class="hero-desc">
-            Satu platform untuk seluruh kebutuhan evaluasi akademik. Mulai dari pembuatan soal oleh guru, pelaksanaan ujian untuk siswa, hingga analisis nilai untuk manajemen sekolah.
-        </p>
-        <div class="hero-actions">
-            <a href="#akses" class="btn btn-primary">Mulai Akses EduExam</a>
-            <a href="#fitur" class="btn btn-outline">Pelajari Fitur</a>
+    <section class="pt-40 pb-24 px-6 relative overflow-hidden bg-gradient-to-b from-indigo-50/70 via-[#f8f9ff] to-white text-center">
+        <div class="max-w-4xl mx-auto flex flex-col items-center">
+            
+            <!-- Status Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-semibold text-indigo-700 mb-6">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Platform CBT SMA Terintegrasi</span>
+            </div>
+            
+            <h1 class="font-headline font-extrabold text-4xl sm:text-5xl md:text-6xl text-slate-900 tracking-tight leading-[1.15] mb-6">
+                Sistem <span class="text-indigo-600">Ujian Digital</span> Cepat, Tertib, & Bebas Kendala
+            </h1>
+            
+            <p class="text-slate-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
+                Satu platform terpadu untuk evaluasi akademik sekolah. Mulai dari bank soal guru, pengerjaan ujian berbasis smartphone untuk siswa, hingga audit komprehensif bagi admin sekolah.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-3.5 items-center justify-center">
+                <a href="#akses" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                    <span>Mulai Akses Sekarang</span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_downward</span>
+                </a>
+                <a href="#fitur" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-sm transition shadow-sm">
+                    Pelajari Fitur
+                </a>
+            </div>
+            
         </div>
     </section>
 
     <!-- PORTALS -->
-    <section id="akses" class="portals">
-        <div class="section-header">
-            <h2 class="section-title">Portal Akses</h2>
-            <p class="section-desc">Silakan pilih portal masuk yang sesuai dengan peran Anda di sekolah untuk mengakses fitur yang relevan.</p>
-        </div>
-        
-        <div class="portals-grid">
-            <!-- Student -->
-            <a href="{{ route('login') }}?role=student" class="portal-card portal-student">
-                <div class="portal-icon">👨‍🎓</div>
-                <h3 class="portal-title">Portal Siswa</h3>
-                <p class="portal-desc">Ikuti ujian, lihat riwayat nilai, dan pantau progres belajar Anda di satu tempat yang bebas distraksi.</p>
-                <div class="portal-btn">Masuk sebagai Siswa ➔</div>
-            </a>
+    <section id="akses" class="py-20 px-6 bg-white border-t border-slate-100">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2 block">Portal Akses Pengguna</span>
+                <h2 class="font-headline font-extrabold text-3xl md:text-4xl text-slate-900 tracking-tight">Pilih Peran Masuk Anda</h2>
+                <p class="text-slate-500 text-sm mt-2 max-w-xl mx-auto">Pilih akses sesuai peran Anda di sekolah untuk membuka lembar kerja dan fitur yang relevan.</p>
+            </div>
             
-            <!-- Teacher -->
-            <a href="{{ route('login') }}?role=teacher" class="portal-card portal-teacher">
-                <div class="portal-icon">👨‍🏫</div>
-                <h3 class="portal-title">Portal Guru</h3>
-                <p class="portal-desc">Kelola bank soal, jadwalkan ujian, dan dapatkan analisis daya serap siswa secara otomatis.</p>
-                <div class="portal-btn">Masuk sebagai Guru ➔</div>
-            </a>
-            
-            <!-- Admin -->
-            <a href="{{ route('login') }}?role=admin" class="portal-card portal-admin">
-                <div class="portal-icon">🏫</div>
-                <h3 class="portal-title">Administrator</h3>
-                <p class="portal-desc">Kelola data master (Siswa, Guru, Kelas) dan pantau seluruh aktivitas sistem secara menyeluruh.</p>
-                <div class="portal-btn">Masuk sebagai Admin ➔</div>
-            </a>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Student Portal -->
+                <a href="{{ route('login') }}?role=student" class="group p-8 rounded-2xl bg-[#f8f9ff] border border-slate-200/90 hover:border-indigo-400 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-6 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            <span class="material-symbols-outlined" style="font-size: 32px;">school</span>
+                        </div>
+                        <h3 class="font-headline font-bold text-slate-900 text-xl mb-2">Portal Siswa</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                            Ikuti ujian secara realtime, pantau durasi waktu, simpan jawaban otomatis, dan tinjau hasil nilai serta pembahasan.
+                        </p>
+                    </div>
+                    <div class="font-bold text-xs text-indigo-600 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
+                        <span>Masuk sebagai Siswa</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                    </div>
+                </a>
+                
+                <!-- Teacher Portal -->
+                <a href="{{ route('login') }}?role=teacher" class="group p-8 rounded-2xl bg-[#f8f9ff] border border-slate-200/90 hover:border-emerald-400 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 group-hover:text-white transition">
+                            <span class="material-symbols-outlined" style="font-size: 32px;">person_apron</span>
+                        </div>
+                        <h3 class="font-headline font-bold text-slate-900 text-xl mb-2">Portal Guru</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                            Susun bank soal dengan cepat, jadwalkan ujian kelas, acak urutan soal, dan pantau daya serap butir soal secara mendalam.
+                        </p>
+                    </div>
+                    <div class="font-bold text-xs text-emerald-700 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
+                        <span>Masuk sebagai Guru</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                    </div>
+                </a>
+                
+                <!-- Admin Portal -->
+                <a href="{{ route('login') }}?role=admin" class="group p-8 rounded-2xl bg-[#f8f9ff] border border-slate-200/90 hover:border-slate-800 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center mx-auto mb-6 group-hover:bg-slate-900 group-hover:text-white transition">
+                            <span class="material-symbols-outlined" style="font-size: 32px;">admin_panel_settings</span>
+                        </div>
+                        <h3 class="font-headline font-bold text-slate-900 text-xl mb-2">Administrator</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                            Kelola data induk sekolah (siswa, guru, rombel kelas, mapel), pantau semua aktivitas ujian, serta audit log sistem.
+                        </p>
+                    </div>
+                    <div class="font-bold text-xs text-slate-800 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
+                        <span>Masuk sebagai Admin</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                    </div>
+                </a>
+            </div>
         </div>
     </section>
 
     <!-- FEATURES -->
-    <section id="fitur" class="features">
-        <div class="features-grid">
-            <div class="feature-content">
-                <h2>Dirancang untuk Memudahkan Seluruh Ekosistem Sekolah</h2>
-                <ul class="feature-list">
-                    <li class="feature-item">
-                        <div class="feature-check">✓</div>
-                        <div class="feature-text">
-                            <h4>Antarmuka Mobile-First untuk Siswa</h4>
-                            <p>Desain ujian yang responsif, bersih, dan bebas distraksi. Sangat optimal diakses menggunakan smartphone.</p>
+    <section id="fitur" class="py-20 px-6 bg-slate-50 border-t border-slate-200/80">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2 block">Fitur Unggulan</span>
+                    <h2 class="font-headline font-extrabold text-3xl md:text-4xl text-slate-900 tracking-tight mb-6">
+                        Dirancang Khusus untuk Standar Ujian Sekolah Modern
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span class="material-symbols-outlined">smartphone</span>
+                            </div>
+                            <div>
+                                <h4 class="font-headline font-bold text-slate-900 text-sm">Responsif & Mobile-Friendly</h4>
+                                <p class="text-xs text-slate-500 mt-1">Antarmuka siswa dirancang khusus agar sangat nyaman dikerjakan melalui smartphone, tablet, maupun laptop.</p>
+                            </div>
                         </div>
-                    </li>
-                    <li class="feature-item">
-                        <div class="feature-check">✓</div>
-                        <div class="feature-text">
-                            <h4>Analisis Nilai Otomatis</h4>
-                            <p>Sistem langsung mengoreksi soal pilihan ganda dan menyajikan grafik analisis daya serap untuk evaluasi guru.</p>
+                        
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span class="material-symbols-outlined">sync</span>
+                            </div>
+                            <div>
+                                <h4 class="font-headline font-bold text-slate-900 text-sm">Penyimpanan Jawaban Otomatis (Anti Hilang)</h4>
+                                <p class="text-xs text-slate-500 mt-1">Setiap opsi yang dipilih siswa langsung tersimpan ke server via AJAX. Jika jaringan terputus, pengerjaan dapat dilanjutkan aman.</p>
+                            </div>
                         </div>
-                    </li>
-                    <li class="feature-item">
-                        <div class="feature-check">✓</div>
-                        <div class="feature-text">
-                            <h4>Manajemen Data Terpusat</h4>
-                            <p>Admin dapat dengan mudah mengatur data siswa, guru, kelas, dan mata pelajaran dalam satu dashboard komprehensif.</p>
+                        
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span class="material-symbols-outlined">analytics</span>
+                            </div>
+                            <div>
+                                <h4 class="font-headline font-bold text-slate-900 text-sm">Koreksi & Analitik Instan</h4>
+                                <p class="text-xs text-slate-500 mt-1">Nilai langsung terkalkulasi otomatis dengan perbandingan batas tuntas KKM dan grafik sebaran daya serap butir soal.</p>
+                            </div>
                         </div>
-                    </li>
-                    <li class="feature-item">
-                        <div class="feature-check">✓</div>
-                        <div class="feature-text">
-                            <h4>Bank Soal Terstruktur</h4>
-                            <p>Guru dapat membuat, menyimpan, dan menggunakan kembali butir soal dari bank soal yang terorganisir per mata pelajaran.</p>
+                    </div>
+                </div>
+                
+                <div class="p-6 md:p-8 bg-white border border-slate-200 rounded-3xl shadow-xl space-y-4">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
                         </div>
-                    </li>
-                </ul>
-            </div>
-            <div class="feature-img">
-                <div class="feature-img-inner">
-                    <div class="mockup-item" style="width:60%;"></div>
-                    <div class="mockup-item" style="width:80%;"></div>
-                    <div class="mockup-item" style="width:70%;"></div>
-                    <div class="mockup-item" style="width:85%;"></div>
-                    <div class="mockup-item" style="width:50%;"></div>
+                        <span class="text-xs font-semibold text-slate-400">cbt.sekolah.sch.id</span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-indigo-900">Ujian Berlangsung: Penilaian Akhir Semester</div>
+                            <div class="text-[11px] text-indigo-600 mt-0.5">Mata Pelajaran: Matematika Wajib • Kelas XII IPA 1</div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold">LIVE</span>
+                    </div>
+                    <div class="space-y-2 pt-2">
+                        <div class="h-3 bg-slate-100 rounded-full w-full"></div>
+                        <div class="h-3 bg-slate-100 rounded-full w-5/6"></div>
+                        <div class="h-3 bg-slate-100 rounded-full w-4/6"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div>
-                <div class="footer-brand">
-                    <span class="footer-logo">E</span>
-                    <span style="font-size: 1.5rem; font-weight: 800;">EduExam</span>
-                </div>
-                <p class="footer-desc">Platform digitalisasi sistem evaluasi pembelajaran untuk Sekolah Menengah Atas di Indonesia.</p>
+    <footer class="bg-[#0b1c30] text-slate-400 py-12 px-6 border-t border-slate-800">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+            <div class="flex items-center gap-2 text-white font-headline font-bold text-sm">
+                <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-white text-xs">E</div>
+                EduExam CBT
             </div>
             <div>
-                <h4 class="footer-title">Portal</h4>
-                <ul class="footer-links">
-                    <li><a href="{{ route('login') }}">Login Siswa</a></li>
-                    <li><a href="{{ route('login') }}">Login Guru</a></li>
-                    <li><a href="{{ route('login') }}">Login Administrator</a></li>
-                </ul>
+                &copy; {{ date('Y') }} EduExam. Platform Ujian Digital Sekolah Indonesia.
             </div>
-            <div>
-                <h4 class="footer-title">Bantuan</h4>
-                <ul class="footer-links">
-                    <li><a href="#">Panduan Penggunaan Siswa</a></li>
-                    <li><a href="#">Panduan Penggunaan Guru</a></li>
-                    <li><a href="#">Hubungi Admin Sekolah</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="copyright">
-            &copy; {{ date('Y') }} EduExam - Platform Ujian Digital Sekolah. All rights reserved.
         </div>
     </footer>
 

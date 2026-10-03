@@ -21,21 +21,44 @@ class ExamController extends Controller
     public function index(Request $request)
     {
         $teacher = Auth::user();
-        $query   = Exam::forTeacher($teacher->id)->with(['subject', 'classroom']);
+        $baseQuery = Exam::forTeacher($teacher->id);
 
-        if ($request->status) {
+        $stats = [
+            'total'     => (clone $baseQuery)->count(),
+            'active'    => (clone $baseQuery)->where('status', 'active')->count(),
+            'scheduled' => (clone $baseQuery)->where('status', 'scheduled')->count(),
+            'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
+            'draft'     => (clone $baseQuery)->where('status', 'draft')->count(),
+        ];
+
+        $query = (clone $baseQuery)->with(['subject', 'classroom.students', 'participants', 'results', 'academicYear', 'settings']);
+
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->academic_year_id);
+        }
+        if ($request->filled('classroom_id')) {
+            $query->where('classroom_id', $request->classroom_id);
+        }
 
-        $exams = $query->latest()->paginate(12);
-        return view('teacher.exam.index', compact('exams'));
+        $exams = $query->latest('exam_date')->paginate(10)->withQueryString();
+        $academicYears = \App\Models\AcademicYear::orderByDesc('is_active')->get();
+        $classrooms = \App\Models\Classroom::orderBy('name')->get();
+
+        return view('teacher.exam.index', compact('exams', 'stats', 'academicYears', 'classrooms'));
     }
 
     public function create()
     {
-        $subjects   = \App\Models\Subject::orderBy('name')->get();
-        $classrooms = \App\Models\Classroom::with('academicYear')->orderBy('name')->get();
-        return view('teacher.exam.create', compact('subjects', 'classrooms'));
+        $subjects      = \App\Models\Subject::orderBy('name')->get();
+        $classrooms    = \App\Models\Classroom::with(['academicYear', 'students'])->orderBy('name')->get();
+        $academicYears = \App\Models\AcademicYear::orderByDesc('is_active')->get();
+        return view('teacher.exam.create', compact('subjects', 'classrooms', 'academicYears'));
     }
 
     public function store(Request $request)
@@ -293,9 +316,13 @@ class ExamController extends Controller
         $questions = Question::where('created_by', $teacher->id)
             ->where('is_active', true)
             ->when($request->subject_id, fn($q) => $q->where('subject_id', $request->subject_id))
-            ->when($request->search,     fn($q) => $q->where('question_text', 'like', '%'.$request->search.'%'))
-            ->with('subject')
-            ->limit(50)
+            ->when($request->type,       fn($q) => $q->where('type', $request->type))
+            ->when($request->search,     fn($q) => $q->where(function($sq) use ($request) {
+                $sq->where('question_text', 'like', '%'.$request->search.'%')
+                   ->orWhere('topic', 'like', '%'.$request->search.'%');
+            }))
+            ->with(['subject', 'options'])
+            ->limit(200)
             ->get();
         return response()->json($questions);
     }

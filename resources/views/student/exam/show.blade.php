@@ -1,389 +1,234 @@
 @extends('layouts.student')
 
-@section('title', 'Detail Ujian — EduExam')
+@section('title', 'Detail Sesi Ujian — EduExam')
 
 @push('mobile-styles')
 <style>
-    /* Sembunyikan bottom navigation bar agar tidak menutupi tombol pengerjaan */
-    .bottom-nav {
-        display: none !important;
-    }
-
-    body {
-        padding-bottom: 40px !important;
-    }
-
-    .exam-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 50%, #6366f1 100%);
-        border-radius: var(--radius-xl);
-        padding: 24px;
-        margin-bottom: 20px;
-        color: white;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
-    }
-    .exam-header::after {
-        content: '📝';
-        position: absolute;
-        right: -10px;
-        bottom: -20px;
-        font-size: 8rem;
-        opacity: 0.12;
-        transform: rotate(-15deg);
-        pointer-events: none;
-    }
-    .exam-badge {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.22);
-        backdrop-filter: blur(8px);
-        padding: 4px 14px;
-        border-radius: 100px;
-        font-size: 0.8125rem;
-        font-weight: 700;
-        margin-bottom: 12px;
-        letter-spacing: 0.3px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .exam-header h1 {
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin-bottom: 6px;
-        line-height: 1.3;
-        color: #ffffff;
-    }
-    .exam-teacher {
-        font-size: 0.875rem;
-        opacity: 0.92;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-    .info-box {
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--gray-200);
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        box-shadow: var(--shadow-sm);
-        transition: transform .15s ease, box-shadow .15s ease;
-    }
-    .info-box:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-    .info-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: var(--primary-light);
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        margin-bottom: 4px;
-    }
-    .info-label {
-        font-size: 0.75rem;
-        color: var(--gray-500);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .info-value {
-        font-size: 1.05rem;
-        font-weight: 800;
-        color: var(--gray-900);
-    }
-
-    .instructions-card {
-        background: #fffbeb;
-        border-radius: var(--radius-lg);
-        border: 1px solid #fde68a;
-        padding: 20px;
-        margin-bottom: 24px;
-        box-shadow: var(--shadow-sm);
-    }
-    .instructions-card h3 {
-        font-size: 1rem;
-        font-weight: 800;
-        color: #b45309;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .instructions-content {
-        font-size: 0.875rem;
-        color: #78350f;
-        line-height: 1.65;
-    }
-    .instructions-content ul {
-        padding-left: 20px;
-        margin-top: 8px;
-    }
-    .instructions-content li {
-        margin-bottom: 6px;
-    }
-
-    /* ACTION CARD & BUTTONS */
-    .action-section {
-        background: var(--white);
-        border-radius: var(--radius-xl);
-        border: 1px solid var(--gray-200);
-        padding: 24px;
-        box-shadow: var(--shadow-md);
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-    .action-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-bottom: 14px;
-        border-bottom: 1px solid var(--gray-100);
-    }
-    .action-status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        border-radius: 100px;
-        font-size: 0.8125rem;
-        font-weight: 700;
-    }
-    .status-badge-active {
-        background: #dcfce7;
-        color: #15803d;
-        border: 1px solid #86efac;
-    }
-    .status-badge-scheduled {
-        background: #fef3c7;
-        color: #b45309;
-        border: 1px solid #fde68a;
-    }
-    .status-badge-ended {
-        background: #f3f4f6;
-        color: #4b5563;
-        border: 1px solid #e5e7eb;
-    }
-    .status-pulse {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #22c55e;
-        display: inline-block;
-        animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    .btn-start {
-        width: 100%;
-        padding: 16px 24px;
-        font-size: 1.125rem;
-        font-weight: 700;
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        cursor: pointer;
-        border: none;
-        text-decoration: none;
-        transition: all .2s ease;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
-    }
-    .btn-start:hover {
-        text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
-    }
-    .btn-start:active {
-        transform: translateY(0);
-    }
-    .btn-start-primary {
-        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-        color: #ffffff !important;
-    }
-    .btn-start-success {
-        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-        color: #ffffff !important;
-        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
-    }
-    .btn-start-success:hover {
-        box-shadow: 0 8px 24px rgba(22, 163, 74, 0.4);
-    }
-    .btn-start-disabled {
-        background: var(--gray-200);
-        color: var(--gray-500) !important;
-        cursor: not-allowed;
-        box-shadow: none !important;
-        transform: none !important;
-    }
-
-    .status-notice {
-        padding: 14px 16px;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 600;
-        line-height: 1.5;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .status-notice.warning {
-        background: #fff7ed;
-        color: #c2410c;
-        border: 1px solid #ffedd5;
-    }
-    .status-notice.danger {
-        background: #fef2f2;
-        color: #b91c1c;
-        border: 1px solid #fee2e2;
-    }
-
-    .btn-back-dashboard {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 18px;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        background: var(--gray-100);
-        border: 1px solid var(--gray-200);
-        text-decoration: none;
-        transition: all .15s ease;
-    }
-    .btn-back-dashboard:hover {
-        background: var(--gray-200);
-        color: var(--gray-800);
-        text-decoration: none;
-    }
+    .bottom-nav { display: none !important; }
 </style>
 @endpush
 
 @section('student-content')
-<div class="exam-header">
-    <span class="exam-badge">{{ $exam->subject->name ?? 'Mata Pelajaran' }}</span>
-    <h1>{{ $exam->title }}</h1>
-    <div class="exam-teacher">
-        <span>👨‍🏫</span>
-        <span>Guru Pengampu: {{ $exam->teacher->name ?? '-' }}</span>
+<div class="flex flex-col w-full pb-24">
+    <!-- Back Button -->
+    <div class="py-2">
+        <a href="{{ route('student.dashboard') }}" class="inline-flex items-center gap-1 text-primary font-label-md text-xs font-semibold hover:opacity-80 transition-opacity">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Kembali ke Dashboard</span>
+        </a>
     </div>
-</div>
 
-<div class="info-grid">
-    <div class="info-box">
-        <div class="info-icon">📅</div>
-        <div class="info-label">Tanggal Pelaksanaan</div>
-        <div class="info-value">{{ $exam->exam_date ? $exam->exam_date->format('d M Y') : '-' }}</div>
-    </div>
-    <div class="info-box">
-        <div class="info-icon">⏱</div>
-        <div class="info-label">Durasi Ujian</div>
-        <div class="info-value">{{ $exam->duration_minutes }} Menit</div>
-    </div>
-    <div class="info-box">
-        <div class="info-icon">📋</div>
-        <div class="info-label">Jumlah Soal</div>
-        <div class="info-value">{{ $exam->total_questions ?? $exam->questions()->count() }} Butir</div>
-    </div>
-    <div class="info-box">
-        <div class="info-icon">🎯</div>
-        <div class="info-label">Standar KKM</div>
-        <div class="info-value">{{ $exam->passing_grade }}</div>
-    </div>
-</div>
+    <!-- Exam Hero Card -->
+    <div class="relative overflow-hidden bg-surface-container-low rounded-2xl p-4 shadow-sm border border-surface-container mb-4">
+        <div class="absolute -right-4 -bottom-6 w-28 h-28 rounded-full bg-primary-fixed/30 pointer-events-none blur-xl"></div>
+        <div class="flex items-center gap-1.5 mb-1.5">
+            <span class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full text-[11px] font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                Siap Dimulai
+            </span>
+            <span class="text-xs text-on-surface-variant font-medium">
+                • Kelas {{ $exam->classroom->name ?? 'Semua Kelas' }}
+            </span>
+        </div>
+        <h2 class="font-headline-sm text-lg md:text-xl font-bold text-on-surface">
+            {{ $exam->title }}
+        </h2>
+        <p class="font-body-sm text-xs text-on-surface-variant mt-0.5">
+            {{ $exam->subject->name ?? 'Mata Pelajaran' }} • Tahun Ajaran {{ $exam->academicYear->name ?? '2026/2027' }}
+        </p>
 
-<div class="instructions-card">
-    <h3>⚠️ Peraturan & Petunjuk Pengerjaan</h3>
-    <div class="instructions-content">
-        @if($exam->instructions)
-            {!! nl2br(e($exam->instructions)) !!}
-        @else
-            <ul>
-                <li>Pastikan koneksi internet Anda stabil sebelum mengklik tombol mulai.</li>
-                <li>Waktu ujian akan otomatis berjalan sejak Anda menekan tombol <strong>Mulai Ujian</strong>.</li>
-                <li>Setiap jawaban yang Anda pilih akan tersimpan otomatis oleh sistem CBT.</li>
-                <li>Jika waktu habis, semua jawaban akan terkumpul secara otomatis.</li>
-                <li>Dilarang berpindah tab browser atau keluar dari aplikasi selama ujian berlangsung.</li>
+        <!-- Access Token Box -->
+        <div class="mt-3 pt-2 bg-surface-container rounded-xl p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm">
+                    <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">vpn_key</span>
+                </div>
+                <div>
+                    <div class="text-[10px] text-on-surface-variant font-medium">Token Akses Ujian</div>
+                    <div class="text-sm text-on-surface tracking-wider font-mono font-bold">
+                        {{ $exam->token ?: 'TERBUKA' }}
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 bg-surface-container-lowest text-secondary px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm">
+                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                <span>Terverifikasi</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Details Grid (2 columns) -->
+    <div class="mb-4">
+        <div class="flex items-center gap-1.5 mb-2.5">
+            <span class="material-symbols-outlined text-primary text-[20px]">assignment</span>
+            <h3 class="font-headline-sm text-sm font-bold text-on-surface">Rincian Informasi Ujian</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">menu_book</span>
+                    <span class="text-[11px] font-medium">Mata Pelajaran</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface truncate">
+                    {{ $exam->subject->name ?? '-' }}
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">person</span>
+                    <span class="text-[11px] font-medium">Guru Pengampu</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface truncate">
+                    {{ $exam->teacher->name ?? 'Guru Pengampu' }}
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">quiz</span>
+                    <span class="text-[11px] font-medium">Jumlah Soal</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface">
+                    {{ $exam->total_questions ?? $exam->questions()->count() }} Soal
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">timer</span>
+                    <span class="text-[11px] font-medium">Durasi</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface">
+                    {{ $exam->duration_minutes }} Menit
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
+                    <span class="text-[11px] font-medium">Jadwal</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface">
+                    {{ \Carbon\Carbon::parse($exam->exam_date ?? now())->translatedFormat('d M Y') }}
+                </div>
+            </div>
+            <div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
+                <div class="flex items-center gap-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">schedule</span>
+                    <span class="text-[11px] font-medium">Waktu Sesi</span>
+                </div>
+                <div class="mt-1 text-xs font-bold text-on-surface truncate">
+                    {{ $exam->start_time ?? '08:00' }} - {{ $exam->end_time ?? '10:00' }} WIB
+                </div>
+            </div>
+        </div>
+
+        <!-- KKM Card -->
+        <div class="mt-2.5 bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-surface-container flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                </div>
+                <div>
+                    <div class="text-[10px] text-on-surface-variant">Kriteria Ketuntasan Minimal</div>
+                    <div class="text-xs font-bold text-on-surface">Target Kelulusan Nilai (KKM)</div>
+                </div>
+            </div>
+            <div class="bg-surface-container-high px-3 py-1 rounded-lg">
+                <span class="font-headline-sm text-base font-bold text-primary">{{ $exam->passing_grade ?? 75 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rules / Tata Tertib Section -->
+    <div class="mb-4">
+        <div class="bg-surface-container-low rounded-2xl p-4 shadow-sm border border-surface-container">
+            <div class="flex items-center gap-1.5 mb-2 text-on-surface">
+                <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">info</span>
+                <h3 class="font-headline-sm text-sm font-bold">Petunjuk & Tata Tertib Ujian</h3>
+            </div>
+            <p class="font-body-sm text-xs text-on-surface-variant mb-3">
+                Bacalah panduan dengan saksama untuk memastikan kelancaran evaluasi Anda:
+            </p>
+            <ul class="space-y-2">
+                <li class="flex items-start gap-2.5 bg-surface-container-lowest p-2.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="w-5 h-5 shrink-0 rounded-full bg-surface-container-high text-primary flex items-center justify-center text-xs font-bold">1</span>
+                    <div class="text-on-surface font-body-sm text-xs pt-0.5">
+                        Pastikan koneksi internet stabil selama mengerjakan ujian.
+                    </div>
+                </li>
+                <li class="flex items-start gap-2.5 bg-surface-container-lowest p-2.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="w-5 h-5 shrink-0 rounded-full bg-surface-container-high text-primary flex items-center justify-center text-xs font-bold">2</span>
+                    <div class="text-on-surface font-body-sm text-xs pt-0.5">
+                        Setiap soal memiliki bobot poin tertentu, pilih opsi yang paling tepat.
+                    </div>
+                </li>
+                <li class="flex items-start gap-2.5 bg-surface-container-lowest p-2.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="w-5 h-5 shrink-0 rounded-full bg-surface-container-high text-primary flex items-center justify-center text-xs font-bold">3</span>
+                    <div class="text-on-surface font-body-sm text-xs pt-0.5">
+                        Jawaban akan tersimpan secara otomatis setiap kali Anda memilih opsi atau mengetik.
+                    </div>
+                </li>
+                <li class="flex items-start gap-2.5 bg-surface-container-lowest p-2.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="w-5 h-5 shrink-0 rounded-full bg-surface-container-high text-primary flex items-center justify-center text-xs font-bold">4</span>
+                    <div class="text-on-surface font-body-sm text-xs pt-0.5">
+                        Ujian akan dikumpulkan otomatis ketika waktu hitung mundur habis.
+                    </div>
+                </li>
+                <li class="flex items-start gap-2.5 bg-error-container/40 p-2.5 rounded-xl border border-error/20">
+                    <span class="w-5 h-5 shrink-0 rounded-full bg-error text-white flex items-center justify-center text-xs font-bold">5</span>
+                    <div class="text-on-surface font-body-sm text-xs pt-0.5 font-medium">
+                        Dilarang membuka tab lain atau meninggalkan halaman ujian demi menjaga integritas proctoring.
+                    </div>
+                </li>
             </ul>
-        @endif
-    </div>
-</div>
-
-{{-- SECTION AKSI MULAI / LANJUTKAN UJIAN --}}
-<div class="action-section">
-    <div class="action-header">
-        <span style="font-weight: 700; color: var(--gray-700); font-size: 0.9375rem;">Status Ujian:</span>
-        @if($exam->status === 'active')
-            <span class="action-status-badge status-badge-active">
-                <span class="status-pulse"></span> Sedang Dibuka (Aktif)
-            </span>
-        @elseif($exam->status === 'scheduled')
-            <span class="action-status-badge status-badge-scheduled">
-                ⏳ Belum Dibuka (Terjadwal)
-            </span>
-        @else
-            <span class="action-status-badge status-badge-ended">
-                🔒 Telah Berakhir
-            </span>
-        @endif
+        </div>
     </div>
 
-    @if($exam->status === 'active')
-        @if($participant && $participant->status === 'in_progress')
-            <a href="{{ route('student.exam.take', $exam->id) }}" class="btn-start btn-start-primary">
-                ⚡ Lanjutkan Pengerjaan Ujian Sekarang →
-            </a>
-        @elseif(!$participant || $participant->status === 'not_started')
-            <form action="{{ route('student.exam.start', $exam->id) }}" method="POST">
+    <!-- Fixed Sticky Action Bar at Bottom -->
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-md border-t border-surface-container shadow-[0_-4px_16px_rgba(0,0,0,0.06)] p-3 pb-safe">
+        <div class="max-w-[480px] mx-auto flex flex-col gap-2">
+            <label class="flex items-start gap-2 cursor-pointer select-none group">
+                <input type="checkbox" id="examAgreement" class="mt-0.5 w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer transition-transform group-active:scale-95">
+                <span class="font-body-sm text-xs text-on-surface-variant group-hover:text-on-surface transition-colors leading-snug">
+                    Saya telah membaca dan memahami tata tertib ujian.
+                </span>
+            </label>
+
+            <form action="{{ route('student.exam.start', $exam->id) }}" method="POST" id="startExamForm">
                 @csrf
-                <button type="submit" class="btn-start btn-start-primary" onclick="return confirm('Apakah Anda yakin sudah siap untuk memulai ujian ini sekarang?\n\nWaktu pengerjaan akan langsung dihitung mundur.')">
-                    🚀 Mulai Ujian Sekarang
+                <button type="submit" id="startExamBtn" disabled class="w-full h-12 bg-primary text-on-primary font-headline-sm text-sm font-semibold rounded-xl shadow-md flex items-center justify-center gap-1.5 opacity-40 cursor-not-allowed transition-all active:scale-[0.98]">
+                    <span>Mulai Ujian</span>
+                    <span class="material-symbols-outlined text-[18px]">play_arrow</span>
                 </button>
             </form>
-        @else
-            <a href="{{ route('student.exam.result', $exam->id) }}" class="btn-start btn-start-success">
-                ✓ Anda Telah Mengumpulkan Ujian (Lihat Hasil)
-            </a>
-        @endif
-    @elseif($exam->status === 'scheduled')
-        <div class="status-notice warning">
-            <span>⏳ Ujian belum dimulai oleh guru. Tombol mulai akan aktif ketika guru membuka ujian.</span>
         </div>
-        <button class="btn-start btn-start-disabled" disabled>
-            Ujian Belum Dibuka
-        </button>
-    @else
-        <div class="status-notice danger">
-            <span>🔒 Ujian ini telah berakhir atau ditutup oleh guru pengampu.</span>
-        </div>
-        <button class="btn-start btn-start-disabled" disabled>
-            Ujian Sudah Selesai
-        </button>
-    @endif
-
-    <a href="{{ route('student.dashboard') }}" class="btn-back-dashboard">
-        ← Kembali ke Halaman Dashboard
-    </a>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const agreementCheckbox = document.getElementById('examAgreement');
+        const startButton = document.getElementById('startExamBtn');
+        const startForm = document.getElementById('startExamForm');
+
+        if (agreementCheckbox && startButton) {
+            agreementCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startButton.disabled = false;
+                    startButton.classList.remove('opacity-40', 'cursor-not-allowed');
+                    startButton.classList.add('hover:bg-primary/95', 'shadow-lg');
+                } else {
+                    startButton.disabled = true;
+                    startButton.classList.add('opacity-40', 'cursor-not-allowed');
+                    startButton.classList.remove('hover:bg-primary/95', 'shadow-lg');
+                }
+            });
+
+            startForm.addEventListener('submit', function() {
+                if (!startButton.disabled) {
+                    startButton.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Mempersiapkan Soal...</span>';
+                    startButton.disabled = true;
+                }
+            });
+        }
+    });
+</script>
 @endsection

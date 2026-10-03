@@ -2,81 +2,137 @@
 
 @section('title', 'Riwayat Ujian — EduExam')
 
-@push('mobile-styles')
-<style>
-    .history-header { margin: 20px 0; }
-    .history-header h1 { font-size: 1.25rem; font-weight: 800; color: var(--gray-900); }
-    
-    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
-    .filter-tab { padding: 6px 14px; border-radius: 100px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; color: var(--gray-600); background: var(--gray-200); white-space: nowrap; transition: all .2s; }
-    .filter-tab.active { background: var(--primary); color: white; }
-    
-    .history-card { background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); display: flex; align-items: stretch; gap: 16px; }
-    .hc-score { width: 64px; border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .hc-score.pass { background: var(--success-light); color: var(--success); }
-    .hc-score.fail { background: var(--danger-light); color: var(--danger); }
-    .hc-score .val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
-    .hc-score .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
-    
-    .hc-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-    .hc-title { font-size: 0.9375rem; font-weight: 700; color: var(--gray-900); margin-bottom: 2px; }
-    .hc-subject { font-size: 0.8125rem; color: var(--primary); font-weight: 600; margin-bottom: 6px; }
-    .hc-meta { font-size: 0.75rem; color: var(--gray-500); display: flex; align-items: center; gap: 12px; }
-    
-    .hc-action { display: flex; align-items: center; padding-left: 10px; border-left: 1px solid var(--gray-100); }
-    .hc-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--gray-50); display: flex; align-items: center; justify-content: center; color: var(--gray-600); text-decoration: none; transition: all .2s; }
-    .hc-btn:hover { background: var(--primary-light); color: var(--primary); }
-</style>
-@endpush
-
 @section('student-content')
-<div class="history-header">
-    <h1>Riwayat Ujian</h1>
-</div>
-
-<div class="filter-tabs">
-    <a href="{{ route('student.history') }}" class="filter-tab {{ !request('filter') ? 'active' : '' }}">Semua</a>
-    <a href="{{ route('student.history', ['filter' => 'pass']) }}" class="filter-tab {{ request('filter') === 'pass' ? 'active' : '' }}">Lulus</a>
-    <a href="{{ route('student.history', ['filter' => 'fail']) }}" class="filter-tab {{ request('filter') === 'fail' ? 'active' : '' }}">Tidak Lulus</a>
-</div>
-
-@if($results->isEmpty())
-    <div class="card">
-        <div class="card-body empty-state">
-            <div class="empty-icon">📂</div>
-            <h3>Belum Ada Riwayat</h3>
-            <p>Anda belum menyelesaikan ujian apapun.</p>
-        </div>
-    </div>
-@else
-    @foreach($results as $result)
-        <div class="history-card">
-            <div class="hc-score {{ $result->pass_status }}">
-                <span class="val">{{ round($result->total_score) }}</span>
-                <span class="lbl">{{ $result->pass_label }}</span>
+<div class="flex flex-col w-full pb-8">
+    <!-- Header -->
+    <div class="pt-2 pb-3 flex flex-col">
+        <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+                <span class="text-[11px] font-semibold text-primary tracking-wider uppercase">Evaluasi Terpadu</span>
             </div>
-            
-            <div class="hc-info">
-                <div class="hc-title">{{ $result->exam->title }}</div>
-                <div class="hc-subject">{{ $result->exam->subject->name ?? '-' }}</div>
-                <div class="hc-meta">
-                    <span>📅 {{ $result->created_at->format('d/m/Y') }}</span>
-                    <span>⏱ {{ $result->time_spent_minutes }} mnt</span>
+            <span class="text-[11px] font-medium text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+                Tahun Ajaran 2026/2027
+            </span>
+        </div>
+        <h1 class="font-headline-sm text-lg md:text-xl font-bold text-on-surface tracking-tight">Riwayat Ujian</h1>
+        <p class="font-body-sm text-xs text-on-surface-variant mt-0.5">Daftar evaluasi dan hasil ujian Anda di SMA Nusantara</p>
+    </div>
+
+    <!-- Average Score Summary Card -->
+    <div class="my-1.5">
+        <div class="bg-surface-container-low rounded-2xl p-4 shadow-sm border border-surface-container relative overflow-hidden flex items-center justify-between">
+            <div class="flex flex-col z-10">
+                <span class="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Rata-Rata Nilai</span>
+                <div class="flex items-baseline gap-1 mt-0.5">
+                    <span class="font-headline-lg text-2xl font-bold text-primary">{{ $avgScore }}</span>
+                    <span class="text-xs text-on-surface-variant">/ 100</span>
+                </div>
+                <span class="text-[11px] {{ $avgScore >= 75 ? 'text-secondary' : 'text-error' }} flex items-center gap-0.5 mt-1 font-semibold">
+                    <span class="material-symbols-outlined text-[14px]">
+                        {{ $avgScore >= 75 ? 'trending_up' : 'trending_down' }}
+                    </span> 
+                    {{ $avgScore >= 75 ? 'Di atas KKM sekolah (75)' : 'Perlu ditingkatkan lagi' }}
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2 z-10">
+                <div class="flex flex-col items-center bg-surface-container-lowest px-3 py-1.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="font-headline-sm text-base text-secondary font-bold">{{ $passedCount }}</span>
+                    <span class="text-[10px] text-on-surface-variant font-medium">Lulus</span>
+                </div>
+                <div class="flex flex-col items-center bg-surface-container-lowest px-3 py-1.5 rounded-xl shadow-sm border border-surface-container">
+                    <span class="font-headline-sm text-base text-error font-bold">{{ $failedCount }}</span>
+                    <span class="text-[10px] text-on-surface-variant font-medium">Remedial</span>
                 </div>
             </div>
-            
-            <div class="hc-action">
-                <a href="{{ route('student.exam.result', $result->exam_id) }}" class="hc-btn" title="Lihat Detail">
-                    ➔
-                </a>
-            </div>
-        </div>
-    @endforeach
-    
-    <div style="margin-top: 20px;">
-        {{ $results->links('pagination::bootstrap-4') }}
-    </div>
-@endif
 
-<div style="height: 16px;"></div>
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-primary-fixed/30 rounded-full blur-xl pointer-events-none"></div>
+        </div>
+    </div>
+
+    <!-- Filter Chips -->
+    <div class="w-full overflow-x-auto no-scrollbar py-2.5 flex items-center gap-1.5">
+        <a href="{{ route('student.history') }}" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all {{ !request('filter') ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container border border-surface-container' }}">
+            <span>Semua</span>
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] {{ !request('filter') ? 'bg-white/20 text-white' : 'bg-surface-container text-on-surface' }}">{{ $totalCount }}</span>
+        </a>
+        <a href="{{ route('student.history', ['filter' => 'pass']) }}" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all {{ request('filter') === 'pass' ? 'bg-secondary text-on-secondary' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container border border-surface-container' }}">
+            <span>Lulus</span>
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-bold {{ request('filter') === 'pass' ? 'bg-white/20 text-white' : 'bg-secondary-fixed text-on-secondary-fixed' }}">{{ $passedCount }}</span>
+        </a>
+        <a href="{{ route('student.history', ['filter' => 'fail']) }}" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all {{ request('filter') === 'fail' ? 'bg-error text-white' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container border border-surface-container' }}">
+            <span>Remedial</span>
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-bold {{ request('filter') === 'fail' ? 'bg-white/20 text-white' : 'bg-error-container text-error' }}">{{ $failedCount }}</span>
+        </a>
+    </div>
+
+    <!-- Exam Results List -->
+    <div class="flex flex-col gap-2.5 mt-1">
+        @if($results->isEmpty())
+            <div class="w-full bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-surface-container text-center flex flex-col items-center justify-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-[24px]">folder_open</span>
+                </div>
+                <h3 class="font-headline-sm text-sm font-bold text-on-surface">Belum Ada Riwayat</h3>
+                <p class="font-body-sm text-xs text-on-surface-variant max-w-[280px]">
+                    Belum ada catatan hasil ujian yang sesuai dengan filter ini.
+                </p>
+            </div>
+        @else
+            @foreach($results as $result)
+                @php
+                    $isPass = $result->pass_status === 'pass';
+                @endphp
+                <div class="bg-surface-container-lowest rounded-2xl p-3.5 shadow-sm border border-surface-container active:scale-[0.99] transition-all relative overflow-hidden flex flex-col gap-2.5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-bold truncate">
+                                    {{ $result->exam->exam_type ?? 'UTS Semester 1' }}
+                                </span>
+                                @if($loop->first && !request('page'))
+                                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    <span class="text-[10px] text-secondary font-semibold">Terbaru</span>
+                                @endif
+                            </div>
+                            <h2 class="font-headline-sm text-sm md:text-base font-bold text-on-surface leading-snug">
+                                {{ $result->exam->title }}
+                            </h2>
+                            <div class="flex items-center gap-1 text-on-surface-variant text-xs mt-0.5">
+                                <span class="material-symbols-outlined text-[14px]">event</span>
+                                <span class="truncate">{{ $result->created_at->translatedFormat('d F Y') }} • {{ $result->time_spent_minutes }} Menit</span>
+                            </div>
+                        </div>
+
+                        <!-- Score Badge -->
+                        <div class="flex flex-col items-center justify-center shrink-0 w-13 h-13 px-3 py-1.5 rounded-xl shadow-sm {{ $isPass ? 'bg-secondary-container text-on-secondary-container' : 'bg-error-container text-error' }}">
+                            <span class="font-headline-sm text-lg font-bold leading-none">{{ round($result->total_score) }}</span>
+                            <span class="text-[9px] font-semibold opacity-80 mt-0.5 uppercase tracking-wider">Nilai</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-surface-container-low">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-primary shrink-0">
+                                <span class="material-symbols-outlined text-[14px]">school</span>
+                            </div>
+                            <span class="text-xs text-on-surface-variant truncate">
+                                {{ $result->exam->subject->name ?? 'Mata Pelajaran' }} • {{ $result->exam->teacher->name ?? 'Guru Pengampu' }}
+                            </span>
+                        </div>
+                        <a href="{{ route('student.exam.result', $result->exam_id) }}" class="shrink-0 h-7 px-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold flex items-center gap-0.5 active:scale-95 transition-all">
+                            <span>Detail</span>
+                            <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                        </a>
+                    </div>
+                </div>
+            @endforeach
+
+            <div class="mt-3">
+                {{ $results->withQueryString()->links() }}
+            </div>
+        @endif
+    </div>
+</div>
 @endsection

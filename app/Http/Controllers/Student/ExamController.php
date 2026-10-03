@@ -238,7 +238,13 @@ class ExamController extends Controller
 
         $results = $query->latest()->paginate(10);
 
-        return view('student.exam.history', compact('results'));
+        $allResults = ExamResult::where('student_id', $student->id)->get();
+        $totalCount = $allResults->count();
+        $passedCount = $allResults->where('pass_status', 'pass')->count();
+        $failedCount = $allResults->where('pass_status', 'fail')->count();
+        $avgScore = $totalCount > 0 ? round($allResults->avg('total_score'), 1) : 0;
+
+        return view('student.exam.history', compact('results', 'totalCount', 'passedCount', 'failedCount', 'avgScore'));
     }
 
     // Validasi akses ujian

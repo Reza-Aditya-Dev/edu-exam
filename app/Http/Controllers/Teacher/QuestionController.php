@@ -17,26 +17,41 @@ class QuestionController extends Controller
     public function index(Request $request)
     {
         $teacher = Auth::user();
-        $query = Question::where('created_by', $teacher->id)
-            ->with(['subject', 'options']);
+        $baseQuery = Question::where('created_by', $teacher->id);
 
-        if ($request->subject_id) {
+        $stats = [
+            'total'           => (clone $baseQuery)->count(),
+            'multiple_choice' => (clone $baseQuery)->where('type', 'multiple_choice')->count(),
+            'short_essay'     => (clone $baseQuery)->whereIn('type', ['short_answer', 'essay'])->count(),
+            'active_in_exams' => DB::table('exam_questions')
+                                    ->join('questions', 'questions.id', '=', 'exam_questions.question_id')
+                                    ->where('questions.created_by', $teacher->id)
+                                    ->distinct('exam_questions.exam_id')
+                                    ->count('exam_questions.exam_id'),
+        ];
+
+        $query = (clone $baseQuery)->with(['subject', 'options', 'exams']);
+
+        if ($request->filled('subject_id')) {
             $query->where('subject_id', $request->subject_id);
         }
-        if ($request->type) {
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
-        if ($request->difficulty) {
+        if ($request->filled('difficulty')) {
             $query->where('difficulty', $request->difficulty);
         }
-        if ($request->search) {
-            $query->where('question_text', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('question_text', 'like', '%' . $request->search . '%')
+                  ->orWhere('topic', 'like', '%' . $request->search . '%');
+            });
         }
 
-        $questions = $query->latest()->paginate(15);
+        $questions = $query->latest()->paginate(10)->withQueryString();
         $subjects  = Subject::orderBy('name')->get();
 
-        return view('teacher.question.index', compact('questions', 'subjects'));
+        return view('teacher.question.index', compact('questions', 'subjects', 'stats'));
     }
 
     public function create()

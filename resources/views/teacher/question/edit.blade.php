@@ -8,70 +8,71 @@
     @csrf
     @method('PUT')
     
-    <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 28px; align-items: start;">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <!-- Kolom Kiri: Konten Utama Soal -->
-        <div class="card" style="box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);">
-            <div class="card-header" style="background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 24px 28px;">
-                <h3 class="card-title flex items-center gap-2" style="font-weight: 800; color: var(--gray-900); font-size: 1.2rem;">
-                    <span>📝</span> Detail Pertanyaan
-                </h3>
-            </div>
-            
-            <div class="card-body" style="padding: 28px;">
-                <div class="form-group mb-6">
-                    <label class="form-label font-bold text-gray-800" style="font-size: 0.95rem;">
-                        Teks Pertanyaan <span class="text-danger">*</span>
-                    </label>
-                    <textarea name="question_text" class="form-control" rows="6" style="padding: 16px; font-size: 1.05rem; line-height: 1.6; border-radius: var(--radius-md);" required placeholder="Tuliskan isi pertanyaan untuk siswa di sini...">{{ old('question_text', $question->question_text) }}</textarea>
-                    @error('question_text') <div class="form-error">{{ $message }}</div> @enderror
+        <!-- Left Column: Question Details (8 cols) -->
+        <div class="lg:col-span-8">
+            <div class="card overflow-hidden">
+                <div class="card-header p-6 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600" style="font-size: 20px;">edit_note</span>
+                    <h3 class="font-headline font-bold text-slate-900 text-base">Detail Pertanyaan Soal</h3>
                 </div>
                 
-                <div class="form-group mb-6" style="background: var(--primary-light); padding: 16px; border-radius: var(--radius-md); border: 1px dashed var(--primary-border);">
-                    <label class="form-label font-bold text-primary-dark" style="font-size: 0.95rem;">
-                        Gambar Soal <span class="text-muted text-sm font-normal ml-1">(Opsional)</span>
-                    </label>
+                <div class="card-body p-6 md:p-8">
+                    <div class="mb-5">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                            Teks Pertanyaan <span class="text-rose-500">*</span>
+                        </label>
+                        <textarea name="question_text" class="form-control text-sm" rows="6" required placeholder="Tuliskan isi pertanyaan untuk siswa di sini...">{{ old('question_text', $question->question_text) }}</textarea>
+                        @error('question_text') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
+                    </div>
                     
-                    @if($question->question_image)
-                        <div class="mb-3 mt-2" style="position: relative; display: inline-block;">
-                            <img src="{{ asset('storage/' . $question->question_image) }}" alt="Gambar Soal" style="max-height: 150px; border-radius: var(--radius-sm); border: 1px solid var(--gray-300);">
-                            <div style="margin-top: 8px;">
-                                <label class="flex items-center gap-2 text-sm text-danger cursor-pointer font-medium">
-                                    <input type="checkbox" name="remove_image" value="1"> Hapus gambar ini
+                    <div class="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-slate-500" style="font-size: 16px;">image</span>
+                            Gambar Soal <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                        </label>
+                        
+                        @if($question->question_image)
+                            <div class="mb-3">
+                                <img src="{{ asset('storage/' . $question->question_image) }}" alt="Gambar Soal" class="max-h-36 rounded-xl border border-slate-200 object-cover shadow-sm">
+                                <label class="flex items-center gap-2 text-xs text-rose-600 font-semibold cursor-pointer mt-2">
+                                    <input type="checkbox" name="remove_image" value="1" class="rounded border-slate-300 text-rose-600">
+                                    <span>Hapus gambar ini</span>
                                 </label>
                             </div>
-                        </div>
-                    @endif
+                        @endif
+                        
+                        <input type="file" name="question_image" class="form-control text-xs bg-white" accept="image/*">
+                        <p class="text-[11px] text-slate-400 mt-1.5">Format: JPG, PNG. Ukuran maksimal: 2MB. Kosongkan jika tidak ingin mengubah gambar.</p>
+                        @error('question_image') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
+                    </div>
                     
-                    <input type="file" name="question_image" class="form-control" accept="image/*" style="background: var(--white);">
-                    <div class="text-xs text-muted mt-2">Format: JPG, PNG. Ukuran maksimal: 2MB. Kosongkan jika tidak ingin mengubah gambar.</div>
-                    @error('question_image') <div class="form-error">{{ $message }}</div> @enderror
-                </div>
-                
-                <div class="form-group mb-0" style="background: var(--gray-50); padding: 20px; border-radius: var(--radius-md); border: 1px dashed var(--gray-300);">
-                    <label class="form-label font-bold text-gray-800" style="font-size: 0.95rem;">
-                        Penjelasan / Pembahasan <span class="text-muted text-sm font-normal ml-1">(Opsional)</span>
-                    </label>
-                    <textarea name="explanation" class="form-control" rows="4" style="padding: 16px; margin-top: 8px;" placeholder="Penjelasan jawaban yang benar. Akan ditampilkan kepada siswa setelah ujian selesai...">{{ old('explanation', $question->explanation) }}</textarea>
-                    <div class="text-xs text-muted mt-2">Memberikan penjelasan sangat disarankan untuk bahan evaluasi siswa.</div>
-                    @error('explanation') <div class="form-error">{{ $message }}</div> @enderror
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                            Penjelasan / Pembahasan <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                        </label>
+                        <textarea name="explanation" class="form-control text-sm" rows="4" placeholder="Penjelasan cara pengerjaan untuk evaluasi siswa setelah ujian selesai...">{{ old('explanation', $question->explanation) }}</textarea>
+                        @error('explanation') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Kolom Kanan: Pengaturan Soal -->
-        <div class="flex flex-col gap-6" style="position: sticky; top: 90px;">
-            <div class="card" style="box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);">
-                <div class="card-header" style="background: var(--gray-50); border-bottom: 1px solid var(--gray-200); padding: 18px 24px;">
-                    <h3 class="card-title flex items-center gap-2" style="font-size: 1.05rem; font-weight: 800; color: var(--gray-800);">
-                        <span>⚙️</span> Konfigurasi Soal
-                    </h3>
+        <!-- Right Column: Settings & Actions (4 cols) -->
+        <div class="lg:col-span-4 sticky top-24">
+            <div class="card overflow-hidden">
+                <div class="card-header p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600" style="font-size: 20px;">settings</span>
+                    <h3 class="font-headline font-bold text-slate-900 text-sm">Konfigurasi Soal</h3>
                 </div>
                 
-                <div class="card-body" style="padding: 24px;">
-                    <div class="form-group mb-5">
-                        <label class="form-label font-bold text-gray-700 text-sm">Mata Pelajaran <span class="text-danger">*</span></label>
-                        <select name="subject_id" class="form-control" required style="padding: 12px; font-weight: 500;">
+                <div class="card-body p-5 md:p-6">
+                    <div class="mb-4">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                            Mata Pelajaran <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="subject_id" class="form-control text-sm" required>
                             <option value="">-- Pilih Mata Pelajaran --</option>
                             @foreach($subjects as $subject)
                                 <option value="{{ $subject->id }}" {{ old('subject_id', $question->subject_id) == $subject->id ? 'selected' : '' }}>
@@ -79,64 +80,56 @@
                                 </option>
                             @endforeach
                         </select>
-                        @error('subject_id') <div class="form-error">{{ $message }}</div> @enderror
+                        @error('subject_id') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="form-group mb-5">
-                        <label class="form-label font-bold text-gray-700 text-sm">Tipe Soal <span class="text-danger">*</span></label>
-                        <select name="type" class="form-control" required style="padding: 12px; font-weight: 500; background: var(--white);">
+                    <div class="mb-4">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                            Tipe Soal <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="type" class="form-control text-sm font-medium" required>
                             <option value="multiple_choice" {{ old('type', $question->type) == 'multiple_choice' ? 'selected' : '' }}>Pilihan Ganda</option>
                             <option value="true_false" {{ old('type', $question->type) == 'true_false' ? 'selected' : '' }}>Benar / Salah</option>
                             <option value="short_answer" {{ old('type', $question->type) == 'short_answer' ? 'selected' : '' }}>Jawaban Singkat</option>
                             <option value="essay" {{ old('type', $question->type) == 'essay' ? 'selected' : '' }}>Esai</option>
                         </select>
-                        @error('type') <div class="form-error">{{ $message }}</div> @enderror
+                        @error('type') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
                     </div>
                     
-                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                        <div class="form-group mb-0">
-                            <label class="form-label font-bold text-gray-700 text-sm">Tingkat <span class="text-danger">*</span></label>
-                            <select name="difficulty" class="form-control" required style="padding: 12px; font-weight: 500;">
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                                Tingkat <span class="text-rose-500">*</span>
+                            </label>
+                            <select name="difficulty" class="form-control text-sm" required>
                                 <option value="easy" {{ old('difficulty', $question->difficulty) == 'easy' ? 'selected' : '' }}>Mudah</option>
                                 <option value="medium" {{ old('difficulty', $question->difficulty) == 'medium' ? 'selected' : '' }}>Sedang</option>
                                 <option value="hard" {{ old('difficulty', $question->difficulty) == 'hard' ? 'selected' : '' }}>Sulit</option>
                             </select>
-                            @error('difficulty') <div class="form-error">{{ $message }}</div> @enderror
+                            @error('difficulty') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
                         </div>
-                        <div class="form-group mb-0">
-                            <label class="form-label font-bold text-gray-700 text-sm">Bobot Skor <span class="text-danger">*</span></label>
-                            <input type="number" name="score" class="form-control" min="1" max="100" value="{{ old('score', $question->score) }}" required style="padding: 12px; font-weight: 600; text-align: center; color: var(--primary-dark);">
-                            @error('score') <div class="form-error">{{ $message }}</div> @enderror
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1.5 block">
+                                Bobot Nilai <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="number" name="score" class="form-control text-sm font-bold text-center" min="1" max="100" value="{{ old('score', $question->score) }}" required>
+                            @error('score') <div class="text-xs text-rose-500 mt-1">{{ $message }}</div> @enderror
                         </div>
                     </div>
                     
-                    <hr style="border: 0; border-top: 1px solid var(--gray-200); margin: 24px 0;">
-                    
-                    <button type="submit" class="btn btn-primary btn-block" style="padding: 14px; font-size: 1rem; font-weight: 700; height: auto;">
-                        <span>💾</span> Simpan Perubahan
-                    </button>
-                    <!-- Menggunakan url yang standar untuk fallback -->
-                    <a href="{{ url('guru/soal') }}" class="btn btn-secondary btn-block mt-3 text-center" style="padding: 14px; height: auto;">
-                        Batal
-                    </a>
+                    <div class="pt-4 border-t border-slate-100 space-y-2">
+                        <button type="submit" class="btn btn-primary w-full text-xs font-bold py-3 flex items-center justify-center gap-1.5 shadow-sm">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                            Simpan Perubahan
+                        </button>
+                        <a href="{{ route('teacher.questions.index') }}" class="btn btn-secondary w-full text-xs font-semibold py-2.5 text-center block">
+                            Batal
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
         
     </div>
 </form>
-
-@push('teacher-styles')
-<style>
-    @media (max-width: 1024px) {
-        .grid {
-            grid-template-columns: 1fr !important;
-        }
-        .flex-col[style*="position: sticky"] {
-            position: relative !important;
-            top: 0 !important;
-        }
-    }
-</style>
-@endpush
 @endsection

@@ -8,44 +8,60 @@
     $user = auth()->user();
 @endphp
 
-<div class="card" style="max-width: 600px; margin: 0 auto;">
-    <div style="background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); height: 120px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"></div>
-    
-    <div class="card-body" style="text-align: center; margin-top: -60px; padding-bottom: 40px;">
-        <img src="{{ $user->avatar_url }}" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; object-fit: cover; box-shadow: var(--shadow-md); margin-bottom: 16px; background: white;">
+<div class="max-w-xl mx-auto">
+    <div class="card overflow-hidden">
+        <!-- Cover Header -->
+        <div class="h-32 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-600 relative"></div>
         
-        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--gray-900); margin-bottom: 4px;">{{ $user->name }}</h2>
-        <div style="color: var(--gray-500); font-family: monospace; font-size: 1rem; margin-bottom: 16px;">NIP. {{ $user->nip }}</div>
-        
-        <div style="display: inline-block; background: var(--primary-light); color: var(--primary-dark); padding: 6px 16px; border-radius: 100px; font-weight: 600; font-size: 0.875rem; margin-bottom: 32px;">
-            Guru Pengajar
-        </div>
-        
-        <div style="text-align: left; max-width: 400px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--gray-100);">
-                <span style="color: var(--gray-500); font-weight: 600;">Username</span>
-                <span style="font-weight: 700; color: var(--gray-900);">{{ $user->username }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--gray-100);">
-                <span style="color: var(--gray-500); font-weight: 600;">Email</span>
-                <span style="font-weight: 700; color: var(--gray-900);">{{ $user->email }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--gray-100);">
-                <span style="color: var(--gray-500); font-weight: 600;">Jenis Kelamin</span>
-                <span style="font-weight: 700; color: var(--gray-900);">{{ $user->gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--gray-100);">
-                <span style="color: var(--gray-500); font-weight: 600;">Status Akun</span>
-                <span style="font-weight: 700; color: var(--success);">Aktif</span>
+        <div class="card-body text-center -mt-16 pb-8 px-6">
+            <img src="{{ $user->avatar_url }}" alt="Avatar" class="w-28 h-28 rounded-full border-4 border-white shadow-md mx-auto object-cover bg-white">
+            
+            <h2 class="font-headline font-bold text-slate-900 text-xl mt-3">{{ $user->name }}</h2>
+            <div class="font-mono text-slate-500 text-xs mt-0.5">NIP. {{ $user->nip }}</div>
+            
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-xs mt-3 border border-emerald-200">
+                <span class="material-symbols-outlined" style="font-size: 14px;">person_apron</span>
+                Guru Pengajar
             </div>
             
-            <div style="margin-top: 24px;">
-                <div style="color: var(--gray-500); font-weight: 600; margin-bottom: 8px;">Mata Pelajaran yang Diampu:</div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    @foreach($user->subjects as $subject)
-                        <span class="badge badge-gray">{{ $subject->name }}</span>
-                    @endforeach
+            <div class="mt-8 text-left max-w-md mx-auto space-y-3">
+                <div class="flex justify-between items-center py-2.5 border-b border-slate-100 text-xs">
+                    <span class="text-slate-500 font-medium">Username</span>
+                    <span class="font-semibold text-slate-900">{{ $user->username }}</span>
                 </div>
+                <div class="flex justify-between items-center py-2.5 border-b border-slate-100 text-xs">
+                    <span class="text-slate-500 font-medium">Alamat Email</span>
+                    <span class="font-semibold text-slate-900">{{ $user->email }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2.5 border-b border-slate-100 text-xs">
+                    <span class="text-slate-500 font-medium">Jenis Kelamin</span>
+                    <span class="font-semibold text-slate-900">{{ $user->gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2.5 border-b border-slate-100 text-xs">
+                    <span class="text-slate-500 font-medium">Status Akun</span>
+                    <span class="badge badge-success text-[11px] font-semibold">Aktif</span>
+                </div>
+                
+                <div class="pt-3">
+                    <div class="text-slate-500 font-medium text-xs mb-2">Mata Pelajaran yang Diampu:</div>
+                    <div class="flex gap-1.5 flex-wrap">
+                        @forelse($user->subjects as $subject)
+                            <span class="badge badge-gray text-xs">{{ $subject->name }}</span>
+                        @empty
+                            <span class="text-xs text-slate-400 italic">Belum ada mata pelajaran terhubung</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary text-xs font-semibold px-6 py-2.5 text-rose-600 hover:bg-rose-50 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
+                        Keluar dari Akun
+                    </button>
+                </form>
             </div>
         </div>
     </div>

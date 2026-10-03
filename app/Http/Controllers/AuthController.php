@@ -27,8 +27,15 @@ class AuthController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $loginField = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        $credentials = [$loginField => $request->login, 'password' => $request->password];
+        $loginInput = $request->login;
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            $loginField = 'email';
+        } elseif (is_numeric($loginInput) && User::where('nis', $loginInput)->exists()) {
+            $loginField = 'nis';
+        } else {
+            $loginField = 'username';
+        }
+        $credentials = [$loginField => $loginInput, 'password' => $request->password];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::user();
