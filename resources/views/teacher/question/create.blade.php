@@ -4,7 +4,7 @@
 @section('page_title', 'Bank Soal')
 
 @section('teacher-content')
-<div class="flex flex-col w-full pb-16">
+<div class="flex flex-col w-full pb-20">
 
     <!-- Form Tag Wrapping Workspace -->
     <form action="{{ route('teacher.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
@@ -30,17 +30,21 @@
             </div>
 
             <!-- Main Action Buttons -->
-            <div class="flex items-center gap-space-sm">
+            <div class="flex items-center gap-space-sm flex-wrap">
                 <a href="{{ route('teacher.questions.index') }}" class="px-space-md py-2.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors font-label-lg text-label-lg">
                     Batal
                 </a>
+                <button type="button" onclick="openSmartPasteModal()" class="inline-flex items-center gap-2 px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface shadow-sm hover:bg-surface-container-low transition-all font-label-lg text-label-lg border border-slate-200/80">
+                    <span class="material-symbols-outlined text-[18px] text-secondary">content_paste</span>
+                    <span>Smart Paste Word</span>
+                </button>
                 <button type="button" onclick="openPreviewModal()" class="inline-flex items-center gap-2 px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-primary shadow-sm hover:bg-surface-container-low transition-all font-label-lg text-label-lg border border-slate-200/80">
                     <span class="material-symbols-outlined text-[18px]">visibility</span>
                     <span>Pratinjau Siswa</span>
                 </button>
-                <button type="submit" class="inline-flex items-center gap-2 px-space-lg py-2.5 rounded-lg bg-primary-container text-on-primary shadow-md hover:bg-primary transition-all font-label-lg text-label-lg active:scale-[0.98]">
+                <button type="button" onclick="handleFormSubmission()" class="inline-flex items-center gap-2 px-space-lg py-2.5 rounded-lg bg-primary-container text-on-primary shadow-md hover:bg-primary transition-all font-label-lg text-label-lg active:scale-[0.98]">
                     <span class="material-symbols-outlined text-[18px]">save</span>
-                    <span>Simpan ke Bank Soal</span>
+                    <span id="btnMainSaveText">Simpan ke Bank Soal</span>
                 </button>
             </div>
         </div>
@@ -59,6 +63,30 @@
             </div>
         @endif
 
+        <!-- MULTI-QUESTION CONTROLLER BAR (Navigasi Multi-Soal 40+ Butir Sekaligus) -->
+        <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-slate-100 mb-space-lg flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-thin max-w-full lg:max-w-3xl" id="questionTabsContainer">
+                <!-- Question tabs generated dynamically via JS: [Soal 1] [Soal 2] ... -->
+            </div>
+            
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                <button type="button" onclick="addNewQuestionSlot()" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-all flex items-center gap-1 border border-slate-200/80 active:scale-95" title="Tambah 1 butir soal">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                    <span>+ Tambah Soal</span>
+                </button>
+                <button type="button" onclick="bulkGenerateSlots(40)" class="px-3.5 py-1.5 rounded-lg bg-primary-fixed hover:bg-primary-fixed-dim text-on-primary-fixed-variant font-label-md text-label-md font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95" title="Siapkan 40 slot soal sekaligus">
+                    <span class="material-symbols-outlined text-[18px]">bolt</span>
+                    <span>Buat 40 Soal Sekaligus</span>
+                </button>
+                <button type="button" onclick="duplicateCurrentQuestion()" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-secondary transition-colors" title="Duplikasi butir soal aktif ini">
+                    <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                </button>
+                <button type="button" onclick="removeCurrentQuestion()" id="btnDeleteCurrentQ" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error transition-colors hidden" title="Hapus butir soal aktif ini">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Workspace Grid (2 Columns: Main Editor + Live Sidebar Inspector) -->
         <div class="grid grid-cols-12 gap-space-lg items-start">
             
@@ -72,10 +100,10 @@
                             <span class="material-symbols-outlined text-[20px]">tune</span>
                             <span>Metadata &amp; Klasifikasi Soal</span>
                         </div>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2.5 py-0.5 rounded-md font-mono">ID: Q-BARU-{{ date('Y') }}</span>
+                        <span id="activeQuestionIdBadge" class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2.5 py-0.5 rounded-md font-mono">Soal #1 • Q-{{ date('Y') }}</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
                         <!-- Mata Pelajaran -->
                         <div class="flex flex-col gap-1.5">
                             <label class="font-label-sm text-label-sm text-on-surface-variant">Mata Pelajaran <span class="text-error">*</span></label>
@@ -83,7 +111,21 @@
                                 <select name="subject_id" id="subjectSelect" class="w-full h-11 pl-3 pr-8 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface appearance-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer" required onchange="updateLivePreview()">
                                     <option value="">-- Pilih Mata Pelajaran --</option>
                                     @foreach($subjects as $sub)
-                                        <option value="{{ $sub->id }}" {{ old('subject_id') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                        <option value="{{ $sub->id }}" {{ (string)old('subject_id', request('subject_id')) === (string)$sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
+                            </div>
+                        </div>
+
+                        <!-- Target Kelas -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-sm text-label-sm text-on-surface-variant">Target Kelas <span class="text-on-surface-variant/60 font-normal">(opsional)</span></label>
+                            <div class="relative">
+                                <select name="classroom_id" id="classroomSelect" class="w-full h-11 pl-3 pr-8 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface appearance-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer" onchange="updateLivePreview()">
+                                    <option value="">-- Semua Kelas (Umum) --</option>
+                                    @foreach($classrooms as $cls)
+                                        <option value="{{ $cls->id }}" {{ (string)old('classroom_id', request('classroom_id')) === (string)$cls->id ? 'selected' : '' }}>Kelas {{ $cls->name }} (Tingkat {{ $cls->grade }})</option>
                                     @endforeach
                                 </select>
                                 <span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
@@ -93,7 +135,7 @@
                         <!-- Topik / Materi Pokok -->
                         <div class="flex flex-col gap-1.5">
                             <label class="font-label-sm text-label-sm text-on-surface-variant">Topik / Materi Pokok <span class="text-on-surface-variant/60 font-normal">(opsional)</span></label>
-                            <input name="topic" id="topicInput" class="w-full h-11 px-3 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Contoh: Persamaan Linier Satu Variabel" type="text" value="{{ old('topic') }}" oninput="updateLivePreview()"/>
+                            <input name="topic" id="topicInput" class="w-full h-11 px-3 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Contoh: Persamaan Linier Satu Variabel" type="text" value="{{ old('topic', request('topic')) }}" oninput="updateLivePreview()"/>
                         </div>
                     </div>
 
@@ -125,10 +167,10 @@
                 <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md border border-slate-100">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-7 h-7 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-headline-sm text-headline-sm font-bold">1</span>
-                            <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Redaksi Pertanyaan (Stimulus)</h2>
+                            <span id="stepNumberIndicator" class="w-7 h-7 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-headline-sm text-headline-sm font-bold">1</span>
+                            <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold" id="questionEditorHeading">Redaksi Pertanyaan (Stimulus Soal #1)</h2>
                         </div>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant">Mendukung format teks kaya & lampiran gambar</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">Mendukung format teks kaya &amp; lampiran gambar</span>
                     </div>
 
                     <!-- Editor Toolbar (Quick Formatting Helpers) -->
@@ -283,7 +325,7 @@
                     </div>
                     <p class="font-body-sm text-body-sm text-on-surface-variant -mt-2">Penjelasan ini akan otomatis ditampilkan kepada siswa saat jadwal pembahasan dibuka atau hasil ujian dirilis.</p>
                     <div class="relative">
-                        <textarea name="explanation" id="explanationInput" class="w-full p-4 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 outline-none transition-all leading-relaxed" placeholder="Tuliskan langkah-langkah penyelesaian rinci atau rujukan materi..." rows="3">{{ old('explanation') }}</textarea>
+                        <textarea name="explanation" id="explanationInput" class="w-full p-4 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-primary/20 outline-none transition-all leading-relaxed" placeholder="Tuliskan langkah-langkah penyelesaian rinci atau rujukan materi..." rows="3" oninput="updateLivePreview()">{{ old('explanation') }}</textarea>
                     </div>
                     <div class="flex items-center gap-space-md p-space-sm bg-surface-container-low rounded-lg text-on-surface-variant font-body-sm text-body-sm border border-slate-100">
                         <span class="material-symbols-outlined text-[20px] text-primary">info</span>
@@ -350,7 +392,7 @@
                         <div class="p-3 rounded-lg bg-surface-container-high/40 flex items-center justify-between border border-slate-100">
                             <div class="flex flex-col">
                                 <span class="font-label-md text-label-md text-on-surface font-semibold" id="bloomLabel">C3 - Mengaplikasikan</span>
-                                <span class="font-body-sm text-body-sm text-on-surface-variant" id="bloomDesc">Penerapan konsep & penyelesaian model</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant" id="bloomDesc">Penerapan konsep &amp; penyelesaian model</span>
                             </div>
                             <span class="material-symbols-outlined text-primary text-[20px]">psychology</span>
                         </div>
@@ -372,8 +414,8 @@
                         <!-- Mini Sticky Header Simulation -->
                         <div class="flex items-center justify-between pb-2 border-b border-surface-container">
                             <div class="flex items-center gap-1.5">
-                                <span class="w-6 h-6 rounded bg-primary-container text-on-primary font-label-sm text-label-sm flex items-center justify-center font-bold">01</span>
-                                <span class="font-label-sm text-label-sm text-on-surface font-semibold">Soal No. 1</span>
+                                <span id="simQuestionNumberBadge" class="w-6 h-6 rounded bg-primary-container text-on-primary font-label-sm text-label-sm flex items-center justify-center font-bold">01</span>
+                                <span id="simQuestionNumberTitle" class="font-label-sm text-label-sm text-on-surface font-semibold">Soal No. 1</span>
                             </div>
                             <span class="font-label-sm text-label-sm text-on-surface-variant tabular-nums flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px] text-tertiary">timer</span> 01:15:00
@@ -411,8 +453,26 @@
                         Tampilan ini merender pratinjau langsung seperti pada layar ujian Chromebook / Android siswa.
                     </p>
                 </div>
+
+                <!-- Palette Navigasi Butir Soal (Sidebar Quick Jump) -->
+                <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md border border-slate-100 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <span class="font-label-md text-label-md font-bold text-on-surface flex items-center gap-1">
+                            <span class="material-symbols-outlined text-primary text-[18px]">grid_view</span>
+                            <span>Palet Butir Soal</span>
+                        </span>
+                        <span id="paletteTotalBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-container text-primary font-mono">1 Soal</span>
+                    </div>
+                    <div id="sidebarPaletteGrid" class="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto pr-1">
+                        <!-- Buttons 1, 2, ... 40 populated via JS -->
+                    </div>
+                </div>
+
             </div>
         </div>
+
+        <!-- Dynamic Hidden Container for Multi-Question Payload Submission -->
+        <div id="bulkPayloadInputs"></div>
     </form>
 </div>
 
@@ -431,8 +491,8 @@
         <div class="p-space-lg overflow-y-auto flex flex-col gap-space-md">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div class="flex items-center gap-2">
-                    <span class="w-7 h-7 rounded bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center font-bold">1</span>
-                    <span class="font-label-md text-label-md text-on-surface font-semibold" id="modalPreviewSubject">Matematika Wajib</span>
+                    <span id="modalPreviewNumberBadge" class="w-7 h-7 rounded bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center font-bold">1</span>
+                    <span class="font-label-md text-label-md text-on-surface font-semibold" id="modalPreviewSubject">Matematika</span>
                 </div>
                 <span class="font-label-sm text-label-sm text-secondary font-semibold" id="modalPreviewScore">Bobot: 2.5 Poin</span>
             </div>
@@ -450,28 +510,401 @@
     </div>
 </div>
 
+<!-- Modal Smart Paste dari Word / Teks -->
+<div id="smartPasteModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+        <div class="p-space-md border-b border-surface-container flex items-center justify-between bg-surface-container-low">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-[22px]">content_paste</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Smart Paste / Impor Teks dari Word</span>
+            </div>
+            <button type="button" onclick="closeSmartPasteModal()" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-container-high transition-colors text-on-surface-variant">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <div class="p-space-lg overflow-y-auto flex flex-col gap-3">
+            <div class="p-3 rounded-xl bg-primary-fixed/30 border border-primary-fixed text-xs text-on-surface leading-relaxed">
+                <strong>Format Teks yang Dikenali Otomatis:</strong>
+                <pre class="mt-1 p-2 rounded bg-white font-mono text-[11px] text-slate-700 border border-slate-200">
+1. Pertanyaan butir nomor 1...
+A. Pilihan A
+B. Pilihan B
+C. Pilihan C
+D. Pilihan D
+E. Pilihan E
+Kunci: B
+
+2. Pertanyaan butir nomor 2...
+A. Pilihan A
+B. Pilihan B
+Kunci: A</pre>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm text-on-surface font-semibold">Tempel Teks Soal Dokumen di Sini:</label>
+                <textarea id="smartPasteInput" rows="10" class="w-full p-3 bg-surface-container-low rounded-xl font-mono text-xs text-on-surface border border-slate-200 outline-none focus:bg-white focus:border-indigo-400" placeholder="Paste naskah soal dari Word di sini..."></textarea>
+            </div>
+        </div>
+        <div class="p-space-md border-t border-surface-container flex items-center justify-between">
+            <button type="button" onclick="fillSmartPasteDemo()" class="text-xs font-semibold text-primary hover:underline">
+                Isi Contoh Demo 5 Soal
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="closeSmartPasteModal()" class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold">
+                    Batal
+                </button>
+                <button type="button" onclick="executeSmartPaste()" class="px-5 py-2 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-container shadow-md">
+                    Proses ke Lembar Soal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
-    // State Options Array
-    let defaultOptions = [
-        { label: 'A', text: '3' },
-        { label: 'B', text: '5' },
-        { label: 'C', text: '7' },
-        { label: 'D', text: '10' }
+    // State: Array of all questions in this session
+    let questionsList = [
+        {
+            type: 'multiple_choice',
+            question_text: '',
+            question_image_base64: null,
+            image_name: '',
+            difficulty: 'medium',
+            score: 2.5,
+            topic: '',
+            explanation: '',
+            correct_option: 1,
+            options: [
+                { label: 'A', text: '3' },
+                { label: 'B', text: '5' },
+                { label: 'C', text: '7' },
+                { label: 'D', text: '10' }
+            ]
+        }
     ];
 
-    let currentType = 'multiple_choice';
-    let currentCorrectOption = 1; // Default option B (index 1)
+    let currentQuestionIndex = 0;
+    let defaultOptions = questionsList[0].options;
+    let currentType = questionsList[0].type;
+    let currentCorrectOption = questionsList[0].correct_option;
     let uploadedImageDataUrl = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         const oldType = document.getElementById('questionType').value;
         if(oldType) setType(oldType);
 
-        renderOptionsList();
+        renderQuestionTabs();
+        loadQuestionIntoForm(0);
         updateLivePreview();
     });
 
+    /**
+     * MULTI-QUESTION MANAGEMENT
+     */
+    function renderQuestionTabs() {
+        const tabsContainer = document.getElementById('questionTabsContainer');
+        tabsContainer.innerHTML = '';
+
+        questionsList.forEach((q, idx) => {
+            const isActive = (idx === currentQuestionIndex);
+            const isFilled = q.question_text && q.question_text.trim() !== '';
+
+            const tabBtn = document.createElement('button');
+            tabBtn.type = 'button';
+            tabBtn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 active:scale-95 ${isActive ? 'bg-primary-container text-on-primary shadow-sm ring-1 ring-primary' : 'bg-surface-container-low hover:bg-surface-container-high text-on-surface border border-slate-200/80'}`;
+            tabBtn.innerHTML = `
+                <span>Soal #${idx + 1}</span>
+                ${isFilled ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>' : ''}
+            `;
+            tabBtn.onclick = () => switchQuestion(idx);
+            tabsContainer.appendChild(tabBtn);
+        });
+
+        // Update delete button visibility
+        const delBtn = document.getElementById('btnDeleteCurrentQ');
+        if (delBtn) {
+            if (questionsList.length > 1) {
+                delBtn.classList.remove('hidden');
+            } else {
+                delBtn.classList.add('hidden');
+            }
+        }
+
+        // Update main save button label
+        const saveBtn = document.getElementById('btnMainSaveText');
+        if (saveBtn) {
+            if (questionsList.length > 1) {
+                saveBtn.innerText = `Simpan Seluruh (${questionsList.length}) Soal ke Bank Soal`;
+            } else {
+                saveBtn.innerText = 'Simpan ke Bank Soal';
+            }
+        }
+
+        // Update right palette grid
+        renderSidebarPalette();
+    }
+
+    function renderSidebarPalette() {
+        const grid = document.getElementById('sidebarPaletteGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        questionsList.forEach((q, idx) => {
+            const isActive = (idx === currentQuestionIndex);
+            const isFilled = q.question_text && q.question_text.trim() !== '';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `h-9 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${isActive ? 'ring-2 ring-primary bg-primary-container text-on-primary font-bold shadow-sm' : (isFilled ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant')}`;
+            btn.innerText = idx + 1;
+            btn.onclick = () => switchQuestion(idx);
+            grid.appendChild(btn);
+        });
+
+        document.getElementById('paletteTotalBadge').innerText = `${questionsList.length} Soal`;
+    }
+
+    function saveCurrentQuestionToMemory(idx) {
+        if (!questionsList[idx]) return;
+
+        questionsList[idx].question_text = document.getElementById('questionTextInput').value;
+        questionsList[idx].topic = document.getElementById('topicInput').value;
+        questionsList[idx].type = currentType;
+        questionsList[idx].score = parseFloat(document.getElementById('scoreInput').value) || 2.5;
+        questionsList[idx].difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || 'medium';
+        questionsList[idx].explanation = document.getElementById('explanationInput').value;
+        questionsList[idx].correct_option = currentCorrectOption;
+        questionsList[idx].options = JSON.parse(JSON.stringify(defaultOptions));
+        questionsList[idx].question_image_base64 = uploadedImageDataUrl;
+    }
+
+    function loadQuestionIntoForm(idx) {
+        currentQuestionIndex = idx;
+        const q = questionsList[idx];
+
+        // Update headers & badges
+        document.getElementById('activeQuestionIdBadge').innerText = `Soal #${idx + 1} • Q-${new Date().getFullYear()}`;
+        document.getElementById('stepNumberIndicator').innerText = idx + 1;
+        document.getElementById('questionEditorHeading').innerText = `Redaksi Pertanyaan (Stimulus Soal #${idx + 1})`;
+        document.getElementById('simQuestionNumberBadge').innerText = String(idx + 1).padStart(2, '0');
+        document.getElementById('simQuestionNumberTitle').innerText = `Soal No. ${idx + 1}`;
+        document.getElementById('modalPreviewNumberBadge').innerText = idx + 1;
+
+        // Populate fields
+        document.getElementById('questionTextInput').value = q.question_text || '';
+        document.getElementById('scoreInput').value = q.score || 2.5;
+        document.getElementById('explanationInput').value = q.explanation || '';
+
+        // Difficulty
+        setDifficulty(q.difficulty || 'medium');
+
+        // Type
+        setType(q.type || 'multiple_choice');
+
+        // Options
+        defaultOptions = q.options && q.options.length ? JSON.parse(JSON.stringify(q.options)) : [
+            { label: 'A', text: '' },
+            { label: 'B', text: '' },
+            { label: 'C', text: '' },
+            { label: 'D', text: '' }
+        ];
+        currentCorrectOption = (q.correct_option !== undefined) ? q.correct_option : 0;
+        renderOptionsList();
+
+        // Image
+        uploadedImageDataUrl = q.question_image_base64 || null;
+        if (uploadedImageDataUrl) {
+            document.getElementById('previewImageTag').src = uploadedImageDataUrl;
+            document.getElementById('previewImageNameBadge').textContent = q.image_name || 'Lampiran.png';
+            document.getElementById('previewImageTitle').textContent = q.image_name || 'Gambar Lampiran Soal';
+            document.getElementById('previewImageInfo').textContent = 'Gambar siap disimpan';
+            document.getElementById('imageUploadDropzone').classList.add('hidden');
+            document.getElementById('imagePreviewCard').classList.remove('hidden');
+        } else {
+            removeImageUpload(false);
+        }
+
+        renderQuestionTabs();
+        updateLivePreview();
+    }
+
+    function switchQuestion(newIdx) {
+        if (newIdx === currentQuestionIndex) return;
+        saveCurrentQuestionToMemory(currentQuestionIndex);
+        loadQuestionIntoForm(newIdx);
+    }
+
+    function addNewQuestionSlot() {
+        saveCurrentQuestionToMemory(currentQuestionIndex);
+
+        const newIndex = questionsList.length;
+        const currentScore = parseFloat(document.getElementById('scoreInput').value) || 2.5;
+        const currentDiff = document.querySelector('input[name="difficulty"]:checked')?.value || 'medium';
+
+        questionsList.push({
+            type: 'multiple_choice',
+            question_text: '',
+            question_image_base64: null,
+            image_name: '',
+            difficulty: currentDiff,
+            score: currentScore,
+            topic: document.getElementById('topicInput').value || '',
+            explanation: '',
+            correct_option: 0,
+            options: [
+                { label: 'A', text: '' },
+                { label: 'B', text: '' },
+                { label: 'C', text: '' },
+                { label: 'D', text: '' }
+            ]
+        });
+
+        loadQuestionIntoForm(newIndex);
+    }
+
+    function bulkGenerateSlots(targetTotal) {
+        saveCurrentQuestionToMemory(currentQuestionIndex);
+
+        targetTotal = parseInt(targetTotal) || 40;
+        if (targetTotal > 100) targetTotal = 100;
+
+        const currentCount = questionsList.length;
+        if (currentCount >= targetTotal) {
+            alert(`Saat ini sudah ada ${currentCount} butir soal disiapkan.`);
+            return;
+        }
+
+        const scorePerItem = Math.round((100 / targetTotal) * 100) / 100;
+        const diff = document.querySelector('input[name="difficulty"]:checked')?.value || 'medium';
+        const topic = document.getElementById('topicInput').value || '';
+
+        for (let i = currentCount; i < targetTotal; i++) {
+            questionsList.push({
+                type: 'multiple_choice',
+                question_text: '',
+                question_image_base64: null,
+                image_name: '',
+                difficulty: diff,
+                score: scorePerItem,
+                topic: topic,
+                explanation: '',
+                correct_option: 0,
+                options: [
+                    { label: 'A', text: '' },
+                    { label: 'B', text: '' },
+                    { label: 'C', text: '' },
+                    { label: 'D', text: '' }
+                ]
+            });
+        }
+
+        // Apply score to all
+        questionsList.forEach(q => q.score = scorePerItem);
+
+        loadQuestionIntoForm(currentQuestionIndex);
+        alert(`Berhasil menyiapkan ${targetTotal} slot soal sekaligus! Bobot masing-masing otomatis diset ${scorePerItem} poin.`);
+    }
+
+    function duplicateCurrentQuestion() {
+        saveCurrentQuestionToMemory(currentQuestionIndex);
+
+        const copy = JSON.parse(JSON.stringify(questionsList[currentQuestionIndex]));
+        copy.question_text = '[Salinan] ' + (copy.question_text || '');
+        const targetIdx = currentQuestionIndex + 1;
+        questionsList.splice(targetIdx, 0, copy);
+
+        loadQuestionIntoForm(targetIdx);
+    }
+
+    function removeCurrentQuestion() {
+        if (questionsList.length <= 1) {
+            alert('Minimal harus ada 1 butir soal.');
+            return;
+        }
+
+        if (confirm(`Apakah Anda yakin ingin menghapus butir soal #${currentQuestionIndex + 1}?`)) {
+            questionsList.splice(currentQuestionIndex, 1);
+            const nextIdx = Math.max(0, currentQuestionIndex - 1);
+            loadQuestionIntoForm(nextIdx);
+        }
+    }
+
+    /**
+     * FORM SUBMISSION (Single or Bulk)
+     */
+    function handleFormSubmission() {
+        saveCurrentQuestionToMemory(currentQuestionIndex);
+
+        const subId = document.getElementById('subjectSelect').value;
+        if (!subId) {
+            alert('Silakan pilih Mata Pelajaran terlebih dahulu.');
+            document.getElementById('subjectSelect').focus();
+            return;
+        }
+
+        const form = document.getElementById('questionForm');
+        const hiddenArea = document.getElementById('bulkPayloadInputs');
+        hiddenArea.innerHTML = '';
+
+        if (questionsList.length === 1) {
+            // Mode Tunggal: Normal submit
+            const qText = document.getElementById('questionTextInput').value.trim();
+            if (!qText) {
+                alert('Tuliskan pertanyaan soal terlebih dahulu.');
+                document.getElementById('questionTextInput').focus();
+                return;
+            }
+            form.submit();
+        } else {
+            // Mode Massal (40+ Soal): Inject into hidden inputs
+            const validCount = questionsList.filter(q => q.question_text && q.question_text.trim() !== '').length;
+            if (validCount === 0) {
+                alert('Belum ada teks pertanyaan yang diisi. Minimal isi 1 butir soal.');
+                return;
+            }
+
+            if (!confirm(`Simpan seluruh ${questionsList.length} butir soal (${validCount} butir terisi teks) ke Bank Soal sekarang?`)) {
+                return;
+            }
+
+            questionsList.forEach((q, idx) => {
+                // Main question fields
+                appendHidden(hiddenArea, `questions[${idx}][question_text]`, q.question_text || '');
+                appendHidden(hiddenArea, `questions[${idx}][type]`, q.type || 'multiple_choice');
+                appendHidden(hiddenArea, `questions[${idx}][difficulty]`, q.difficulty || 'medium');
+                appendHidden(hiddenArea, `questions[${idx}][score]`, q.score || 2.5);
+                appendHidden(hiddenArea, `questions[${idx}][topic]`, q.topic || '');
+                appendHidden(hiddenArea, `questions[${idx}][explanation]`, q.explanation || '');
+                appendHidden(hiddenArea, `questions[${idx}][correct_option]`, q.correct_option ?? 0);
+
+                if (q.question_image_base64) {
+                    appendHidden(hiddenArea, `questions[${idx}][question_image_base64]`, q.question_image_base64);
+                }
+
+                // Options
+                if (q.options && Array.isArray(q.options)) {
+                    q.options.forEach((opt, optIdx) => {
+                        appendHidden(hiddenArea, `questions[${idx}][options][${optIdx}][label]`, opt.label);
+                        appendHidden(hiddenArea, `questions[${idx}][options][${optIdx}][text]`, opt.text || '');
+                    });
+                }
+            });
+
+            form.submit();
+        }
+    }
+
+    function appendHidden(container, name, val) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = name;
+        inp.value = val;
+        container.appendChild(inp);
+    }
+
+    /**
+     * ORIGINAL TYPES & OPTIONS CONTROLS
+     */
     function setType(type) {
         currentType = type;
         document.getElementById('questionType').value = type;
@@ -585,7 +1018,6 @@
     function removeOptionRow(idx) {
         if(defaultOptions.length > 2) {
             defaultOptions.splice(idx, 1);
-            // Re-label
             defaultOptions.forEach((o, i) => o.label = String.fromCharCode(65 + i));
             if(currentCorrectOption >= defaultOptions.length) {
                 currentCorrectOption = 0;
@@ -600,6 +1032,9 @@
         updateLivePreview();
     }
 
+    /**
+     * IMAGE UPLOAD & PREVIEW (Original Dropzone + Stored in memory)
+     */
     function handleImageUpload(e) {
         const file = e.target.files[0];
         if(!file) return;
@@ -607,6 +1042,9 @@
         const reader = new FileReader();
         reader.onload = function(evt) {
             uploadedImageDataUrl = evt.target.result;
+            questionsList[currentQuestionIndex].question_image_base64 = uploadedImageDataUrl;
+            questionsList[currentQuestionIndex].image_name = file.name;
+
             document.getElementById('previewImageTag').src = uploadedImageDataUrl;
             document.getElementById('previewImageNameBadge').textContent = file.name;
             document.getElementById('previewImageTitle').textContent = file.name;
@@ -620,9 +1058,13 @@
         reader.readAsDataURL(file);
     }
 
-    function removeImageUpload() {
+    function removeImageUpload(updateState = true) {
         document.getElementById('questionImageInput').value = '';
         uploadedImageDataUrl = null;
+        if (updateState && questionsList[currentQuestionIndex]) {
+            questionsList[currentQuestionIndex].question_image_base64 = null;
+            questionsList[currentQuestionIndex].image_name = '';
+        }
         document.getElementById('previewImageTag').src = '';
         document.getElementById('imageUploadDropzone').classList.remove('hidden');
         document.getElementById('imagePreviewCard').classList.add('hidden');
@@ -643,12 +1085,12 @@
             const input = card.querySelector('input');
             if(input.value === diff) {
                 card.className = 'diff-card flex flex-col items-center justify-center py-2.5 px-2 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed shadow-sm cursor-pointer transition-all text-center ring-2 ring-tertiary-container/30 font-bold';
+                input.checked = true;
             } else {
                 card.className = 'diff-card flex flex-col items-center justify-center py-2.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high cursor-pointer transition-all text-center border border-slate-100 font-semibold';
             }
         });
 
-        // Update Bloom Dimension hint
         const bloomLabel = document.getElementById('bloomLabel');
         const bloomDesc = document.getElementById('bloomDesc');
         if(diff === 'easy') {
@@ -795,6 +1237,133 @@
 
     function escapeQuotes(str) {
         return (str || '').replace(/"/g, '&quot;');
+    }
+
+    /**
+     * SMART PASTE DARI WORD / TEKS
+     */
+    function openSmartPasteModal() {
+        document.getElementById('smartPasteModal').classList.remove('hidden');
+    }
+
+    function closeSmartPasteModal() {
+        document.getElementById('smartPasteModal').classList.add('hidden');
+    }
+
+    function fillSmartPasteDemo() {
+        document.getElementById('smartPasteInput').value = 
+`1. Di antara besaran berikut, manakah yang merupakan besaran turunan?
+A. Massa
+B. Panjang
+C. Kecepatan
+D. Waktu
+E. Kuat Arus
+Kunci: C
+
+2. Satuan internasional (SI) untuk suhu adalah...
+A. Celcius
+B. Fahrenheit
+C. Reamur
+D. Kelvin
+E. Rankine
+Kunci: D
+
+3. Alat ukur yang memiliki ketelitian hingga 0.01 mm adalah...
+A. Penggaris
+B. Jangka Sorong
+C. Mikrometer Sekrup
+D. Neraca Ohaus
+E. Stopwatch
+Kunci: C
+
+4. Dimensi dari besaran gaya (F) adalah...
+A. [M][L][T]^-1
+B. [M][L][T]^-2
+C. [M][L]^-1[T]^-2
+D. [M][L]^2[T]^-2
+E. [M][T]^-2
+Kunci: B
+
+5. Perubahan wujud dari gas langsung menjadi padat disebut...
+A. Mengembun
+B. Menyublim
+C. Mengkristal
+D. Membeku
+E. Mencair
+Kunci: C`;
+    }
+
+    function executeSmartPaste() {
+        const raw = document.getElementById('smartPasteInput').value.trim();
+        if (!raw) {
+            alert('Teks soal masih kosong.');
+            return;
+        }
+
+        const lines = raw.split(/\r?\n/);
+        const parsed = [];
+        let current = null;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const qMatch = trimmed.match(/^(\d+)[\.\)]\s*(.+)$/);
+            if (qMatch) {
+                if (current) parsed.push(current);
+                current = {
+                    type: 'multiple_choice',
+                    question_text: qMatch[2],
+                    question_image_base64: null,
+                    image_name: '',
+                    difficulty: 'medium',
+                    score: parseFloat(document.getElementById('scoreInput').value) || 2.5,
+                    topic: document.getElementById('topicInput').value || '',
+                    explanation: '',
+                    correct_option: 0,
+                    options: [
+                        { label: 'A', text: '' },
+                        { label: 'B', text: '' },
+                        { label: 'C', text: '' },
+                        { label: 'D', text: '' },
+                        { label: 'E', text: '' }
+                    ]
+                };
+                return;
+            }
+
+            const optMatch = trimmed.match(/^([A-Ea-e])[\.\)]\s*(.+)$/);
+            if (optMatch && current) {
+                const letter = optMatch[1].toUpperCase();
+                const optIdx = letter.charCodeAt(0) - 65;
+                if (optIdx >= 0 && optIdx < 5) {
+                    current.options[optIdx] = { label: letter, text: optMatch[2] };
+                }
+                return;
+            }
+
+            const keyMatch = trimmed.match(/^(?:Kunci|Jawaban|Kunci Jawaban|Key)[\s\:]+([A-Ea-e])/i);
+            if (keyMatch && current) {
+                current.correct_option = keyMatch[1].toUpperCase().charCodeAt(0) - 65;
+                return;
+            }
+
+            if (current && current.options.filter(o => o.text !== '').length === 0) {
+                current.question_text += ' ' + trimmed;
+            }
+        });
+
+        if (current) parsed.push(current);
+
+        if (parsed.length === 0) {
+            alert('Format tidak dikenali. Pastikan soal diawali angka seperti "1. Pertanyaan..."');
+            return;
+        }
+
+        questionsList = parsed;
+        loadQuestionIntoForm(0);
+        closeSmartPasteModal();
+        alert(`Berhasil memuat ${parsed.length} butir soal ke lembar kerja! Gunakan bilah tab di atas untuk berpindah soal.`);
     }
 </script>
 @endpush

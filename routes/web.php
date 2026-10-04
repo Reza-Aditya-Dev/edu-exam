@@ -108,9 +108,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/siswa',                    [Admin\UserController::class, 'students'])->name('students');
     Route::get('/siswa/tambah',             [Admin\UserController::class, 'createStudent'])->name('students.create');
     Route::post('/siswa',                   [Admin\UserController::class, 'storeStudent'])->name('students.store');
+    Route::get('/siswa/export',             [Admin\UserController::class, 'exportStudents'])->name('students.export');
+    Route::get('/siswa/template-import',    [Admin\UserController::class, 'downloadImportTemplate'])->name('students.template');
+    Route::get('/siswa/cetak-kartu',        [Admin\UserController::class, 'printExamCards'])->name('students.print-cards');
+    Route::post('/siswa/sync-accounts',     [Admin\UserController::class, 'syncAccounts'])->name('students.sync');
+    Route::post('/siswa/import',            [Admin\UserController::class, 'importStudents'])->name('students.import');
+    Route::post('/siswa/bulk-action',       [Admin\UserController::class, 'bulkActionStudents'])->name('students.bulk-action');
     Route::get('/siswa/{student}/edit',     [Admin\UserController::class, 'editStudent'])->name('students.edit');
     Route::put('/siswa/{student}',          [Admin\UserController::class, 'updateStudent'])->name('students.update');
+    Route::delete('/siswa/{student}',       [Admin\UserController::class, 'destroyStudent'])->name('students.destroy');
     Route::post('/siswa/{student}/toggle',  [Admin\UserController::class, 'toggleStudent'])->name('students.toggle');
+    Route::post('/siswa/{student}/reset-password', [Admin\UserController::class, 'resetStudentPassword'])->name('students.reset-password');
 
     // Manajemen Guru
     Route::get('/guru',                     [Admin\UserController::class, 'teachers'])->name('teachers');
@@ -131,6 +139,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Mata Pelajaran
     Route::get('/mapel',                    [Admin\ManagementController::class, 'subjects'])->name('subjects');
     Route::post('/mapel',                   [Admin\ManagementController::class, 'storeSubject'])->name('subjects.store');
+    Route::post('/mapel/sync-kurikulum',    [Admin\ManagementController::class, 'syncCurriculum'])->name('subjects.sync');
+    Route::post('/mapel/kkm',               [Admin\ManagementController::class, 'updateKkmPolicy'])->name('subjects.kkm');
     Route::put('/mapel/{subject}',          [Admin\ManagementController::class, 'updateSubject'])->name('subjects.update');
     Route::delete('/mapel/{subject}',       [Admin\ManagementController::class, 'destroySubject'])->name('subjects.destroy');
 
@@ -141,7 +151,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Semua Ujian
     Route::get('/ujian',                    [Admin\ManagementController::class, 'allExams'])->name('exams');
+    Route::post('/ujian',                   [Admin\ManagementController::class, 'storeExam'])->name('exams.store');
+    Route::get('/ujian/export',             [Admin\ManagementController::class, 'exportExams'])->name('exams.export');
+    Route::post('/ujian/bulk-action',       [Admin\ManagementController::class, 'bulkActionExams'])->name('exams.bulk-action');
+    Route::get('/ujian/{exam}/berita-acara',[Admin\ManagementController::class, 'printBeritaAcara'])->name('exams.berita-acara');
     Route::post('/ujian/{exam}/arsip',      [Admin\ManagementController::class, 'archiveExam'])->name('exams.archive');
+    Route::post('/ujian/{exam}/aktifkan',   [Admin\ManagementController::class, 'activateExam'])->name('exams.activate');
+    Route::post('/ujian/{exam}/selesai',    [Admin\ManagementController::class, 'completeExam'])->name('exams.complete');
+    Route::put('/ujian/{exam}',             [Admin\ManagementController::class, 'updateExam'])->name('exams.update');
     Route::delete('/ujian/{exam}',          [Admin\ManagementController::class, 'destroyExam'])->name('exams.destroy');
 
     // Pengaturan

@@ -317,12 +317,13 @@ class ExamController extends Controller
         $questions = Question::where('created_by', $teacher->id)
             ->where('is_active', true)
             ->when($request->subject_id, fn($q) => $q->where('subject_id', $request->subject_id))
+            ->when($request->classroom_id, fn($q) => $q->where('classroom_id', $request->classroom_id))
             ->when($request->type,       fn($q) => $q->where('type', $request->type))
             ->when($request->search,     fn($q) => $q->where(function($sq) use ($request) {
                 $sq->where('question_text', 'like', '%'.$request->search.'%')
                    ->orWhere('topic', 'like', '%'.$request->search.'%');
             }))
-            ->with(['subject', 'options'])
+            ->with(['subject', 'classroom', 'options'])
             ->limit(200)
             ->get();
         return response()->json($questions);

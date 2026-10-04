@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Question extends Model
 {
     protected $fillable = [
-        'subject_id', 'created_by', 'type', 'question_text', 'question_image',
+        'subject_id', 'classroom_id', 'created_by', 'type', 'question_text', 'question_image',
         'topic', 'difficulty', 'score', 'explanation', 'is_active',
     ];
 
     protected $casts = ['score' => 'float', 'is_active' => 'boolean'];
 
-    public function subject()  { return $this->belongsTo(Subject::class); }
-    public function creator()  { return $this->belongsTo(User::class, 'created_by'); }
-    public function options()  { return $this->hasMany(QuestionOption::class)->orderBy('sort_order'); }
+    public function subject()   { return $this->belongsTo(Subject::class); }
+    public function classroom() { return $this->belongsTo(Classroom::class); }
+    public function creator()   { return $this->belongsTo(User::class, 'created_by'); }
+    public function options()   { return $this->hasMany(QuestionOption::class)->orderBy('sort_order'); }
     public function correctOption() { return $this->hasOne(QuestionOption::class)->where('is_correct', true); }
 
     public function exams()

@@ -9,7 +9,7 @@ class Exam extends Model
 {
     protected $fillable = [
         'subject_id', 'classroom_id', 'teacher_id', 'academic_year_id',
-        'title', 'exam_type', 'description', 'instructions',
+        'title', 'session_name', 'token', 'exam_type', 'description', 'instructions',
         'exam_date', 'start_time', 'end_time', 'duration_minutes',
         'total_questions', 'passing_grade', 'status',
     ];
