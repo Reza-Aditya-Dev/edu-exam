@@ -1,7 +1,11 @@
 @extends('layouts.teacher')
 
-@section('title', 'Manajemen Jadwal & Sesi Ujian — EduExam')
-@section('page_title', 'Manajemen Ujian')
+@php
+    $isCompletedView = request('status') === 'completed';
+@endphp
+
+@section('title', ($isCompletedView ? 'Hasil & Rekap Nilai Ujian' : 'Manajemen Jadwal & Sesi Ujian') . ' — EduExam')
+@section('page_title', $isCompletedView ? 'Hasil Ujian' : 'Manajemen Ujian')
 
 @section('teacher-content')
 <div class="flex flex-col w-full pb-space-xl">
@@ -13,13 +17,17 @@
         <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-space-md z-10">
             <div class="flex flex-col gap-1 max-w-2xl">
                 <div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm tracking-wide uppercase">
-                    <span class="inline-block w-2 h-2 rounded-full bg-primary"></span>
-                    <span>Sistem Evaluasi Terpadu</span>
+                    <span class="inline-block w-2 h-2 rounded-full {{ $isCompletedView ? 'bg-secondary' : 'bg-primary' }}"></span>
+                    <span>{{ $isCompletedView ? 'Rekapitulasi Nilai & Evaluasi Siswa' : 'Sistem Evaluasi Terpadu' }}</span>
                     <span class="text-outline-variant">•</span>
                     <span>Semester Ganjil 2026/2027</span>
                 </div>
-                <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">Manajemen Jadwal &amp; Sesi Ujian</h1>
-                <p class="font-body-md text-body-md text-on-surface-variant">Atur jadwal pelaksanaan, pantau sesi aktif, dan kelola arsip ujian SMA Nusantara.</p>
+                <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
+                    {{ $isCompletedView ? 'Hasil & Rekapitulasi Nilai Ujian' : 'Manajemen Jadwal & Sesi Ujian' }}
+                </h1>
+                <p class="font-body-md text-body-md text-on-surface-variant">
+                    {{ $isCompletedView ? 'Rekapitulasi perolehan nilai, statistik ketuntasan KKM, dan evaluasi hasil pengerjaan ujian siswa.' : 'Atur jadwal pelaksanaan, pantau sesi aktif, dan kelola arsip ujian SMA Nusantara.' }}
+                </p>
             </div>
             
             <div class="flex items-center gap-space-sm self-start lg:self-center">

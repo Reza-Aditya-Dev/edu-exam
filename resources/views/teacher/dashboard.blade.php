@@ -33,7 +33,7 @@
                     <span class="material-symbols-outlined text-[20px] text-primary">post_add</span>
                     <span>Tambah Soal</span>
                 </a>
-                <a href="{{ route('teacher.exams.index') }}" class="inline-flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container-lowest text-on-surface-variant font-label-lg text-label-lg rounded-lg shadow-sm hover:text-on-surface hover:bg-surface-container-low transition-all border border-slate-200/80">
+                <a href="{{ route('teacher.exams.index', ['status' => 'completed']) }}" class="inline-flex items-center gap-space-xs px-space-md py-space-sm bg-surface-container-lowest text-on-surface-variant font-label-lg text-label-lg rounded-lg shadow-sm hover:text-on-surface hover:bg-surface-container-low transition-all border border-slate-200/80">
                     <span class="material-symbols-outlined text-[20px]">file_download</span>
                     <span>Unduh Rekap Nilai</span>
                 </a>
@@ -367,7 +367,7 @@
                         <span class="material-symbols-outlined text-primary text-[20px]">event_upcoming</span>
                         <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Ujian Mendatang</h2>
                     </div>
-                    <a class="font-label-sm text-label-sm text-primary hover:underline font-semibold" href="{{ route('teacher.exams.index') }}">Jadwal Lengkap</a>
+                    <a class="font-label-sm text-label-sm text-primary hover:underline font-semibold" href="{{ route('teacher.exams.index', ['status' => 'scheduled']) }}">Jadwal Lengkap</a>
                 </div>
 
                 <div class="flex flex-col gap-space-sm">

@@ -66,6 +66,10 @@
             <span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
             Rekap Nilai Siswa
         </a>
+        <a href="{{ route('teacher.exams.index', ['status' => 'completed']) }}" class="btn btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            Daftar Hasil Ujian
+        </a>
     </div>
 </div>
 

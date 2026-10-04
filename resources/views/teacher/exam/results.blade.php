@@ -21,13 +21,17 @@
     </div>
     
     <div class="flex items-center gap-2">
+        <button type="button" onclick="window.print()" class="btn btn-secondary text-xs font-semibold px-3 py-2 flex items-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+            Cetak Rekap
+        </button>
         <a href="{{ route('teacher.exams.analytics', $exam) }}" class="btn btn-secondary text-xs font-semibold px-3.5 py-2 flex items-center gap-1.5">
             <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
             Analisis Soal
         </a>
-        <a href="{{ route('teacher.exams.index') }}" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1">
+        <a href="{{ route('teacher.exams.index', ['status' => 'completed']) }}" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-            Daftar Ujian
+            Daftar Hasil Ujian
         </a>
     </div>
 </div>

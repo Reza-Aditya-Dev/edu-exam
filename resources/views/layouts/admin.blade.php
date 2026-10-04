@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@push('admin-styles')
+@push('styles')
 <script>
     if (typeof tailwind !== 'undefined') {
         tailwind.config.theme.extend.colors['primary'] = '#3525cd';
@@ -19,24 +19,156 @@
         tailwind.config.theme.extend.colors['surface-container-highest'] = '#d3e4fe';
     }
 </script>
+<script>
+    (function() {
+        try {
+            if (localStorage.getItem('edu_admin_sidebar_collapsed') === 'true' && window.innerWidth >= 1024) {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch(e) {}
+    })();
+</script>
 <style>
     ::-webkit-scrollbar { display: none; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    #sidebar {
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #adminMainWrapper {
+        transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #adminHeader {
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (min-width: 1024px) {
+        .sidebar-collapsed #sidebar {
+            width: 5rem !important;
+        }
+        .sidebar-collapsed #adminMainWrapper {
+            padding-left: 5rem !important;
+        }
+        .sidebar-collapsed #adminHeader {
+            left: 5rem !important;
+        }
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .sidebar-brand-full,
+        .sidebar-collapsed .sidebar-bottom-full,
+        .sidebar-collapsed .sidebar-section-title {
+            display: none !important;
+        }
+        .sidebar-collapsed .sidebar-brand-mini {
+            display: flex !important;
+        }
+        .sidebar-collapsed .sidebar-bottom-mini {
+            display: flex !important;
+        }
+        .sidebar-collapsed .sidebar-nav-item {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            width: 2.75rem !important;
+            height: 2.75rem !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+    }
+    @media (max-width: 1023px) {
+        #sidebar {
+            transform: translateX(-100%);
+        }
+        #sidebar.open {
+            transform: translateX(0) !important;
+        }
+        #adminMainWrapper {
+            padding-left: 0 !important;
+        }
+        #adminHeader {
+            left: 0 !important;
+        }
+        .sidebar-brand-mini,
+        .sidebar-bottom-mini {
+            display: none !important;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
+<style>
+    #sidebar {
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #adminMainWrapper {
+        transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #adminHeader {
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @media (min-width: 1024px) {
+        .sidebar-collapsed #sidebar {
+            width: 5rem !important;
+        }
+        .sidebar-collapsed #adminMainWrapper {
+            padding-left: 5rem !important;
+        }
+        .sidebar-collapsed #adminHeader {
+            left: 5rem !important;
+        }
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .sidebar-brand-full,
+        .sidebar-collapsed .sidebar-bottom-full,
+        .sidebar-collapsed .sidebar-section-title {
+            display: none !important;
+        }
+        .sidebar-collapsed .sidebar-brand-mini {
+            display: flex !important;
+        }
+        .sidebar-collapsed .sidebar-bottom-mini {
+            display: flex !important;
+        }
+        .sidebar-collapsed .sidebar-nav-item {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            width: 2.75rem !important;
+            height: 2.75rem !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+    }
+    @media (max-width: 1023px) {
+        #sidebar {
+            transform: translateX(-100%);
+        }
+        #sidebar.open {
+            transform: translateX(0) !important;
+        }
+        #adminMainWrapper {
+            padding-left: 0 !important;
+        }
+        #adminHeader {
+            left: 0 !important;
+        }
+        .sidebar-brand-mini,
+        .sidebar-bottom-mini {
+            display: none !important;
+        }
+    }
+</style>
+
 <div class="min-h-screen bg-surface text-on-surface font-body-md antialiased">
 
     <!-- Sidebar Overlay for Mobile -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
     <!-- Aside Sidebar (Navbar Admin) -->
-    <aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between overflow-hidden">
         <div class="flex flex-col min-h-0 flex-1">
-            <!-- Brand Header -->
-            <div class="h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
+            <!-- Brand Header Full (Expanded) -->
+            <div class="sidebar-brand-full h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-space-sm no-underline min-w-0">
                     <div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md flex-shrink-0">
                         <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
@@ -50,92 +182,104 @@
                         <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
                     </div>
                 </a>
-                <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container" onclick="toggleSidebar()" title="Tutup Menu">
-                    <span class="material-symbols-outlined text-[20px]">close</span>
+                <div class="flex items-center gap-1">
+                    <button type="button" class="hidden lg:flex p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors" onclick="toggleSidebarCollapse()" title="Ciutkan Sidebar">
+                        <span class="material-symbols-outlined text-[20px]">menu_open</span>
+                    </button>
+                    <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer" onclick="toggleSidebar()" title="Tutup Menu">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Brand Header Mini (Collapsed) -->
+            <div class="sidebar-brand-mini hidden h-20 w-full items-center justify-center bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
+                <button type="button" onclick="toggleSidebarCollapse()" class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md hover:scale-105 transition-transform cursor-pointer" title="Buka Sidebar">
+                    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
                 </button>
             </div>
 
             <!-- Scrollable Nav List -->
             <div class="px-space-md py-space-sm overflow-y-auto flex-1 no-scrollbar">
                 <!-- Section: Menu Utama -->
-                <div class="px-space-md py-space-xs mb-space-xs">
+                <div class="sidebar-section-title px-space-md py-space-xs mb-space-xs">
                     <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Menu Utama</span>
                 </div>
                 <nav class="flex flex-col gap-1">
                     <!-- Dashboard -->
                     @php $isDashboard = request()->routeIs('admin.dashboard'); @endphp
-                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-space-md py-2.5 transition-colors rounded-lg font-label-lg text-label-lg {{ $isDashboard ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
-                        <span>Dashboard</span>
+                    <a href="{{ route('admin.dashboard') }}" title="Dashboard" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 transition-colors rounded-lg font-label-lg text-label-lg {{ $isDashboard ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">dashboard</span>
+                        <span class="sidebar-text truncate">Dashboard</span>
                     </a>
 
                     <!-- Data Siswa -->
                     @php $isStudent = request()->routeIs('admin.students*'); @endphp
-                    <a href="{{ route('admin.students') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isStudent ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">group</span>
-                        <span>Data Siswa</span>
+                    <a href="{{ route('admin.students') }}" title="Data Siswa" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isStudent ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">group</span>
+                        <span class="sidebar-text truncate">Data Siswa</span>
                     </a>
 
                     <!-- Data Guru -->
                     @php $isTeacher = request()->routeIs('admin.teachers*'); @endphp
-                    <a href="{{ route('admin.teachers') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isTeacher ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">school</span>
-                        <span>Data Guru</span>
+                    <a href="{{ route('admin.teachers') }}" title="Data Guru" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isTeacher ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">school</span>
+                        <span class="sidebar-text truncate">Data Guru</span>
                     </a>
 
                     <!-- Data Kelas -->
                     @php $isClassroom = request()->routeIs('admin.classrooms*'); @endphp
-                    <a href="{{ route('admin.classrooms') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isClassroom ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">meeting_room</span>
-                        <span>Data Kelas</span>
+                    <a href="{{ route('admin.classrooms') }}" title="Data Kelas" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isClassroom ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">meeting_room</span>
+                        <span class="sidebar-text truncate">Data Kelas</span>
                     </a>
 
                     <!-- Mata Pelajaran -->
                     @php $isSubject = request()->routeIs('admin.subjects*'); @endphp
-                    <a href="{{ route('admin.subjects') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSubject ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
-                        <span>Mata Pelajaran</span>
+                    <a href="{{ route('admin.subjects') }}" title="Mata Pelajaran" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSubject ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">menu_book</span>
+                        <span class="sidebar-text truncate">Mata Pelajaran</span>
                     </a>
 
                     <!-- Semua Ujian -->
                     @php $isExam = request()->routeIs('admin.exams*'); @endphp
-                    <a href="{{ route('admin.exams') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isExam ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">description</span>
-                        <span>Semua Ujian</span>
+                    <a href="{{ route('admin.exams') }}" title="Semua Ujian" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isExam ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">description</span>
+                        <span class="sidebar-text truncate">Semua Ujian</span>
                     </a>
 
                     <!-- Tahun Ajaran -->
                     @php $isYear = request()->routeIs('admin.academic-years*'); @endphp
-                    <a href="{{ route('admin.academic-years') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isYear ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">calendar_today</span>
-                        <span>Tahun Ajaran</span>
+                    <a href="{{ route('admin.academic-years') }}" title="Tahun Ajaran" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isYear ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">calendar_today</span>
+                        <span class="sidebar-text truncate">Tahun Ajaran</span>
                     </a>
                 </nav>
 
                 <!-- Section: Sistem -->
-                <div class="px-space-md pt-space-md pb-space-xs mt-space-sm">
+                <div class="sidebar-section-title px-space-md pt-space-md pb-space-xs mt-space-sm">
                     <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Sistem</span>
                 </div>
                 <nav class="flex flex-col gap-1">
                     <!-- Pengaturan Sistem -->
                     @php $isSetting = request()->routeIs('admin.settings*'); @endphp
-                    <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSetting ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">settings</span>
-                        <span>Pengaturan Sistem</span>
+                    <a href="{{ route('admin.settings') }}" title="Pengaturan Sistem" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isSetting ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">settings</span>
+                        <span class="sidebar-text truncate">Pengaturan Sistem</span>
                     </a>
 
                     <!-- Log Aktivitas -->
                     @php $isLog = request()->routeIs('admin.logs*'); @endphp
-                    <a href="{{ route('admin.logs') }}" class="flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isLog ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
-                        <span class="material-symbols-outlined text-[20px]">schedule</span>
-                        <span>Log Aktivitas</span>
+                    <a href="{{ route('admin.logs') }}" title="Log Aktivitas" class="sidebar-nav-item flex items-center gap-3 px-space-md py-2.5 rounded-lg font-label-lg text-label-lg transition-colors {{ $isLog ? 'bg-primary-container text-on-primary font-semibold shadow-[0_1px_3px_0_rgba(15,23,42,0.06)]' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <span class="material-symbols-outlined text-[20px] shrink-0">schedule</span>
+                        <span class="sidebar-text truncate">Log Aktivitas</span>
                     </a>
                 </nav>
             </div>
         </div>
 
-        <!-- Bottom School & Logout Bar -->
-        <div class="p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between shrink-0 border border-slate-100">
+        <!-- Bottom School & Logout Bar (Expanded) -->
+        <div class="sidebar-bottom-full p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between shrink-0 border border-slate-100">
             <div class="flex items-center gap-space-sm min-w-0">
                 <span class="material-symbols-outlined text-secondary text-[22px] shrink-0" style="font-variation-settings: 'FILL' 1;">verified</span>
                 <div class="flex flex-col min-w-0">
@@ -145,19 +289,34 @@
             </div>
             <form action="{{ route('logout') }}" method="POST" class="m-0 shrink-0">
                 @csrf
-                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors" title="Keluar" onclick="return confirm('Keluar dari portal administrator?')">
+                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer" title="Keluar" onclick="return confirm('Keluar dari portal administrator?')">
                     <span class="material-symbols-outlined text-[18px]">logout</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Bottom Mini Logout (Collapsed) -->
+        <div class="sidebar-bottom-mini hidden p-2 my-2 mx-auto flex-col items-center shrink-0">
+            <form action="{{ route('logout') }}" method="POST" class="m-0">
+                @csrf
+                <button type="submit" class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer" title="Keluar (Logout)" onclick="return confirm('Keluar dari portal administrator?')">
+                    <span class="material-symbols-outlined text-[20px]">logout</span>
                 </button>
             </form>
         </div>
     </aside>
 
     <!-- Main Content Wrapper -->
-    <div class="lg:pl-72 flex flex-col min-h-screen">
+    <div id="adminMainWrapper" class="lg:pl-72 flex flex-col min-h-screen">
         <!-- Topbar / Header -->
-        <header class="fixed top-0 left-0 lg:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-md md:px-space-lg">
+        <header id="adminHeader" class="fixed top-0 left-0 lg:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-md md:px-space-lg">
             <div class="flex items-center flex-1 max-w-lg mr-space-md">
-                <button type="button" class="lg:hidden mr-2.5 p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" onclick="toggleSidebar()" title="Buka Menu">
+                <!-- Mobile Toggle -->
+                <button type="button" class="lg:hidden mr-2.5 p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer" onclick="toggleSidebar()" title="Buka Menu">
+                    <span class="material-symbols-outlined text-[22px]">menu</span>
+                </button>
+                <!-- Desktop Toggle (Collapse / Expand) -->
+                <button type="button" id="adminSidebarCollapseBtn" class="hidden lg:flex mr-2.5 p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer" onclick="toggleSidebarCollapse()" title="Buka / Tutup Sidebar" aria-label="Toggle Sidebar">
                     <span class="material-symbols-outlined text-[22px]">menu</span>
                 </button>
                 <form action="{{ route('admin.students') }}" method="GET" class="w-full flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary-container transition-all">
@@ -219,9 +378,19 @@
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
         if (sidebar && overlay) {
+            sidebar.classList.toggle('open');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
         }
     }
+
+    function toggleSidebarCollapse() {
+        const isCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+        try {
+            localStorage.setItem('edu_admin_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        } catch(e) {}
+    }
 </script>
 @endsection
+
