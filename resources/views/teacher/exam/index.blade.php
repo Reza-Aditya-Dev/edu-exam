@@ -266,8 +266,15 @@
                                 </a>
                                 <form action="{{ route('teacher.exams.complete', $exam) }}" method="POST" class="inline" onsubmit="return confirm('Tutup sesi ujian ini sekarang?');">
                                     @csrf
-                                    <button type="submit" class="p-2 rounded-lg bg-surface-container-lowest text-error hover:bg-error-container transition-colors border border-slate-200" title="Tutup Sesi Ujian">
+                                    <button type="submit" class="p-2 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container transition-colors border border-slate-200" title="Tutup Sesi Ujian">
                                         <span class="material-symbols-outlined text-[20px]">stop_circle</span>
+                                    </button>
+                                </form>
+                                <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Sesi ujian ini sedang berlangsung!\n\nMenghapus ujian ini akan menghapus seluruh data butir soal, peserta, dan hasil jawaban siswa secara permanen.\n\nApakah Anda yakin ingin menghapus ujian ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-2 rounded-lg bg-surface-container-lowest text-error hover:bg-error-container hover:text-on-error-container transition-colors border border-slate-200" title="Hapus Ujian Permanen">
+                                        <span class="material-symbols-outlined text-[20px]">delete</span>
                                     </button>
                                 </form>
                             </div>
@@ -438,6 +445,13 @@
                                     <span class="material-symbols-outlined text-[16px]">analytics</span>
                                     <span>Hasil &amp; Analisis</span>
                                 </a>
+                                <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus ujian yang sudah selesai ini beserta seluruh riwayat hasil nilainya?\n\nData yang dihapus tidak dapat dipulihkan.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-1.5 rounded-lg bg-surface-container-lowest text-error hover:bg-error-container hover:text-on-error-container transition-colors border border-slate-200" title="Hapus Ujian & Hasil">
+                                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

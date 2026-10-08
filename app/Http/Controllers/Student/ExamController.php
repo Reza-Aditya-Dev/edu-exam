@@ -37,7 +37,7 @@ class ExamController extends Controller
         $this->authorizeExam($exam, $student);
 
         if ($exam->status !== 'active') {
-            return redirect()->route('student.dashboard')->with('error', 'Ujian belum dibuka atau sudah berakhir.');
+            return redirect()->route('student.dashboard')->with('error', 'Ujian belum dibuka atau waktu pengerjaan ujian telah berakhir.');
         }
 
         // Cek sudah ada participant
@@ -71,10 +71,15 @@ class ExamController extends Controller
             return redirect()->route('student.exam.result', $exam);
         }
 
-        // Cek waktu habis
+        // Cek jika guru sudah menutup ujian
+        if ($exam->status !== 'active') {
+            return $this->autoSubmit($exam, $participant, 'Ujian telah ditutup oleh guru pengampu.');
+        }
+
+        // Cek waktu habis (otomatis berakhir jika melewati batas waktu)
         $remainingSeconds = $participant->remaining_seconds;
-        if ($remainingSeconds <= 0 && $exam->settings?->auto_submit) {
-            return $this->autoSubmit($exam, $participant);
+        if ($remainingSeconds <= 0) {
+            return $this->autoSubmit($exam, $participant, 'Waktu ujian telah berakhir. Jawaban dikumpulkan otomatis.');
         }
 
         $examQuestions = ExamQuestion::where('exam_id', $exam->id)
@@ -111,6 +116,28 @@ class ExamController extends Controller
             ->where('student_id', $student->id)
             ->where('status', 'in_progress')
             ->firstOrFail();
+
+        // Cek jika guru telah menutup ujian
+        if ($exam->status !== 'active') {
+            $this->processSubmit($exam, $participant, true);
+            return response()->json([
+                'success'     => false,
+                'exam_closed' => true,
+                'redirect'    => route('student.exam.result', $exam),
+                'message'     => 'Ujian telah ditutup oleh guru pengampu.',
+            ]);
+        }
+
+        // Cek jika waktu ujian sudah habis
+        if ($participant->remaining_seconds <= 0) {
+            $this->processSubmit($exam, $participant, true);
+            return response()->json([
+                'success'     => false,
+                'timeout'     => true,
+                'redirect'    => route('student.exam.result', $exam),
+                'message'     => 'Waktu ujian telah berakhir.',
+            ]);
+        }
 
         $request->validate([
             'exam_question_id'  => 'required|exists:exam_questions,id',
@@ -152,7 +179,7 @@ class ExamController extends Controller
         ]);
     }
 
-    // Submit ujian
+    // Submit / Tutup Ujian oleh Siswa
     public function submit(Request $request, Exam $exam)
     {
         $student = Auth::user();
@@ -161,14 +188,81 @@ class ExamController extends Controller
             ->where('status', 'in_progress')
             ->firstOrFail();
 
-        return $this->processSubmit($exam, $participant);
+        // 1. Cek jika waktu habis (timeout)
+        $isTimeout = $request->boolean('is_timeout') || ($participant->remaining_seconds <= 0);
+
+        // 2. Jika bukan timeout (siswa mencoba menutup ujian secara manual):
+        if (!$isTimeout) {
+            // Cek jika guru sudah menutup ujian
+            if ($exam->status !== 'active') {
+                return $this->autoSubmit($exam, $participant, 'Ujian telah ditutup oleh guru pengampu.');
+            }
+
+            // Validasi: Siswa TIDAK BISA menutup ujian kecuali seluruh soal SUDAH dijawab!
+            $totalQuestions = ExamQuestion::where('exam_id', $exam->id)->count();
+            $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get();
+            $answeredCount = $answers->filter(function ($a) {
+                return $a->selected_option_id !== null || (!empty(trim($a->answer_text ?? '')));
+            })->count();
+
+            $unansweredCount = $totalQuestions - $answeredCount;
+            if ($unansweredCount > 0) {
+                return redirect()->route('student.exam.take', ['exam' => $exam->id, 'q' => $request->get('q', 1)])
+                    ->with('error', "Ujian tidak dapat ditutup karena masih ada {$unansweredCount} butir soal yang belum dijawab. Harap selesaikan seluruh butir soal terlebih dahulu.");
+            }
+        }
+
+        return $this->processSubmit($exam, $participant, $isTimeout);
     }
 
-    // Auto-submit (waktu habis)
-    private function autoSubmit(Exam $exam, ExamParticipant $participant)
+    // Cek Status Ujian secara Real-time (AJAX Polling)
+    public function checkStatus(Exam $exam)
+    {
+        $student = Auth::user();
+        $participant = ExamParticipant::where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if (!$participant || $participant->status !== 'in_progress') {
+            return response()->json([
+                'active'   => false,
+                'redirect' => route('student.exam.result', $exam),
+                'message'  => 'Ujian telah selesai.',
+            ]);
+        }
+
+        // Cek jika guru menutup ujian
+        if ($exam->status !== 'active') {
+            $this->processSubmit($exam, $participant, true);
+            return response()->json([
+                'active'   => false,
+                'redirect' => route('student.exam.result', $exam),
+                'message'  => 'Ujian telah ditutup oleh guru pengampu.',
+            ]);
+        }
+
+        // Cek jika batas waktu habis
+        $remainingSeconds = $participant->remaining_seconds;
+        if ($remainingSeconds <= 0) {
+            $this->processSubmit($exam, $participant, true);
+            return response()->json([
+                'active'   => false,
+                'redirect' => route('student.exam.result', $exam),
+                'message'  => 'Waktu ujian telah berakhir.',
+            ]);
+        }
+
+        return response()->json([
+            'active'           => true,
+            'remaining_seconds'=> $remainingSeconds,
+        ]);
+    }
+
+    // Auto-submit (waktu habis atau ditutup guru)
+    private function autoSubmit(Exam $exam, ExamParticipant $participant, string $message = 'Waktu ujian telah berakhir. Jawaban dikumpulkan otomatis.')
     {
         $this->processSubmit($exam, $participant, true);
-        return redirect()->route('student.exam.result', $exam)->with('info', 'Waktu ujian habis. Jawaban dikumpulkan otomatis.');
+        return redirect()->route('student.exam.result', $exam)->with('info', $message);
     }
 
     // Proses kalkulasi hasil

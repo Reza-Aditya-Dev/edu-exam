@@ -381,20 +381,23 @@
         </div>
     </aside>
 
-</div>
-
-<!-- MODAL PILIH BANK SOAL -->
+<!-- MODAL PILIH BANK SOAL (BERBASIS KARTU MAPEL + KELAS) -->
 <div id="questionModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
-        <!-- Modal Header -->
+        
+        <!-- Modal Dynamic Header -->
         <div class="p-space-lg border-b border-surface-container flex items-center justify-between bg-surface-container-low/50">
             <div class="flex items-center gap-space-sm">
-                <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined text-[22px]">library_books</span>
+                <!-- Back Button (tampil hanya saat membuka butir soal dalam kartu) -->
+                <button type="button" id="modalBackToCardsBtn" onclick="backToCardsView()" class="hidden w-10 h-10 rounded-xl bg-surface-container-highest hover:bg-surface-container flex items-center justify-center text-on-surface transition-colors mr-1" title="Kembali ke Daftar Kartu Bank Soal">
+                    <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+                </button>
+                <div id="modalHeaderIconWrapper" class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-[22px]" id="modalHeaderIcon">library_books</span>
                 </div>
                 <div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Pilih Butir Soal dari Bank Soal</h3>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant">Pilih soal yang ingin dimasukkan ke dalam paket ujian ini</p>
+                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold" id="modalHeaderTitle">Pilih Butir Soal dari Bank Soal</h3>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant" id="modalHeaderSubtitle">Pilih kartu Bank Soal berdasarkan Mata Pelajaran &amp; Kelas untuk melihat butir soal</p>
                 </div>
             </div>
             <button type="button" onclick="closeQuestionModal()" class="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
@@ -402,59 +405,111 @@
             </button>
         </div>
 
-        <!-- Modal Search & Filters -->
-        <div class="p-space-md border-b border-surface-container bg-surface-container-lowest flex flex-wrap items-center gap-space-sm">
-            <div class="relative flex-1 min-w-[200px]">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-                <input type="text" id="modalSearch" class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300" placeholder="Cari pertanyaan atau topik soal..."/>
+        <!-- ================= LEVEL 1: VIEW KARTU BANK SOAL ================= -->
+        <div id="modalCardsView" class="flex-1 flex flex-col overflow-hidden">
+            <!-- Filter Bar Kartu -->
+            <div class="p-space-md border-b border-surface-container bg-surface-container-lowest flex flex-wrap items-center gap-space-sm">
+                <div class="relative flex-1 min-w-[200px]">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                    <input type="text" id="cardSearchInput" oninput="filterCards()" class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300" placeholder="Cari mata pelajaran atau kelas..."/>
+                </div>
+                <select id="cardSubjectFilter" onchange="filterCards()" class="h-10 px-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none border border-transparent focus:border-indigo-300">
+                    <option value="">Semua Mata Pelajaran</option>
+                    @foreach($subjects as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+                <div class="text-xs text-on-surface-variant hidden md:block">
+                    Pilih kartu untuk melihat butir soal
+                </div>
             </div>
-            <select id="modalSubjectSelect" onchange="loadQuestionsModal()" class="h-10 px-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none border border-transparent focus:border-indigo-300">
-                <option value="">Semua Mata Pelajaran</option>
-                @foreach($subjects as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }}</option>
-                @endforeach
-            </select>
-            <select id="modalTypeSelect" onchange="loadQuestionsModal()" class="h-10 px-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none border border-transparent focus:border-indigo-300">
-                <option value="">Semua Bentuk Soal</option>
-                <option value="multiple_choice">Pilihan Ganda</option>
-                <option value="true_false">Benar / Salah</option>
-                <option value="short_answer">Isian Singkat</option>
-                <option value="essay">Uraian / Esai</option>
-            </select>
-            <button type="button" onclick="selectAllModal()" class="h-10 px-3 rounded-lg bg-surface-container-high text-on-surface font-label-sm text-label-sm hover:bg-surface-container transition-colors">
-                Pilih Semua
-            </button>
+
+            <!-- Cards Grid Container -->
+            <div id="modalCardsGrid" class="p-space-lg flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-space-md bg-surface-container-low/30 min-h-[350px]">
+                <div class="col-span-full text-center py-12 text-on-surface-variant font-body-md text-body-md">
+                    Memuat daftar kartu Bank Soal...
+                </div>
+            </div>
+
+            <!-- Cards View Footer -->
+            <div class="p-space-md border-t border-surface-container bg-surface-container-lowest flex items-center justify-between">
+                <div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface font-semibold">
+                    <span class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center text-xs" id="modalCardsSelectedCounter">0</span>
+                    <span>Total Soal Terpilih untuk Ujian</span>
+                </div>
+                <div class="flex items-center gap-space-xs">
+                    <button type="button" onclick="closeQuestionModal()" class="h-10 px-space-md rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors">
+                        Tutup
+                    </button>
+                    <button type="button" onclick="applyModalQuestions()" class="h-10 px-space-lg rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-md hover:opacity-95 transition-all">
+                        Terapkan ke Ujian
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- Modal Question List Body -->
-        <div id="modalQuestionList" class="p-space-md flex-1 overflow-y-auto flex flex-col gap-space-sm bg-surface-container-low/30 min-h-[300px]">
-            <div class="text-center py-12 text-on-surface-variant font-body-md text-body-md">
-                Memuat bank butir soal...
+        <!-- ================= LEVEL 2: VIEW BUTIR SOAL DALAM KARTU ================= -->
+        <div id="modalDetailView" class="hidden flex-1 flex flex-col overflow-hidden">
+            <!-- Filter Bar Butir Soal -->
+            <div class="p-space-md border-b border-surface-container bg-surface-container-lowest flex flex-wrap items-center justify-between gap-space-sm">
+                <div class="flex flex-wrap items-center gap-space-sm flex-1 min-w-[280px]">
+                    <!-- Checkbox Pilih Semua -->
+                    <label class="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold transition-colors cursor-pointer select-none">
+                        <input type="checkbox" id="selectAllCardCheckbox" onchange="toggleSelectAllInActiveCard()" class="w-4 h-4 rounded text-secondary accent-secondary cursor-pointer"/>
+                        <span>Pilih Semua (<span id="selectAllCardTotalText">0</span> Soal)</span>
+                    </label>
+
+                    <div class="relative flex-1 min-w-[180px]">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                        <input type="text" id="detailSearchInput" oninput="filterActiveCardQuestions()" class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300" placeholder="Cari isi pertanyaan / topik..."/>
+                    </div>
+
+                    <select id="detailTypeSelect" onchange="filterActiveCardQuestions()" class="h-10 px-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface focus:outline-none border border-transparent focus:border-indigo-300">
+                        <option value="">Semua Bentuk Soal</option>
+                        <option value="multiple_choice">Pilihan Ganda</option>
+                        <option value="true_false">Benar / Salah</option>
+                        <option value="short_answer">Isian Singkat</option>
+                        <option value="essay">Uraian / Esai</option>
+                    </select>
+                </div>
+
+                <div class="font-label-sm text-label-sm font-semibold text-secondary" id="detailHeaderSelectionCount">
+                    0 Soal Dipilih
+                </div>
+            </div>
+
+            <!-- Question Items List -->
+            <div id="modalDetailQuestionList" class="p-space-md flex-1 overflow-y-auto flex flex-col gap-space-sm bg-surface-container-low/30 min-h-[350px]">
+                <!-- Question cards populated via JS -->
+            </div>
+
+            <!-- Detail View Footer -->
+            <div class="p-space-md border-t border-surface-container bg-surface-container-lowest flex items-center justify-between">
+                <button type="button" onclick="backToCardsView()" class="inline-flex items-center gap-1.5 h-10 px-space-md rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    <span>Kembali ke Bank Soal</span>
+                </button>
+                <div class="flex items-center gap-space-md">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant hidden sm:inline" id="detailFooterStatusText">
+                        0 dari 0 soal dipilih
+                    </span>
+                    <button type="button" onclick="applyModalQuestions()" class="inline-flex items-center gap-1.5 h-10 px-space-lg rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-md hover:opacity-95 transition-all">
+                        <span class="material-symbols-outlined text-[18px]">add_task</span>
+                        <span>Tambahkan Soal ke Ujian</span>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Modal Footer -->
-        <div class="p-space-md border-t border-surface-container bg-surface-container-lowest flex items-center justify-between">
-            <div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface font-semibold">
-                <span class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center text-xs" id="modalSelectedCounter">0</span>
-                <span>Butir Soal Terpilih</span>
-            </div>
-            <div class="flex items-center gap-space-xs">
-                <button type="button" onclick="closeQuestionModal()" class="h-10 px-space-md rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors">
-                    Tutup
-                </button>
-                <button type="button" onclick="applyModalQuestions()" class="h-10 px-space-lg rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-md hover:opacity-95 transition-all">
-                    Terapkan Pilihan
-                </button>
-            </div>
-        </div>
     </div>
 </div>
 
 @push('scripts')
 <script>
     let selectedQuestions = new Map();
-    let modalQuestions = [];
+    let allServerQuestions = [];
+    let bankPackages = new Map();
+    let activeCardKey = null;
     let currentFilterType = 'all';
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -462,24 +517,19 @@
         handleClassroomChange();
         updateSummary();
 
-        // Check if old question_ids exist
         const oldSubjectId = document.getElementById('subjectFilter').value;
         if(oldSubjectId) {
-            document.getElementById('modalSubjectSelect').value = oldSubjectId;
+            const cardSubj = document.getElementById('cardSubjectFilter');
+            if(cardSubj) cardSubj.value = oldSubjectId;
         }
-
-        // Setup search debouncing inside modal
-        const searchInput = document.getElementById('modalSearch');
-        let searchTimer;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(loadQuestionsModal, 300);
-        });
     });
 
     function handleSubjectChange() {
         const subjId = document.getElementById('subjectFilter').value;
-        document.getElementById('modalSubjectSelect').value = subjId;
+        const cardSubj = document.getElementById('cardSubjectFilter');
+        if(cardSubj && subjId) {
+            cardSubj.value = subjId;
+        }
         updateSummary();
     }
 
@@ -520,64 +570,286 @@
     }
 
     function openQuestionModal() {
-        const subjId = document.getElementById('subjectFilter').value;
-        if(subjId) {
-            document.getElementById('modalSubjectSelect').value = subjId;
-        }
         document.getElementById('questionModal').classList.remove('hidden');
-        loadQuestionsModal();
+        backToCardsView();
+        loadBankQuestions();
     }
 
     function closeQuestionModal() {
         document.getElementById('questionModal').classList.add('hidden');
     }
 
-    function loadQuestionsModal() {
-        const subjId = document.getElementById('modalSubjectSelect').value;
-        const type = document.getElementById('modalTypeSelect').value;
-        const search = document.getElementById('modalSearch').value;
-        const container = document.getElementById('modalQuestionList');
+    function loadBankQuestions() {
+        const grid = document.getElementById('modalCardsGrid');
+        grid.innerHTML = '<div class="col-span-full text-center py-12 text-on-surface-variant font-body-md text-body-md">Memuat daftar kartu Bank Soal...</div>';
 
-        container.innerHTML = '<div class="text-center py-12 text-on-surface-variant font-body-md text-body-md">Memuat butir soal...</div>';
-
-        const url = new URL('/guru/api/soal', window.location.origin);
-        if(subjId) url.searchParams.set('subject_id', subjId);
-        if(type) url.searchParams.set('type', type);
-        if(search) url.searchParams.set('search', search);
-
-        fetch(url)
+        fetch('/guru/api/soal')
             .then(res => res.json())
             .then(data => {
-                modalQuestions = data;
-                renderModalQuestions();
+                allServerQuestions = data;
+                groupQuestionsIntoPackages();
+                renderModalCards();
             })
             .catch(() => {
-                container.innerHTML = '<div class="text-center py-12 text-error font-body-md text-body-md">Gagal memuat butir soal dari server.</div>';
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-error font-body-md text-body-md">Gagal memuat bank butir soal dari server.</div>';
             });
     }
 
-    function renderModalQuestions() {
-        const container = document.getElementById('modalQuestionList');
-        container.innerHTML = '';
+    function formatClassroomLabel(classroom) {
+        if (!classroom) return 'Semua Kelas (Umum)';
+        const cName = classroom.name || '';
+        const grade = classroom.grade;
+        const roman = grade == 10 ? 'Kelas X' : (grade == 11 ? 'Kelas XI' : (grade == 12 ? 'Kelas XII' : (grade ? 'Kelas ' + grade : '')));
+        
+        if (roman) {
+            if (cName.toUpperCase().startsWith('X') || cName.toUpperCase().startsWith('XI') || cName.toUpperCase().startsWith('XII')) {
+                return 'Kelas ' + cName;
+            }
+            return roman + ' (' + cName + ')';
+        }
+        return cName.toLowerCase().startsWith('kelas') ? cName : 'Kelas ' + cName;
+    }
 
-        if(modalQuestions.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-12 text-on-surface-variant flex flex-col items-center">
-                    <span class="material-symbols-outlined text-4xl mb-1 text-slate-300">search_off</span>
-                    <p class="font-body-md text-body-md">Tidak ada butir soal ditemukan untuk kriteria ini.</p>
+    function groupQuestionsIntoPackages() {
+        bankPackages.clear();
+        allServerQuestions.forEach(q => {
+            const subId = q.subject_id || 0;
+            const classId = q.classroom_id || 'all';
+            const key = `pkg_${subId}_${classId}`;
+
+            if (!bankPackages.has(key)) {
+                bankPackages.set(key, {
+                    key: key,
+                    subject_id: q.subject_id,
+                    subject_name: q.subject?.name || 'Mata Pelajaran',
+                    subject_icon: q.subject?.icon || 'menu_book',
+                    classroom_id: q.classroom_id,
+                    classroom_name: q.classroom?.name || '',
+                    classroom_grade: q.classroom?.grade || '',
+                    classroom_label: formatClassroomLabel(q.classroom),
+                    questions: []
+                });
+            }
+
+            bankPackages.get(key).questions.push(q);
+        });
+    }
+
+    function filterCards() {
+        renderModalCards();
+    }
+
+    function renderModalCards() {
+        const grid = document.getElementById('modalCardsGrid');
+        grid.innerHTML = '';
+
+        const searchQuery = (document.getElementById('cardSearchInput').value || '').trim().toLowerCase();
+        const subjectFilter = document.getElementById('cardSubjectFilter').value;
+
+        let packagesList = Array.from(bankPackages.values());
+
+        if (subjectFilter) {
+            packagesList = packagesList.filter(p => String(p.subject_id) === String(subjectFilter));
+        }
+
+        if (searchQuery) {
+            packagesList = packagesList.filter(p => {
+                const subMatch = (p.subject_name || '').toLowerCase().includes(searchQuery);
+                const classMatch = (p.classroom_label || '').toLowerCase().includes(searchQuery);
+                const qMatch = p.questions.some(q => 
+                    (q.topic || '').toLowerCase().includes(searchQuery) || 
+                    (q.question_text || '').toLowerCase().includes(searchQuery)
+                );
+                return subMatch || classMatch || qMatch;
+            });
+        }
+
+        if (packagesList.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full p-8 text-center bg-surface-container-low rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
+                    <span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">library_books</span>
+                    <p class="font-headline-sm text-sm font-semibold text-on-surface">Belum ada soal pada Bank Soal ini.</p>
+                    <p class="text-xs text-on-surface-variant mt-1">Pastikan sudah ada soal yang dibuat untuk kriteria ini.</p>
                 </div>
             `;
-            updateModalCounter();
+            updateModalGlobalCounter();
             return;
         }
 
-        modalQuestions.forEach(q => {
+        packagesList.forEach(pkg => {
+            const totalQuestions = pkg.questions.length;
+            const selectedInPkg = pkg.questions.filter(q => selectedQuestions.has(q.id)).length;
+
+            let statusBadge = '';
+            let cardBorder = 'border-slate-200 hover:border-primary-300';
+            let cardBg = 'bg-surface-container-lowest hover:bg-surface-container-low/50';
+
+            if (selectedInPkg === 0) {
+                statusBadge = `
+                    <div class="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium">
+                        <span class="material-symbols-outlined text-[16px]">radio_button_unchecked</span>
+                        <span>${totalQuestions} Soal</span>
+                    </div>
+                `;
+            } else if (selectedInPkg === totalQuestions) {
+                cardBorder = 'border-primary ring-1 ring-primary/30';
+                cardBg = 'bg-primary-container/10 hover:bg-primary-container/15';
+                statusBadge = `
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed text-xs font-semibold">
+                        <span class="material-symbols-outlined text-[14px]">done_all</span>
+                        <span>${totalQuestions} Soal tersedia • ${totalQuestions} soal dipilih</span>
+                    </div>
+                `;
+            } else {
+                cardBorder = 'border-secondary ring-1 ring-secondary/30';
+                cardBg = 'bg-secondary-container/10 hover:bg-secondary-container/15';
+                statusBadge = `
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold">
+                        <span class="material-symbols-outlined text-[14px]">check</span>
+                        <span>${totalQuestions} Soal tersedia • ${selectedInPkg} soal dipilih</span>
+                    </div>
+                `;
+            }
+
+            const card = document.createElement('div');
+            card.className = `p-5 rounded-2xl border ${cardBorder} ${cardBg} transition-all cursor-pointer shadow-sm flex flex-col justify-between gap-4 group`;
+            card.onclick = () => openCardDetail(pkg.key);
+
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-primary-fixed/60 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <span class="material-symbols-outlined text-[24px]">${escapeHtml(pkg.subject_icon)}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-headline-sm text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug">
+                                ${escapeHtml(pkg.subject_name)}
+                            </h4>
+                            <span class="inline-block mt-0.5 px-2 py-0.5 rounded-md bg-surface-container text-on-surface font-label-sm text-xs font-semibold">
+                                ${escapeHtml(pkg.classroom_label)}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary group-hover:translate-x-1 transition-all text-[22px]">
+                        chevron_right
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div>
+                        ${statusBadge}
+                    </div>
+                    <span class="text-xs font-semibold text-primary inline-flex items-center gap-0.5 group-hover:underline">
+                        <span>Pilih Soal</span>
+                        <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </span>
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
+
+        updateModalGlobalCounter();
+    }
+
+    function openCardDetail(cardKey) {
+        activeCardKey = cardKey;
+        const pkg = bankPackages.get(cardKey);
+        if (!pkg) return;
+
+        // Beralih tampilan ke Detail View
+        document.getElementById('modalCardsView').classList.add('hidden');
+        document.getElementById('modalDetailView').classList.remove('hidden');
+
+        // Perbarui Header Modal
+        document.getElementById('modalBackToCardsBtn').classList.remove('hidden');
+        document.getElementById('modalHeaderTitle').textContent = `${pkg.subject_name} — ${pkg.classroom_label}`;
+        document.getElementById('modalHeaderSubtitle').textContent = `${pkg.questions.length} Soal Tersedia dalam Bank Soal ini`;
+        document.getElementById('modalHeaderIcon').textContent = pkg.subject_icon || 'menu_book';
+
+        // Reset filter pencarian butir soal
+        document.getElementById('detailSearchInput').value = '';
+        document.getElementById('detailTypeSelect').value = '';
+
+        renderActiveCardQuestions();
+    }
+
+    function backToCardsView() {
+        activeCardKey = null;
+
+        // Beralih kembali ke tampilan Kartu
+        document.getElementById('modalDetailView').classList.add('hidden');
+        document.getElementById('modalCardsView').classList.remove('hidden');
+
+        // Kembalikan Header Modal
+        document.getElementById('modalBackToCardsBtn').classList.add('hidden');
+        document.getElementById('modalHeaderTitle').textContent = 'Pilih Butir Soal dari Bank Soal';
+        document.getElementById('modalHeaderSubtitle').textContent = 'Pilih kartu Bank Soal berdasarkan Mata Pelajaran & Kelas untuk melihat butir soal';
+        document.getElementById('modalHeaderIcon').textContent = 'library_books';
+
+        renderModalCards();
+    }
+
+    function filterActiveCardQuestions() {
+        renderActiveCardQuestions();
+    }
+
+    function renderActiveCardQuestions() {
+        if (!activeCardKey) return;
+        const pkg = bankPackages.get(activeCardKey);
+        if (!pkg) return;
+
+        const container = document.getElementById('modalDetailQuestionList');
+        container.innerHTML = '';
+
+        const searchQuery = (document.getElementById('detailSearchInput').value || '').trim().toLowerCase();
+        const typeFilter = document.getElementById('detailTypeSelect').value;
+
+        let filtered = pkg.questions;
+
+        if (typeFilter) {
+            filtered = filtered.filter(q => q.type === typeFilter);
+        }
+
+        if (searchQuery) {
+            filtered = filtered.filter(q => {
+                const textMatch = (q.question_text || '').toLowerCase().includes(searchQuery);
+                const topicMatch = (q.topic || '').toLowerCase().includes(searchQuery);
+                return textMatch || topicMatch;
+            });
+        }
+
+        const totalInPkg = pkg.questions.length;
+        const selectedInPkg = pkg.questions.filter(q => selectedQuestions.has(q.id)).length;
+
+        // Sinkronisasi status checkbox "Pilih Semua"
+        const selectAllCb = document.getElementById('selectAllCardCheckbox');
+        const selectAllText = document.getElementById('selectAllCardTotalText');
+        selectAllText.textContent = totalInPkg;
+        selectAllCb.checked = (totalInPkg > 0 && selectedInPkg === totalInPkg);
+        selectAllCb.indeterminate = (selectedInPkg > 0 && selectedInPkg < totalInPkg);
+
+        // Perbarui teks status di header & footer
+        document.getElementById('detailHeaderSelectionCount').textContent = `${selectedInPkg} Soal Dipilih`;
+        document.getElementById('detailFooterStatusText').textContent = `${selectedInPkg} dari ${totalInPkg} soal dipilih`;
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 text-on-surface-variant flex flex-col items-center">
+                    <span class="material-symbols-outlined text-4xl mb-1 text-slate-300">search_off</span>
+                    <p class="font-body-md text-body-md">Belum ada butir soal yang sesuai kriteria pada Bank Soal ini.</p>
+                </div>
+            `;
+            return;
+        }
+
+        filtered.forEach((q, idx) => {
             const isSelected = selectedQuestions.has(q.id);
             const card = document.createElement('div');
-            card.className = `p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${isSelected ? 'bg-secondary-container/20 border-secondary' : 'bg-surface-container-lowest border-slate-200 hover:border-primary-300'}`;
+            card.className = `p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${isSelected ? 'bg-secondary-container/20 border-secondary' : 'bg-surface-container-lowest border-slate-200 hover:border-primary-300'}`;
             card.onclick = (e) => {
                 if(e.target.tagName !== 'INPUT') {
-                    toggleSelectModal(q.id);
+                    toggleQuestionInActiveCard(q.id);
                 }
             };
 
@@ -591,13 +863,13 @@
             }
 
             card.innerHTML = `
-                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectModal(${q.id})" class="mt-1 w-4 h-4 rounded text-secondary accent-secondary cursor-pointer"/>
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleQuestionInActiveCard(${q.id})" class="mt-1 w-4 h-4 rounded text-secondary accent-secondary cursor-pointer"/>
                 <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-1">
-                        <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold">Soal #${padZero(q.id)}</span>
+                        <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold">Soal #${padZero(idx + 1)}</span>
                         <span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">${typeLabel}</span>
                         <span class="font-label-sm text-label-sm text-secondary font-semibold">Bobot: ${q.score} Poin</span>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Topik: ${q.topic || 'Umum'}</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Topik: ${escapeHtml(q.topic || 'Umum')}</span>
                     </div>
                     <p class="font-body-md text-body-md text-on-surface font-medium line-clamp-2">
                         ${escapeHtml(q.question_text)}
@@ -609,31 +881,46 @@
                     </div>
                 </div>
             `;
+
             container.appendChild(card);
         });
-
-        updateModalCounter();
     }
 
-    function toggleSelectModal(id) {
+    function toggleQuestionInActiveCard(id) {
         if(selectedQuestions.has(id)) {
             selectedQuestions.delete(id);
         } else {
-            const q = modalQuestions.find(x => x.id === id);
+            const q = allServerQuestions.find(x => x.id === id);
             if(q) selectedQuestions.set(id, q);
         }
-        renderModalQuestions();
+        renderActiveCardQuestions();
+        updateModalGlobalCounter();
     }
 
-    function selectAllModal() {
-        modalQuestions.forEach(q => {
-            selectedQuestions.set(q.id, q);
-        });
-        renderModalQuestions();
+    function toggleSelectAllInActiveCard() {
+        if (!activeCardKey) return;
+        const pkg = bankPackages.get(activeCardKey);
+        if (!pkg) return;
+
+        const totalInPkg = pkg.questions.length;
+        const selectedInPkg = pkg.questions.filter(q => selectedQuestions.has(q.id)).length;
+
+        if (selectedInPkg === totalInPkg) {
+            // Semua sudah terpilih -> batalkan semua di kartu ini
+            pkg.questions.forEach(q => selectedQuestions.delete(q.id));
+        } else {
+            // Pilih semua di kartu ini
+            pkg.questions.forEach(q => selectedQuestions.set(q.id, q));
+        }
+
+        renderActiveCardQuestions();
+        updateModalGlobalCounter();
     }
 
-    function updateModalCounter() {
-        document.getElementById('modalSelectedCounter').textContent = selectedQuestions.size;
+    function updateModalGlobalCounter() {
+        const count = selectedQuestions.size;
+        const el = document.getElementById('modalCardsSelectedCounter');
+        if (el) el.textContent = count;
     }
 
     function applyModalQuestions() {

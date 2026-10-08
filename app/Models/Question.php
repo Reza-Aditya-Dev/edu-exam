@@ -57,7 +57,8 @@ class Question extends Model
             return $this->question_image;
         }
 
-        $cleanPath = ltrim(str_replace('storage/', '', $this->question_image), '/');
+        $normalized = str_replace('\\', '/', $this->question_image);
+        $cleanPath = ltrim(str_replace('storage/', '', $normalized), '/');
         return asset('storage/' . $cleanPath);
     }
 }

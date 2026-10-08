@@ -208,20 +208,122 @@ class ExamController extends Controller
     public function complete(Exam $exam)
     {
         $this->authorizeExam($exam);
-        $exam->update(['status' => 'completed']);
-        ActivityLog::log('exam_completed', "Ujian diselesaikan: {$exam->title}", $exam);
-        return back()->with('success', 'Ujian ditandai selesai.');
+
+        DB::transaction(function () use ($exam) {
+            $exam->update(['status' => 'completed']);
+
+            // Selesaikan otomatis seluruh siswa yang masih berstatus in_progress
+            $participants = ExamParticipant::where('exam_id', $exam->id)
+                ->where('status', 'in_progress')
+                ->get();
+
+            foreach ($participants as $participant) {
+                $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get();
+                $totalScore    = $answers->sum('score_obtained');
+                $correctCount  = $answers->where('is_correct', true)->count();
+                $wrongCount    = $answers->where('is_correct', false)->whereNotNull('selected_option_id')->count();
+                $totalQ        = ExamQuestion::where('exam_id', $exam->id)->count();
+                $unanswered    = $totalQ - $answers->whereNotNull('selected_option_id')->count();
+                $timeSpent     = $participant->time_spent_minutes;
+                $passStatus    = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+
+                $participant->update([
+                    'status'       => 'submitted',
+                    'submitted_at' => now(),
+                ]);
+
+                ExamResult::updateOrCreate(
+                    ['exam_id' => $exam->id, 'student_id' => $participant->student_id],
+                    [
+                        'exam_participant_id' => $participant->id,
+                        'total_score'         => $totalScore,
+                        'correct_answers'     => $correctCount,
+                        'wrong_answers'       => $wrongCount,
+                        'unanswered'          => $unanswered,
+                        'time_spent_minutes'  => $timeSpent,
+                        'pass_status'         => $passStatus,
+                    ]
+                );
+            }
+
+            ActivityLog::log('exam_completed', "Ujian diselesaikan oleh guru: {$exam->title}", $exam);
+        });
+
+        return back()->with('success', 'Ujian berhasil ditutup dan seluruh pengerjaan siswa telah diselesaikan.');
     }
 
     public function destroy(Exam $exam)
     {
         $this->authorizeExam($exam);
-        if ($exam->status === 'active') {
-            return back()->with('error', 'Ujian yang sedang berlangsung tidak dapat dihapus.');
-        }
-        ActivityLog::log('exam_deleted', "Ujian dihapus: {$exam->title}");
-        $exam->delete();
-        return redirect()->route('teacher.exams.index')->with('success', 'Ujian berhasil dihapus.');
+        $title = $exam->title;
+
+        DB::transaction(function () use ($exam, $title) {
+            // Ambil semua ID partisipan ujian
+            $participantIds = ExamParticipant::where('exam_id', $exam->id)->pluck('id');
+
+            // Hapus jawaban siswa
+            if ($participantIds->isNotEmpty()) {
+                StudentAnswer::whereIn('exam_participant_id', $participantIds)->delete();
+            }
+
+            // Hapus hasil ujian & peserta
+            ExamResult::where('exam_id', $exam->id)->delete();
+            ExamParticipant::where('exam_id', $exam->id)->delete();
+
+            // Hapus butir soal ujian
+            ExamQuestion::where('exam_id', $exam->id)->delete();
+
+            // Hapus pengaturan ujian jika ada
+            if ($exam->settings) {
+                $exam->settings()->delete();
+            }
+
+            // Hapus ujian
+            $exam->delete();
+
+            ActivityLog::log('exam_deleted', "Ujian '{$title}' dan seluruh hasil serta data terkait berhasil dihapus oleh guru.");
+        });
+
+        return redirect()->route('teacher.exams.index')->with('success', "Ujian '{$title}' beserta seluruh hasil ujian berhasil dihapus permanen.");
+    }
+
+    // Hapus seluruh hasil pengerjaan siswa pada ujian ini (reset hasil ujian)
+    public function clearResults(Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        DB::transaction(function () use ($exam) {
+            $participantIds = ExamParticipant::where('exam_id', $exam->id)->pluck('id');
+            if ($participantIds->isNotEmpty()) {
+                StudentAnswer::whereIn('exam_participant_id', $participantIds)->delete();
+            }
+            ExamResult::where('exam_id', $exam->id)->delete();
+            ExamParticipant::where('exam_id', $exam->id)->delete();
+
+            ActivityLog::log('exam_results_cleared', "Seluruh hasil ujian '{$exam->title}' berhasil dihapus/direset oleh guru.");
+        });
+
+        return back()->with('success', "Seluruh hasil ujian '{$exam->title}' berhasil dihapus. Ujian kini bersih dan dapat diujikan kembali.");
+    }
+
+    // Hapus satu hasil ujian siswa tertentu (reset ujian siswa tersebut)
+    public function destroyResult(Exam $exam, $studentId)
+    {
+        $this->authorizeExam($exam);
+
+        DB::transaction(function () use ($exam, $studentId) {
+            $student = \App\Models\User::findOrFail($studentId);
+            $participant = ExamParticipant::where('exam_id', $exam->id)->where('student_id', $studentId)->first();
+            if ($participant) {
+                StudentAnswer::where('exam_participant_id', $participant->id)->delete();
+                $participant->delete();
+            }
+            ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->delete();
+
+            ActivityLog::log('student_result_deleted', "Hasil ujian siswa '{$student->name}' pada ujian '{$exam->title}' dihapus oleh guru.");
+        });
+
+        return back()->with('success', "Hasil ujian siswa berhasil dihapus.");
     }
 
     // Hasil ujian semua siswa
@@ -324,7 +426,7 @@ class ExamController extends Controller
                    ->orWhere('topic', 'like', '%'.$request->search.'%');
             }))
             ->with(['subject', 'classroom', 'options'])
-            ->limit(200)
+            ->limit(1000)
             ->get();
         return response()->json($questions);
     }

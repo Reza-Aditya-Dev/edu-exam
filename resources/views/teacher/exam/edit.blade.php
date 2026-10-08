@@ -222,9 +222,15 @@
     <!-- STEP 1: PENGATURAN DASAR -->
     <div class="step-content active" id="step-1">
         <div class="card max-w-3xl mx-auto overflow-hidden">
-            <div class="card-header p-6 border-b border-slate-100 bg-slate-50/50">
-                <h3 class="font-headline font-bold text-slate-900 text-lg">Edit Informasi Ujian</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Perbarui nama ujian, jadwal waktu pengerjaan, atau batas nilai KKM.</p>
+            <div class="card-header p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h3 class="font-headline font-bold text-slate-900 text-lg">Edit Informasi Ujian</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Perbarui nama ujian, jadwal waktu pengerjaan, atau batas nilai KKM.</p>
+                </div>
+                <button type="button" onclick="confirmDeleteExamFromEdit()" class="btn btn-secondary text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 px-3 py-1.5 flex items-center gap-1.5 shrink-0" title="Hapus Ujian Ini">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                    <span>Hapus Ujian Ini</span>
+                </button>
             </div>
             
             <div class="card-body p-6 md:p-8">
@@ -576,5 +582,16 @@
             i++;
         });
     }
+
+    function confirmDeleteExamFromEdit() {
+        if (confirm("PERINGATAN: Apakah Anda yakin ingin menghapus ujian '{{ $exam->title }}' ini?\n\nSeluruh konfigurasi soal dan data ujian akan dihapus permanen.")) {
+            document.getElementById('deleteExamFormFromEdit').submit();
+        }
+    }
 </script>
+
+<form id="deleteExamFormFromEdit" action="{{ route('teacher.exams.destroy', $exam->id) }}" method="POST" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
 @endpush

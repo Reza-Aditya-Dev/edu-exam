@@ -42,6 +42,7 @@ Route::middleware(['auth', 'role:student'])->prefix('siswa')->name('student.')->
         Route::get('/{exam}/kerjakan', [Student\ExamController::class, 'take'])->name('take');
         Route::post('/{exam}/jawab',   [Student\ExamController::class, 'saveAnswer'])->name('answer');
         Route::post('/{exam}/kumpul',  [Student\ExamController::class, 'submit'])->name('submit');
+        Route::get('/{exam}/status',   [Student\ExamController::class, 'checkStatus'])->name('status');
         Route::get('/{exam}/hasil',    [Student\ExamController::class, 'result'])->name('result');
     });
 
@@ -81,6 +82,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('guru')->name('teacher.')->g
         Route::post('/{exam}/aktifkan',  [Teacher\ExamController::class, 'activate'])->name('activate');
         Route::post('/{exam}/selesai',   [Teacher\ExamController::class, 'complete'])->name('complete');
         Route::get('/{exam}/hasil',      [Teacher\ExamController::class, 'results'])->name('results');
+        Route::delete('/{exam}/hasil/semua', [Teacher\ExamController::class, 'clearResults'])->name('clear_results');
+        Route::delete('/{exam}/hasil/siswa/{studentId}', [Teacher\ExamController::class, 'destroyResult'])->name('destroy_result');
         Route::get('/{exam}/siswa/{studentId}', [Teacher\ExamController::class, 'studentAnswerDetail'])->name('student_detail');
         Route::get('/{exam}/analitik',   [Teacher\ExamController::class, 'analytics'])->name('analytics');
     });

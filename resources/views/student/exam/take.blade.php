@@ -4,6 +4,16 @@
     $markedCount = $answers->where('is_marked', true)->count();
     $currentAnswer = $answers[$currentExamQuestion->id] ?? null;
     $isMarked = $currentAnswer ? (bool)$currentAnswer->is_marked : false;
+    $questionsData = $examQuestions->values()->map(function($eq, $idx) use ($answers) {
+        $ans = $answers[$eq->id] ?? null;
+        $hasAns = $ans && ($ans->selected_option_id || !empty(trim($ans->answer_text ?? '')));
+        return [
+            'id' => $eq->id,
+            'number' => $idx + 1,
+            'has_answer' => (bool)$hasAns,
+            'is_marked' => $ans ? (bool)$ans->is_marked : false,
+        ];
+    });
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -177,6 +187,13 @@
 
         <!-- Main Examination Canvas -->
         <main class="flex-1 flex flex-col w-full pt-20 pb-36 px-4 bg-surface">
+            @if(session('error'))
+                <div class="mb-3 p-3 bg-error-container text-on-error-container rounded-xl flex items-start gap-2 border border-error/20 text-xs shadow-sm animate-pulse">
+                    <span class="material-symbols-outlined text-error shrink-0 text-[18px]">error</span>
+                    <div class="font-medium leading-relaxed">{{ session('error') }}</div>
+                </div>
+            @endif
+
             <!-- Meta & Flag Row -->
             <div class="flex items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2">
@@ -209,10 +226,28 @@
                     {!! $currentExamQuestion->question->question_text !!}
                 </div>
 
-                @if($currentExamQuestion->question->question_image)
-                    <div class="w-full bg-surface-container-low rounded-xl p-2.5 flex flex-col items-center">
-                        <img src="{{ asset('storage/' . $currentExamQuestion->question->question_image) }}" alt="Gambar Soal {{ $currentIndex }}" class="rounded-lg max-h-72 object-contain shadow-sm">
-                        <span class="text-[11px] text-on-surface-variant mt-1.5">Gambar Lampiran Soal {{ $currentIndex }}</span>
+                @if($currentExamQuestion->question->image_url)
+                    <div class="w-full bg-surface-container-low rounded-xl p-2.5 flex flex-col items-center border border-surface-container/80 shadow-xs">
+                        <div class="relative group cursor-pointer max-w-full flex items-center justify-center" onclick="openImageModal('{{ $currentExamQuestion->question->image_url }}', 'Gambar Soal No. {{ $currentIndex }}')">
+                            <img src="{{ $currentExamQuestion->question->image_url }}" 
+                                 alt="Gambar Lampiran Soal No. {{ $currentIndex }}" 
+                                 class="rounded-lg max-h-72 object-contain shadow-sm bg-white hover:opacity-95 transition-opacity"
+                                 loading="lazy">
+                            <div class="absolute bottom-2 right-2 px-2.5 py-1 bg-inverse-surface/80 text-inverse-on-surface rounded-lg text-[10px] font-semibold flex items-center gap-1 backdrop-blur-xs opacity-90 group-hover:opacity-100 transition-opacity shadow-sm">
+                                <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+                                <span>Klik untuk Perbesar</span>
+                            </div>
+                        </div>
+                        <div class="w-full mt-2 flex items-center justify-between text-[11px] text-on-surface-variant px-1">
+                            <span class="flex items-center gap-1 font-medium">
+                                <span class="material-symbols-outlined text-[14px]">image</span>
+                                <span>Lampiran Gambar Soal {{ $currentIndex }}</span>
+                            </span>
+                            <a href="{{ $currentExamQuestion->question->image_url }}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-0.5">
+                                <span>Buka Ukuran Asli</span>
+                                <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                            </a>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -236,8 +271,14 @@
                                     </div>
                                     <div class="option-text text-xs md:text-sm {{ $isSelected ? 'text-primary font-bold' : 'text-on-surface' }} leading-relaxed flex-1">
                                         {!! $option->option_text !!}
-                                        @if($option->option_image)
-                                            <img src="{{ asset('storage/' . $option->option_image) }}" alt="Opsi {{ $option->label }}" class="max-h-36 rounded-md mt-1.5 block">
+                                        @if($option->image_url)
+                                            <div class="mt-2 inline-block max-w-full">
+                                                <img src="{{ $option->image_url }}" 
+                                                     alt="Opsi {{ $option->label }}" 
+                                                     class="max-h-36 rounded-lg object-contain bg-white border border-surface-container shadow-xs cursor-pointer hover:opacity-95 transition-opacity"
+                                                     onclick="event.stopPropagation(); openImageModal('{{ $option->image_url }}', 'Gambar Opsi {{ $option->label }} - Soal No. {{ $currentIndex }}')"
+                                                     title="Klik untuk memperbesar gambar opsi">
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
@@ -385,19 +426,20 @@
 
         <!-- Submit Confirmation Modal (Screen 6) -->
         <div id="submit-modal" class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-4 transition-opacity">
-            <div class="w-full max-w-[390px] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col p-5 relative overflow-hidden border border-surface-container animate-[scaleIn_0.2s_ease-out]">
+            <div class="w-full max-w-[400px] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col p-5 relative overflow-hidden border border-surface-container animate-[scaleIn_0.2s_ease-out]">
                 <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-primary-fixed/30 pointer-events-none blur-xl"></div>
                 <div class="absolute -bottom-10 -left-10 w-28 h-28 rounded-full bg-secondary-fixed/20 pointer-events-none blur-lg"></div>
                 
+                <!-- Dynamic Header (Incomplete vs Complete) -->
                 <div class="relative flex flex-col items-center text-center">
-                    <div class="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary mb-3 shadow-sm">
-                        <span class="material-symbols-outlined text-[30px]" style="font-variation-settings: 'FILL' 1;">assignment_turned_in</span>
+                    <div id="modal-icon-container" class="w-14 h-14 rounded-full bg-error-container text-error flex items-center justify-center mb-3 shadow-sm transition-colors">
+                        <span id="modal-icon" class="material-symbols-outlined text-[30px]" style="font-variation-settings: 'FILL' 1;">lock</span>
                     </div>
-                    <h2 class="font-headline-sm text-base md:text-lg font-bold text-on-surface">
-                        Sudah yakin ingin mengakhiri ujian?
+                    <h2 id="modal-title" class="font-headline-sm text-base md:text-lg font-bold text-on-surface">
+                        Ujian Belum Dapat Ditutup!
                     </h2>
-                    <p class="font-body-sm text-xs text-on-surface-variant mt-1">
-                        Setelah dikumpulkan, seluruh jawaban Anda akan terkunci dan tidak dapat diubah kembali.
+                    <p id="modal-desc" class="font-body-sm text-xs text-on-surface-variant mt-1 leading-relaxed">
+                        Anda belum menjawab seluruh soal. Semua soal wajib dijawab sebelum Anda dapat mengakhiri ujian ini.
                     </p>
                 </div>
 
@@ -437,25 +479,80 @@
                     </div>
                 </div>
 
-                <div class="mt-3 p-2.5 bg-tertiary-fixed/30 rounded-xl flex items-start gap-2 border border-tertiary/20">
-                    <span class="material-symbols-outlined text-tertiary shrink-0 text-[18px] mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
-                    <p class="font-body-sm text-[11px] text-on-surface leading-snug">
-                        Pastikan seluruh soal telah Anda jawab dengan baik sebelum konfirmasi pengiriman.
+                <!-- Dynamic Notice Box -->
+                <div id="modal-notice-box" class="mt-3 p-2.5 bg-error-container/40 rounded-xl flex items-start gap-2 border border-error/20 transition-all">
+                    <span id="modal-notice-icon" class="material-symbols-outlined text-error shrink-0 text-[18px] mt-0.5" style="font-variation-settings: 'FILL' 1;">lock</span>
+                    <p id="modal-notice-text" class="font-body-sm text-[11px] text-on-surface leading-snug">
+                        Siswa tidak dapat menutup ujian sebelum seluruh soal dijawab, kecuali waktu habis atau guru menutup ujian.
                     </p>
                 </div>
 
+                <!-- Actions Button Group -->
                 <div class="flex flex-col gap-2 mt-4">
-                    <button type="button" onclick="closeSubmitModal()" class="w-full h-11 rounded-xl bg-surface-container-low hover:bg-surface-container text-primary font-label-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors active:scale-[0.99]">
-                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-                        <span>Periksa Kembali</span>
+                    <button type="button" id="btn-jump-unanswered" onclick="jumpToFirstUnanswered()" class="w-full h-11 rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors active:scale-[0.99] shadow-sm">
+                        <span class="material-symbols-outlined text-[18px]">play_circle</span>
+                        <span id="btn-jump-text">Lanjutkan Jawab Soal yang Kosong</span>
                     </button>
-                    <form action="{{ route('student.exam.submit', $exam->id) }}" method="POST" id="submitExamFinalForm">
+
+                    <button type="button" onclick="closeSubmitModal()" class="w-full h-10 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors active:scale-[0.99]">
+                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                        <span>Periksa Kembali Lembar Soal</span>
+                    </button>
+
+                    <form action="{{ route('student.exam.submit', $exam->id) }}" method="POST" id="submitExamFinalForm" class="mt-1">
                         @csrf
-                        <button type="submit" id="btnConfirmSubmit" class="w-full h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.99]">
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check</span>
-                            <span>Kumpulkan Jawaban Sekarang</span>
+                        <input type="hidden" name="is_timeout" id="isTimeoutInput" value="0">
+                        <button type="submit" id="btnConfirmSubmit" class="w-full h-11 rounded-xl bg-surface-container-highest text-outline font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-not-allowed" disabled>
+                            <span id="btnConfirmIcon" class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                            <span id="btnConfirmText">Kumpulkan Ujian (Terkunci)</span>
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Modal: Guru Menutup Ujian / Waktu Habis -->
+        <div id="notice-modal" class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md hidden items-center justify-center p-4">
+            <div class="w-full max-w-[380px] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col p-6 items-center text-center border border-surface-container animate-[scaleIn_0.2s_ease-out]">
+                <div id="notice-modal-icon-wrap" class="w-16 h-16 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary mb-4 shadow-sm">
+                    <span id="notice-modal-icon" class="material-symbols-outlined text-[36px]" style="font-variation-settings: 'FILL' 1;">campaign</span>
+                </div>
+                <h3 id="notice-modal-title" class="font-headline-sm text-base md:text-lg font-bold text-on-surface">Ujian Ditutup oleh Guru</h3>
+                <p id="notice-modal-desc" class="font-body-sm text-xs text-on-surface-variant mt-2 leading-relaxed">
+                    Sesi ujian ini telah diakhiri oleh guru pengawas. Seluruh jawaban Anda telah disimpan otomatis.
+                </p>
+                <div class="mt-5 w-full">
+                    <a id="notice-modal-redirect-btn" href="{{ route('student.exam.result', $exam->id) }}" class="w-full h-11 rounded-xl bg-primary text-on-primary font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:bg-primary-container transition-colors">
+                        <span>Lihat Hasil Ujian</span>
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox Image Zoom Modal -->
+        <div id="image-zoom-modal" class="fixed inset-0 z-50 bg-inverse-surface/85 backdrop-blur-sm hidden items-center justify-center p-3 transition-opacity" onclick="closeImageModal()">
+            <div class="relative w-full max-w-2xl bg-surface-container-lowest rounded-2xl p-4 shadow-2xl flex flex-col items-center border border-surface-container animate-[scaleIn_0.2s_ease-out]" onclick="event.stopPropagation()">
+                <div class="w-full flex items-center justify-between pb-2 mb-2 border-b border-surface-container">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-[18px]">image</span>
+                        <span id="image-zoom-title" class="font-headline-sm text-xs md:text-sm font-bold text-on-surface truncate">Pratinjau Gambar</span>
+                    </div>
+                    <button type="button" onclick="closeImageModal()" class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div class="overflow-auto max-h-[70vh] flex items-center justify-center w-full p-2 bg-surface-container-low rounded-xl">
+                    <img id="image-zoom-img" src="" alt="Pratinjau Gambar Penuh" class="max-w-full max-h-[65vh] object-contain rounded-lg shadow-sm">
+                </div>
+                <div class="w-full mt-3 flex items-center justify-end gap-2 text-xs">
+                    <a id="image-zoom-link" href="" target="_blank" class="px-3.5 py-2 rounded-xl bg-surface-container-high text-primary hover:bg-surface-container-highest font-semibold flex items-center gap-1 transition-colors">
+                        <span>Buka di Tab Baru</span>
+                        <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                    </a>
+                    <button type="button" onclick="closeImageModal()" class="px-4 py-2 rounded-xl bg-primary text-on-primary font-bold shadow-sm hover:bg-primary-container transition-all">
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>
@@ -466,16 +563,22 @@
     <script>
         const examId = {{ $exam->id }};
         const eqId = {{ $currentExamQuestion->id }};
+        const currentIndex = {{ $currentIndex }};
         const totalQuestions = {{ $totalQ }};
         let remainingSeconds = {{ $remainingSeconds }};
         let isFlagged = {{ $isMarked ? 'true' : 'false' }};
         let saveTimeout = null;
+        let isExamClosedLocally = false;
+
+        // In-memory Questions Status Tracker
+        let examQuestionsData = @json($questionsData);
 
         // Monospace Timer Countdown
         const timeDisplay = document.getElementById('time-display');
         const timerBox = document.getElementById('exam-timer-box');
 
         function formatTimer(totalSecs) {
+            if (totalSecs < 0) totalSecs = 0;
             const h = Math.floor(totalSecs / 3600);
             const m = Math.floor((totalSecs % 3600) / 60);
             const s = totalSecs % 60;
@@ -485,12 +588,31 @@
             return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
+        // Timer interval with automatic timeout submission
         const timerInterval = setInterval(() => {
+            if (isExamClosedLocally) {
+                clearInterval(timerInterval);
+                return;
+            }
+
             if (remainingSeconds <= 0) {
                 clearInterval(timerInterval);
+                isExamClosedLocally = true;
                 timeDisplay.textContent = "00:00";
-                alert("Waktu ujian telah berakhir! Jawaban Anda akan otomatis dikumpulkan.");
-                document.getElementById('submitExamFinalForm').submit();
+                
+                showNoticeModal(
+                    "timer_off",
+                    "bg-error-container text-error",
+                    "Waktu Ujian Telah Habis!",
+                    "Batas waktu yang ditentukan telah selesai. Jawaban Anda otomatis dikumpulkan dan ujian diakhiri.",
+                    true
+                );
+
+                // Auto submit form with is_timeout flag
+                document.getElementById('isTimeoutInput').value = '1';
+                setTimeout(() => {
+                    document.getElementById('submitExamFinalForm').submit();
+                }, 1200);
                 return;
             }
 
@@ -504,6 +626,123 @@
             }
         }, 1000);
         timeDisplay.textContent = formatTimer(remainingSeconds);
+
+        // Calculate and synchronize answered/unanswered counts across the UI
+        function calculateAndSyncStatus() {
+            const answered = examQuestionsData.filter(q => q.has_answer).length;
+            const unanswered = totalQuestions - answered;
+            const marked = examQuestionsData.filter(q => q.is_marked).length;
+
+            // Update top progress bar
+            const progressBar = document.getElementById('progress-bar-fill');
+            if (progressBar && totalQuestions > 0) {
+                const percent = Math.round((answered / totalQuestions) * 100);
+                progressBar.style.width = percent + '%';
+            }
+
+            // Update footer badge
+            const answeredBadge = document.getElementById('answered-badge');
+            if (answeredBadge) {
+                answeredBadge.textContent = `${answered}/${totalQuestions}`;
+            }
+
+            // Update bottom sheet legends
+            const legendAnswered = document.getElementById('legend-answered');
+            if (legendAnswered) legendAnswered.textContent = answered;
+            const legendUnanswered = document.getElementById('legend-unanswered');
+            if (legendUnanswered) legendUnanswered.textContent = unanswered;
+            const legendMarked = document.getElementById('legend-marked');
+            if (legendMarked) legendMarked.textContent = marked;
+
+            // Update Submit Modal Elements
+            const modalAns = document.getElementById('modal-answered-count');
+            if (modalAns) modalAns.textContent = answered;
+            const modalUnans = document.getElementById('modal-unanswered-count');
+            if (modalUnans) modalUnans.textContent = unanswered;
+            const modalMarked = document.getElementById('modal-marked-count');
+            if (modalMarked) modalMarked.textContent = marked;
+
+            const iconContainer = document.getElementById('modal-icon-container');
+            const iconEl = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+            const noticeBox = document.getElementById('modal-notice-box');
+            const noticeIcon = document.getElementById('modal-notice-icon');
+            const noticeText = document.getElementById('modal-notice-text');
+            const btnJump = document.getElementById('btn-jump-unanswered');
+            const btnJumpText = document.getElementById('btn-jump-text');
+            const btnConfirm = document.getElementById('btnConfirmSubmit');
+            const btnConfirmIcon = document.getElementById('btnConfirmIcon');
+            const btnConfirmText = document.getElementById('btnConfirmText');
+
+            if (unanswered > 0) {
+                // Not all questions answered -> Cannot close exam!
+                if (iconContainer) iconContainer.className = "w-14 h-14 rounded-full bg-error-container text-error flex items-center justify-center mb-3 shadow-sm";
+                if (iconEl) iconEl.textContent = "lock";
+                if (titleEl) titleEl.textContent = "Ujian Belum Dapat Ditutup!";
+                if (descEl) descEl.textContent = `Anda masih memiliki ${unanswered} soal yang belum dijawab. Seluruh soal wajib dijawab sebelum Anda dapat mengakhiri ujian ini.`;
+
+                if (noticeBox) noticeBox.className = "mt-3 p-2.5 bg-error-container/40 rounded-xl flex items-start gap-2 border border-error/20";
+                if (noticeIcon) {
+                    noticeIcon.textContent = "lock";
+                    noticeIcon.className = "material-symbols-outlined text-error shrink-0 text-[18px] mt-0.5";
+                }
+                if (noticeText) noticeText.textContent = `Tombol kumpulkan ujian terkunci. Masih ada ${unanswered} soal belum diisi.`;
+
+                if (btnJump) {
+                    btnJump.style.display = "flex";
+                    const firstUnans = examQuestionsData.find(q => !q.has_answer);
+                    if (firstUnans && btnJumpText) {
+                        btnJumpText.textContent = `Lanjutkan Jawab Soal Kosong (No. ${firstUnans.number})`;
+                    }
+                }
+
+                if (btnConfirm) {
+                    btnConfirm.disabled = true;
+                    btnConfirm.className = "w-full h-11 rounded-xl bg-surface-container-highest text-outline font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed";
+                }
+                if (btnConfirmIcon) btnConfirmIcon.textContent = "lock";
+                if (btnConfirmText) btnConfirmText.textContent = "Kumpulkan Ujian (Terkunci)";
+            } else {
+                // All questions answered -> Can close exam!
+                if (iconContainer) iconContainer.className = "w-14 h-14 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center mb-3 shadow-sm";
+                if (iconEl) iconEl.textContent = "task_alt";
+                if (titleEl) titleEl.textContent = "Seluruh Soal Sudah Dijawab!";
+                if (descEl) descEl.textContent = "Luar biasa! Seluruh soal telah Anda jawab dengan lengkap. Anda dapat mengakhiri dan mengumpulkan ujian sekarang.";
+
+                if (noticeBox) noticeBox.className = "mt-3 p-2.5 bg-secondary-fixed/30 rounded-xl flex items-start gap-2 border border-secondary/20";
+                if (noticeIcon) {
+                    noticeIcon.textContent = "check_circle";
+                    noticeIcon.className = "material-symbols-outlined text-secondary shrink-0 text-[18px] mt-0.5";
+                }
+                if (noticeText) noticeText.textContent = "Jawaban Anda sudah 100% lengkap. Tekan tombol di bawah untuk mengumpulkan.";
+
+                if (btnJump) {
+                    btnJump.style.display = "none";
+                }
+
+                if (btnConfirm) {
+                    btnConfirm.disabled = false;
+                    btnConfirm.className = "w-full h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.99]";
+                }
+                if (btnConfirmIcon) btnConfirmIcon.textContent = "check";
+                if (btnConfirmText) btnConfirmText.textContent = "Kumpulkan Jawaban Sekarang";
+            }
+        }
+
+        // Jump directly to first unanswered question
+        function jumpToFirstUnanswered() {
+            const firstUnans = examQuestionsData.find(q => !q.has_answer);
+            if (firstUnans) {
+                closeSubmitModal();
+                if (firstUnans.number === currentIndex) {
+                    return;
+                }
+                window.location.href = "{{ route('student.exam.take', ['exam' => $exam->id]) }}?q=" + firstUnans.number;
+            } else {
+                closeSubmitModal();
+            }
+        }
 
         // Auto Save Answer function
         function triggerAutoSave() {
@@ -526,6 +765,14 @@
                 })
                 .then(res => res.json())
                 .then(data => {
+                    if (data.exam_closed) {
+                        handleTeacherClosedExam();
+                        return;
+                    }
+                    if (data.timeout) {
+                        handleTimeoutExam();
+                        return;
+                    }
                     if (data.status === 'ok') {
                         statusEl.textContent = 'Jawaban tersimpan otomatis';
                         updateNavigatorState(data.answer);
@@ -534,40 +781,59 @@
                 .catch(err => {
                     statusEl.textContent = 'Gagal menyimpan, periksa koneksi';
                 });
-            }, 400);
+            }, 350);
         }
 
         // Option Selection Radio Handler
         function selectOptionRadio(inputEl, label) {
+            // Mark current question as answered in memory
+            const currentItem = examQuestionsData.find(q => q.id === eqId);
+            if (currentItem) {
+                currentItem.has_answer = true;
+            }
+            calculateAndSyncStatus();
+
             // Update styles across options
             document.querySelectorAll('.option-card').forEach(card => {
                 card.classList.remove('border-primary', 'bg-surface-container', 'shadow-sm');
                 card.classList.add('border-surface-container', 'bg-surface-container-lowest');
 
                 const indicator = card.querySelector('.option-indicator');
-                indicator.className = 'option-indicator w-8 h-8 rounded-full bg-surface-container text-on-surface-variant font-semibold flex items-center justify-center text-xs shrink-0 transition-colors';
+                if (indicator) indicator.className = 'option-indicator w-8 h-8 rounded-full bg-surface-container text-on-surface-variant font-semibold flex items-center justify-center text-xs shrink-0 transition-colors';
 
                 const text = card.querySelector('.option-text');
-                text.className = 'option-text text-xs md:text-sm text-on-surface leading-relaxed flex-1';
+                if (text) text.className = 'option-text text-xs md:text-sm text-on-surface leading-relaxed flex-1';
 
                 const check = card.querySelector('.check-icon');
-                check.classList.remove('opacity-100');
-                check.classList.add('opacity-0');
+                if (check) {
+                    check.classList.remove('opacity-100');
+                    check.classList.add('opacity-0');
+                }
             });
 
             const parentCard = inputEl.closest('.option-card');
-            parentCard.classList.remove('border-surface-container', 'bg-surface-container-lowest');
-            parentCard.classList.add('border-primary', 'bg-surface-container', 'shadow-sm');
+            if (parentCard) {
+                parentCard.classList.remove('border-surface-container', 'bg-surface-container-lowest');
+                parentCard.classList.add('border-primary', 'bg-surface-container', 'shadow-sm');
 
-            const activeInd = parentCard.querySelector('.option-indicator');
-            activeInd.className = 'option-indicator w-8 h-8 rounded-full bg-primary text-on-primary shadow-sm font-bold flex items-center justify-center text-xs shrink-0 transition-colors';
+                const activeInd = parentCard.querySelector('.option-indicator');
+                if (activeInd) activeInd.className = 'option-indicator w-8 h-8 rounded-full bg-primary text-on-primary shadow-sm font-bold flex items-center justify-center text-xs shrink-0 transition-colors';
 
-            const activeText = parentCard.querySelector('.option-text');
-            activeText.className = 'option-text text-xs md:text-sm text-primary font-bold leading-relaxed flex-1';
+                const activeText = parentCard.querySelector('.option-text');
+                if (activeText) activeText.className = 'option-text text-xs md:text-sm text-primary font-bold leading-relaxed flex-1';
 
-            const activeCheck = parentCard.querySelector('.check-icon');
-            activeCheck.classList.remove('opacity-0');
-            activeCheck.classList.add('opacity-100');
+                const activeCheck = parentCard.querySelector('.check-icon');
+                if (activeCheck) {
+                    activeCheck.classList.remove('opacity-0');
+                    activeCheck.classList.add('opacity-100');
+                }
+            }
+
+            // Update navigator grid box styling
+            const gridBox = document.getElementById(`grid-box-${eqId}`);
+            if (gridBox) {
+                gridBox.className = 'grid-item h-11 rounded-xl flex items-center justify-center font-headline-sm text-xs font-bold transition-all active:scale-95 shadow-sm bg-primary text-on-primary ring-2 ring-primary ring-offset-2';
+            }
 
             triggerAutoSave();
         }
@@ -575,7 +841,14 @@
         // Essay text input handler
         const essayInput = document.getElementById('answer-text-input');
         if (essayInput) {
-            essayInput.addEventListener('input', triggerAutoSave);
+            essayInput.addEventListener('input', function() {
+                const currentItem = examQuestionsData.find(q => q.id === eqId);
+                if (currentItem) {
+                    currentItem.has_answer = this.value.trim().length > 0;
+                }
+                calculateAndSyncStatus();
+                triggerAutoSave();
+            });
         }
 
         // Flag / Ragu-ragu Toggle
@@ -584,6 +857,12 @@
             const btn = document.getElementById('flag-btn');
             const icon = document.getElementById('flag-icon');
             const text = document.getElementById('flag-text');
+
+            const currentItem = examQuestionsData.find(q => q.id === eqId);
+            if (currentItem) {
+                currentItem.is_marked = isFlagged;
+            }
+            calculateAndSyncStatus();
 
             if (isFlagged) {
                 btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tertiary-container text-on-tertiary font-bold shadow-sm text-xs transition-all active:scale-95';
@@ -604,7 +883,7 @@
         function updateNavigatorState(answer) {
             const gridBox = document.getElementById(`grid-box-${eqId}`);
             if (gridBox) {
-                const isCurrent = {{ $currentIndex }} == gridBox.textContent.trim();
+                const isCurrent = currentIndex == gridBox.textContent.trim();
                 const hasAnswer = answer.selected_option_id || (answer.answer_text && answer.answer_text.trim() !== '');
 
                 gridBox.className = 'grid-item h-11 rounded-xl flex items-center justify-center font-headline-sm text-xs font-bold transition-all active:scale-95 shadow-sm';
@@ -635,6 +914,7 @@
 
         // Submit Confirmation Modal Toggle
         function openSubmitModal() {
+            calculateAndSyncStatus();
             const modal = document.getElementById('submit-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -646,18 +926,141 @@
             modal.classList.remove('flex');
         }
 
+        // Prevent Premature Exit Confirmation
         function confirmExitExam() {
-            if (confirm("Ujian sedang berlangsung! Apakah Anda yakin ingin kembali ke dashboard? Sisa waktu Anda akan terus berjalan.")) {
-                window.location.href = "{{ route('student.dashboard') }}";
+            const unanswered = examQuestionsData.filter(q => !q.has_answer).length;
+            if (unanswered > 0) {
+                if (confirm(`Peringatan: Anda belum menyelesaikan seluruh soal ujian (masih ada ${unanswered} soal kosong).\n\nUjian TIDAK BISA ditutup sebelum semua soal dijawab, kecuali waktu habis atau guru menutup ujian.\n\nApakah Anda hanya ingin kembali sementara ke dashboard? Waktu ujian Anda akan tetap berjalan.`)) {
+                    window.location.href = "{{ route('student.dashboard') }}";
+                }
+            } else {
+                if (confirm("Ujian sedang berlangsung dan seluruh soal telah Anda jawab. Apakah Anda ingin kembali ke dashboard tanpa mengumpulkan sekarang? Waktu ujian tetap berjalan.")) {
+                    window.location.href = "{{ route('student.dashboard') }}";
+                }
             }
         }
 
-        // Submit loading indicator
-        document.getElementById('submitExamFinalForm').addEventListener('submit', function() {
+        // Form Submit handler
+        document.getElementById('submitExamFinalForm').addEventListener('submit', function(e) {
+            const isTimeout = document.getElementById('isTimeoutInput').value === '1';
+            const unanswered = examQuestionsData.filter(q => !q.has_answer).length;
+
+            if (!isTimeout && unanswered > 0) {
+                e.preventDefault();
+                alert(`Anda tidak dapat menutup ujian karena masih ada ${unanswered} butir soal yang belum dijawab! Harap jawab seluruh soal terlebih dahulu.`);
+                return false;
+            }
+
             const btn = document.getElementById('btnConfirmSubmit');
             btn.disabled = true;
-            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Mengirim Jawaban...</span>';
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Mengumpulkan Jawaban...</span>';
         });
+
+        // Modal for external events (Teacher Closed / Timeout)
+        function showNoticeModal(icon, iconWrapClasses, title, desc, autoRedirect = false) {
+            const modal = document.getElementById('notice-modal');
+            const iconWrap = document.getElementById('notice-modal-icon-wrap');
+            const iconEl = document.getElementById('notice-modal-icon');
+            const titleEl = document.getElementById('notice-modal-title');
+            const descEl = document.getElementById('notice-modal-desc');
+
+            if (iconWrap) iconWrap.className = `w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm ${iconWrapClasses}`;
+            if (iconEl) iconEl.textContent = icon;
+            if (titleEl) titleEl.textContent = title;
+            if (descEl) descEl.textContent = desc;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (autoRedirect) {
+                setTimeout(() => {
+                    window.location.href = "{{ route('student.exam.result', $exam->id) }}";
+                }, 2000);
+            }
+        }
+
+        function handleTeacherClosedExam() {
+            if (isExamClosedLocally) return;
+            isExamClosedLocally = true;
+            clearInterval(timerInterval);
+            showNoticeModal(
+                "campaign",
+                "bg-secondary-fixed text-secondary",
+                "Ujian Telah Ditutup oleh Guru",
+                "Guru/Pengawas telah mengakhiri sesi ujian ini. Seluruh jawaban Anda telah disimpan otomatis dan Anda dialihkan ke halaman hasil.",
+                true
+            );
+        }
+
+        function handleTimeoutExam() {
+            if (isExamClosedLocally) return;
+            isExamClosedLocally = true;
+            clearInterval(timerInterval);
+            showNoticeModal(
+                "timer_off",
+                "bg-error-container text-error",
+                "Waktu Ujian Telah Berakhir",
+                "Batas waktu yang diberikan sudah habis. Ujian otomatis berakhir dan jawaban Anda dikumpulkan.",
+                true
+            );
+        }
+
+        // Background Polling to check if Teacher Closed the Exam or Time is Up
+        const pollStatusInterval = setInterval(() => {
+            if (isExamClosedLocally) {
+                clearInterval(pollStatusInterval);
+                return;
+            }
+
+            fetch("{{ route('student.exam.status', $exam->id) }}", {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.is_closed) {
+                    clearInterval(pollStatusInterval);
+                    handleTeacherClosedExam();
+                } else if (data.is_timeout || (data.remaining_seconds !== undefined && data.remaining_seconds <= 0)) {
+                    clearInterval(pollStatusInterval);
+                    handleTimeoutExam();
+                } else if (data.remaining_seconds !== undefined && Math.abs(remainingSeconds - data.remaining_seconds) > 15) {
+                    // Sync remaining seconds if slight discrepancy
+                    remainingSeconds = data.remaining_seconds;
+                }
+            })
+            .catch(err => {
+                // Ignore transient network errors during poll
+            });
+        }, 10000);
+
+        // Lightbox Image Zoom handlers
+        function openImageModal(imgSrc, title) {
+            const modal = document.getElementById('image-zoom-modal');
+            const img = document.getElementById('image-zoom-img');
+            const titleEl = document.getElementById('image-zoom-title');
+            const linkEl = document.getElementById('image-zoom-link');
+            if (img) img.src = imgSrc;
+            if (titleEl) titleEl.textContent = title || 'Pratinjau Gambar';
+            if (linkEl) linkEl.href = imgSrc;
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('image-zoom-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Initial setup
+        calculateAndSyncStatus();
     </script>
 </body>
 </html>

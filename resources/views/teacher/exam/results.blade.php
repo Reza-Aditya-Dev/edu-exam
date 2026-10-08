@@ -20,7 +20,7 @@
         </div>
     </div>
     
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
         <button type="button" onclick="window.print()" class="btn btn-secondary text-xs font-semibold px-3 py-2 flex items-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
             Cetak Rekap
@@ -29,9 +29,27 @@
             <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
             Analisis Soal
         </a>
-        <a href="{{ route('teacher.exams.index', ['status' => 'completed']) }}" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1">
+        @if(count($results) > 0)
+        <form action="{{ route('teacher.exams.clear_results', $exam) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin menghapus SELURUH hasil pengerjaan siswa pada ujian ini?\n\nSoal ujian tetap tersimpan, tetapi semua nilai dan jawaban siswa akan dihapus/direset.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-secondary text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 px-3 py-2 flex items-center gap-1.5" title="Hapus dan Reset Semua Nilai Siswa">
+                <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                Reset Semua Hasil
+            </button>
+        </form>
+        @endif
+        <form action="{{ route('teacher.exams.destroy', $exam) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN BESAR: Apakah Anda yakin ingin menghapus ujian \'{{ $exam->title }}\' ini secara permanen?\n\nSeluruh konfigurasi ujian, butir soal, dan riwayat nilai siswa akan dihapus bersih sehingga Anda bisa membuat ujian baru.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 flex items-center gap-1.5 shadow-sm" title="Hapus Ujian & Hasil Permanen">
+                <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+                Hapus Ujian Ini
+            </button>
+        </form>
+        <a href="{{ route('teacher.exams.index') }}" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-            Daftar Hasil Ujian
+            Daftar Ujian
         </a>
     </div>
 </div>
@@ -124,10 +142,19 @@
                         </span>
                     </td>
                     <td style="text-align: right;">
-                        <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm text-xs font-medium px-3 py-1.5 flex items-center gap-1 justify-end ml-auto" title="Periksa Lembar Jawaban">
-                            <span>Jawaban</span>
-                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
-                        </a>
+                        <div class="flex items-center justify-end gap-1.5">
+                            <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm text-xs font-medium px-2.5 py-1.5 flex items-center gap-1" title="Periksa Lembar Jawaban">
+                                <span>Jawaban</span>
+                                <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
+                            </a>
+                            <form action="{{ route('teacher.exams.destroy_result', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" method="POST" class="inline" onsubmit="return confirm('Hapus hasil pengerjaan siswa {{ $result->student->name }}?\n\nNilai dan jawaban siswa ini akan dihapus.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors" title="Hapus Hasil Siswa Ini">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
