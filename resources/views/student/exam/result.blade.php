@@ -4,6 +4,7 @@
 
 @section('student-content')
 @php
+    $showResult = $exam->settings ? (bool)$exam->settings->show_result_immediately : true;
     $score = round($result->total_score);
     $kkm = $exam->passing_grade ?? 75;
     $diff = $score - $kkm;
@@ -48,6 +49,7 @@
         </div>
     </div>
 
+    @if($showResult)
     <!-- Score Showcase Card with Circular Gauge -->
     <div class="mb-5">
         <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container flex flex-col items-center text-center relative overflow-hidden">
@@ -159,6 +161,18 @@
             </div>
         </div>
     </div>
+    @else
+    <!-- Hidden Score Card Notice -->
+    <div class="mb-5 bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-surface-container text-center flex flex-col items-center">
+        <div class="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined text-[28px]">lock_clock</span>
+        </div>
+        <h3 class="font-headline-sm text-base font-bold text-on-surface">Hasil Disimpan &amp; Terkunci</h3>
+        <p class="font-body-sm text-xs text-on-surface-variant mt-2 max-w-sm leading-relaxed">
+            Jawaban Anda telah berhasil tersimpan di sistem. Sesuai pengaturan pengawas, rincian skor dan hasil akhir akan diumumkan setelah seluruh sesi ujian selesai dinilai.
+        </p>
+    </div>
+    @endif
 
     <!-- Details Card -->
     <div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container p-4 mb-5">

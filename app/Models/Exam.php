@@ -95,4 +95,17 @@ class Exam extends Model
         $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $this->subject->code ?? $this->subject->name ?? $this->title ?? 'CBT'), 0, 3));
         return ($prefix ?: 'CBT') . '-' . str_pad($this->id, 3, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Kirim notifikasi otomatis khusus ke seluruh siswa di rombel/kelas ujian ini.
+     */
+    public function notifyClassroomStudents(string $title, string $message, string $type = 'exam'): void
+    {
+        $classroom = $this->classroom()->with('students')->first();
+        if ($classroom && $classroom->students) {
+            foreach ($classroom->students as $student) {
+                Notification::send($student->id, $title, $message, $type, $this);
+            }
+        }
+    }
 }

@@ -137,18 +137,8 @@ tailwind.config = {
                     </a>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('student.dashboard') }}#notifications" class="relative w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors" title="Notifikasi">
-                        <span class="material-symbols-outlined text-[22px]">notifications</span>
-                        @if(isset($unreadCount) && $unreadCount > 0)
-                            <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                                {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-                            </span>
-                        @endif
-                    </a>
-                    <a href="{{ route('student.profile') }}" class="relative shrink-0 block" title="Profil Siswa">
-                        <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-fixed">
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-white"></span>
-                    </a>
+                    @include('partials.notification-dropdown')
+                    
                 </div>
             </div>
         </header>

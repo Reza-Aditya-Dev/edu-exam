@@ -678,6 +678,23 @@ class ManagementController extends Controller
         );
 
         ActivityLog::log('exam_created_by_admin', "Jadwal ujian dibuat oleh Admin: {$exam->title} ({$exam->token})", $exam);
+
+        // Notifikasi otomatis ke seluruh siswa di kelas terkait
+        $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+        if ($exam->status === 'active') {
+            $exam->notifyClassroomStudents(
+                'Ujian Telah Dimulai!',
+                "Sesi ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} sekarang telah dibuka. Silakan kerjakan!",
+                'exam'
+            );
+        } elseif ($exam->status === 'scheduled') {
+            $exam->notifyClassroomStudents(
+                'Jadwal Ujian Baru',
+                "Ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} dijadwalkan pada {$exam->formatted_date}.",
+                'exam'
+            );
+        }
+
         return redirect()->route('admin.exams')->with('success', "Jadwal ujian '{$exam->title}' (Token: {$exam->token}) berhasil dibuat.");
     }
 
@@ -735,6 +752,12 @@ class ManagementController extends Controller
     public function activateExam(Exam $exam)
     {
         $exam->update(['status' => 'active']);
+        $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+        $exam->notifyClassroomStudents(
+            'Ujian Telah Dimulai!',
+            "Sesi ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} sekarang sedang berlangsung (Live). Silakan masuk dan kerjakan!",
+            'exam'
+        );
         ActivityLog::log('exam_activated_by_admin', "Sesi ujian diaktifkan (Live): {$exam->title}", $exam);
         return back()->with('success', "Sesi ujian '{$exam->title}' sekarang sedang berlangsung (Live).");
     }
@@ -742,6 +765,12 @@ class ManagementController extends Controller
     public function completeExam(Exam $exam)
     {
         $exam->update(['status' => 'completed']);
+        $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+        $exam->notifyClassroomStudents(
+            'Sesi Ujian Ditutup',
+            "Sesi ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} telah ditandai selesai.",
+            'info'
+        );
         ActivityLog::log('exam_completed_by_admin', "Sesi ujian diselesaikan: {$exam->title}", $exam);
         return back()->with('success', "Sesi ujian '{$exam->title}' telah ditandai selesai.");
     }
@@ -778,7 +807,16 @@ class ManagementController extends Controller
             ActivityLog::log('bulk_exams_archived', "{$count} ujian berhasil diarsipkan.");
             return back()->with('success', "{$count} sesi ujian berhasil diarsipkan.");
         } elseif ($action === 'activate') {
-            Exam::whereIn('id', $ids)->update(['status' => 'active']);
+            $examsToActivate = Exam::whereIn('id', $ids)->get();
+            foreach ($examsToActivate as $ex) {
+                $ex->update(['status' => 'active']);
+                $clsName = $ex->classroom?->name ?? 'Kelas Anda';
+                $ex->notifyClassroomStudents(
+                    'Ujian Telah Dimulai!',
+                    "Sesi ujian {$ex->title} ({$ex->subject?->name}) untuk {$clsName} kini telah aktif. Silakan masuk dan kerjakan!",
+                    'exam'
+                );
+            }
             ActivityLog::log('bulk_exams_activated', "{$count} ujian diaktifkan secara massal.");
             return back()->with('success', "{$count} sesi ujian berhasil diaktifkan.");
         } elseif ($action === 'delete') {
@@ -1028,13 +1066,25 @@ class ManagementController extends Controller
 
     public function updateSettings(Request $request)
     {
+        $request->validate([
+            'school_logo_file' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
+        ], [
+            'school_logo_file.image' => 'Berkas logo sekolah harus berupa gambar valid.',
+            'school_logo_file.mimes' => 'Format logo hanya boleh JPG, PNG, WEBP, atau SVG.',
+            'school_logo_file.max'   => 'Ukuran berkas logo maksimal 2 MB.',
+        ]);
+
         if ($request->hasFile('school_logo_file')) {
             $file = $request->file('school_logo_file');
             $dir = public_path('uploads/settings');
             if (!file_exists($dir)) {
-                mkdir($dir, 0777, true);
+                mkdir($dir, 0755, true);
             }
-            $filename = 'logo_' . time() . '.' . $file->getClientOriginalExtension();
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'svg'])) {
+                $ext = 'png';
+            }
+            $filename = 'logo_' . time() . '_' . \Illuminate\Support\Str::random(6) . '.' . $ext;
             $file->move($dir, $filename);
             SchoolSetting::set('school_logo', '/uploads/settings/' . $filename);
         }

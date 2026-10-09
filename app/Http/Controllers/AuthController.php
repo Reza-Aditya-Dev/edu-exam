@@ -32,6 +32,8 @@ class AuthController extends Controller
             $loginField = 'email';
         } elseif (is_numeric($loginInput) && User::where('nis', $loginInput)->exists()) {
             $loginField = 'nis';
+        } elseif (is_numeric($loginInput) && User::where('nisn', $loginInput)->exists()) {
+            $loginField = 'nisn';
         } else {
             $loginField = 'username';
         }

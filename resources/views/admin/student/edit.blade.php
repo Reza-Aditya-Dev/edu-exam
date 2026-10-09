@@ -154,6 +154,29 @@
                         @enderror
                     </div>
 
+                    <!-- NISN (Nomor Induk Siswa Nasional) -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between" for="nisn">
+                            <span>NISN (10 Digit)</span>
+                            <span class="material-symbols-outlined text-outline text-[16px] cursor-help" title="Nomor Induk Siswa Nasional (Kemendikbud - Opsional)">help</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3.5 text-outline text-[20px] pointer-events-none">badge</span>
+                            <input 
+                                name="nisn" 
+                                id="nisn" 
+                                maxlength="10" 
+                                class="w-full bg-surface-container-low focus:bg-surface-container-lowest rounded-lg pl-11 pr-4 py-2.5 font-body-md text-body-md text-on-surface outline-none border border-transparent focus:border-primary-container transition-all focus:shadow-md font-mono tracking-wider @error('nisn') border-error @enderror" 
+                                placeholder="Contoh: 0054819201" 
+                                type="text" 
+                                value="{{ old('nisn', $student->nisn) }}" 
+                            />
+                        </div>
+                        @error('nisn')
+                            <span class="text-error font-body-sm text-xs mt-0.5">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                     <!-- NIS (Nomor Induk Siswa) -->
                     <div class="flex flex-col gap-1.5">
                         <label class="font-label-md text-label-md text-on-surface font-semibold" for="nis">
@@ -221,7 +244,7 @@
                     </div>
 
                     <!-- Status Akun -->
-                    <div class="flex flex-col gap-1.5">
+                    <div class="md:col-span-2 flex flex-col gap-1.5">
                         <label class="font-label-md text-label-md text-on-surface font-semibold" for="is_active">
                             Status Akun Siswa
                         </label>
@@ -287,7 +310,13 @@
                     </div>
                     <div class="flex flex-col min-w-0">
                         <span class="font-headline-sm text-[16px] text-on-surface truncate font-bold">{{ $student->name }}</span>
-                        <span class="font-body-sm text-xs text-on-surface-variant">NIS: {{ $student->nis }}</span>
+                        <div class="flex items-center gap-1.5 text-xs text-on-surface-variant font-mono">
+                            <span>NIS: {{ $student->nis }}</span>
+                            @if($student->nisn)
+                                <span class="text-outline">•</span>
+                                <span>NISN: {{ $student->nisn }}</span>
+                            @endif
+                        </div>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="px-2 py-0.5 rounded-full {{ $student->is_active ? 'bg-secondary-container text-on-secondary-container' : 'bg-error-container text-on-error-container' }} font-label-sm text-[11px] font-semibold">
                                 {{ $student->is_active ? 'Akun Aktif' : 'Nonaktif' }}

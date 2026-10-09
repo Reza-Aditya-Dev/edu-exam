@@ -161,7 +161,9 @@ class QuestionController extends Controller
                             $decoded = base64_decode($dataParts[1]);
                             $ext = 'png';
                             if (preg_match('/data:image\/([a-zA-Z0-9]+);/', $dataParts[0], $m)) {
-                                $ext = strtolower($m[1]) === 'jpeg' ? 'jpg' : strtolower($m[1]);
+                                $rawExt = strtolower($m[1]) === 'jpeg' ? 'jpg' : strtolower($m[1]);
+                                $allowedExts = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+                                $ext = in_array($rawExt, $allowedExts) ? $rawExt : 'png';
                             }
                             $fileName = 'questions/img_' . time() . '_' . $index . '_' . \Illuminate\Support\Str::random(6) . '.' . $ext;
                             \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decoded);

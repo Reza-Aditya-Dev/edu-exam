@@ -313,9 +313,15 @@
 
                             <!-- NISN / NIS -->
                             <td class="py-3.5 px-space-md">
-                                <div class="flex flex-col">
-                                    <span class="font-label-md text-label-md text-on-surface font-mono font-medium">{{ $student->nis ?: '-' }}</span>
-                                    <span class="font-label-sm text-label-sm text-outline font-mono">ID: {{ $student->username }}</span>
+                                <div class="flex flex-col gap-0.5">
+                                    <div class="flex items-center gap-1.5 font-mono">
+                                        <span class="font-label-md text-label-md text-on-surface font-semibold">{{ $student->nis ?: '-' }}</span>
+                                        <span class="text-[10px] px-1 py-0.2 rounded bg-surface-container text-on-surface-variant font-medium">NIS</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 font-mono text-outline text-label-sm">
+                                        <span>{{ $student->nisn ?: '-' }}</span>
+                                        <span class="text-[10px] px-1 py-0.2 rounded bg-surface-container text-outline">NISN</span>
+                                    </div>
                                 </div>
                             </td>
 

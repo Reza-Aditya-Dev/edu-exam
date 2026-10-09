@@ -24,6 +24,7 @@ class UserController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
                   ->orWhere('nis', 'like', '%'.$search.'%')
+                  ->orWhere('nisn', 'like', '%'.$search.'%')
                   ->orWhere('email', 'like', '%'.$search.'%')
                   ->orWhere('username', 'like', '%'.$search.'%');
             });
@@ -175,6 +176,7 @@ class UserController extends Controller
         $request->validate([
             'name'         => 'required|string|max:255',
             'nis'          => 'required|string|unique:users,nis,'.$student->id,
+            'nisn'         => 'nullable|string|max:20|unique:users,nisn,'.$student->id,
             'email'        => 'required|email|unique:users,email,'.$student->id,
             'username'     => 'nullable|string|max:100|unique:users,username,'.$student->id,
             'gender'       => 'required|in:L,P',
@@ -182,16 +184,20 @@ class UserController extends Controller
             'phone'        => 'nullable|string|max:30',
             'address'      => 'nullable|string',
             'password'     => 'nullable|string|min:6',
+            'avatar'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ], [
             'name.required'         => 'Nama lengkap siswa wajib diisi.',
             'nis.required'          => 'NIS (Nomor Induk Siswa) wajib diisi.',
             'nis.unique'            => 'NIS ini sudah digunakan oleh siswa lain.',
+            'nisn.unique'           => 'NISN ini sudah digunakan oleh siswa lain.',
             'email.required'        => 'Alamat email wajib diisi.',
             'email.unique'          => 'Email sudah terdaftar untuk akun lain.',
             'username.unique'       => 'Username sudah digunakan.',
             'classroom_id.required' => 'Kelas siswa wajib dipilih.',
             'classroom_id.exists'   => 'Kelas yang dipilih tidak ditemukan.',
             'password.min'          => 'Kata sandi baru minimal 6 karakter jika ingin diubah.',
+            'avatar.image'          => 'Berkas foto harus berupa gambar valid.',
+            'avatar.max'            => 'Ukuran foto profil maksimal 2 MB.',
         ]);
 
         $student->update([
@@ -395,10 +401,11 @@ class UserController extends Controller
     public function importStudents(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:5120',
+            'file' => 'required|file|mimes:csv,txt|max:5120',
             'classroom_id' => 'nullable|exists:classrooms,id',
         ], [
-            'file.required' => 'Silakan pilih berkas CSV/Excel untuk diimpor.',
+            'file.required' => 'Silakan pilih berkas CSV untuk diimpor.',
+            'file.mimes'    => 'Berkas yang diunggah harus berekstensi .csv atau .txt.',
             'file.max'      => 'Ukuran berkas maksimal 5MB.',
         ]);
 

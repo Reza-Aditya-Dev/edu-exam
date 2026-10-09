@@ -21,14 +21,7 @@
                     </span>
                 </div>
             </div>
-            <a href="#notifications" class="relative w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface transition-transform active:scale-95 shadow-sm">
-                <span class="material-symbols-outlined text-[22px]">notifications</span>
-                @if(isset($unreadCount) && $unreadCount > 0)
-                    <span class="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] px-1 bg-error text-white font-label-sm text-[10px] flex items-center justify-center font-bold rounded-full">
-                        {{ $unreadCount }}
-                    </span>
-                @endif
-            </a>
+            
         </div>
         
         <!-- Quick Status Banner -->
@@ -38,6 +31,26 @@
                 Status: <strong class="text-on-surface font-semibold">Terdaftar Ujian Semester (UTS/UAS)</strong>
             </p>
         </div>
+
+        @if(isset($unreadNotificationCount) && $unreadNotificationCount > 0 && isset($latestNotifications) && $latestNotifications->isNotEmpty())
+            @php $latestUnread = $latestNotifications->firstWhere('is_read', false) ?? $latestNotifications->first(); @endphp
+            @if($latestUnread)
+                <div class="w-full bg-primary/10 border border-primary/20 p-3 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-8 h-8 rounded-lg bg-primary text-white shrink-0 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[18px]">notifications_active</span>
+                        </span>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-xs font-bold text-on-surface truncate">{{ $latestUnread->title }}</span>
+                            <span class="text-[11px] text-on-surface-variant line-clamp-1">{{ $latestUnread->message }}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleNotificationDropdown()" class="shrink-0 px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold shadow-xs hover:bg-primary-hover transition-colors cursor-pointer">
+                        Lihat
+                    </button>
+                </div>
+            @endif
+        @endif
     </div>
 
     <!-- Section A: Ujian Aktif (Urgent / Highlight) -->

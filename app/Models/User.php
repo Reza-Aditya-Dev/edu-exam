@@ -50,7 +50,7 @@ class User extends Authenticatable
     {
         return $this->classrooms()
                     ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
-                    ->first();
+                    ->first() ?: $this->classrooms()->first();
     }
 
     public function examParticipants()

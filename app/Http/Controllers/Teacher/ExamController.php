@@ -118,6 +118,21 @@ class ExamController extends Controller
             ]);
 
             ActivityLog::log('exam_created', "Ujian dibuat: {$exam->title}", $exam);
+
+            // Notifikasi ke seluruh siswa kelas jika langsung diterbitkan
+            if ($exam->status === 'scheduled') {
+                $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+                $exam->notifyClassroomStudents(
+                    'Ujian Baru Dijadwalkan',
+                    "Ujian {$exam->title} ({$exam->subject?->name}) untuk kelas {$clsName} telah dijadwalkan pada {$exam->formatted_date}.",
+                    'exam'
+                );
+            }
+
+            // Notifikasi ke seluruh Admin
+            foreach (\App\Models\User::admins()->get() as $admin) {
+                Notification::send($admin->id, 'Paket Ujian Baru', "Guru " . auth()->user()->name . " membuat paket ujian: {$exam->title}.", 'exam', $exam);
+            }
         });
 
         return redirect()->route('teacher.exams.index')->with('success', 'Ujian berhasil disimpan.');
@@ -187,11 +202,13 @@ class ExamController extends Controller
         $this->authorizeExam($exam);
         $exam->update(['status' => 'scheduled']);
 
-        // Notifikasi ke semua siswa
-        $classroom = $exam->classroom()->with('students')->first();
-        foreach ($classroom->students as $student) {
-            Notification::send($student->id, 'Ujian Dijadwalkan', "Ujian {$exam->title} dijadwalkan pada {$exam->formatted_date}.", 'exam', $exam);
-        }
+        // Notifikasi otomatis ke seluruh siswa rombel kelas ini
+        $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+        $exam->notifyClassroomStudents(
+            'Ujian Baru Dijadwalkan',
+            "Ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} dijadwalkan pada {$exam->formatted_date}.",
+            'exam'
+        );
 
         ActivityLog::log('exam_published', "Ujian diterbitkan: {$exam->title}", $exam);
         return back()->with('success', 'Ujian berhasil diterbitkan.');
@@ -201,6 +218,15 @@ class ExamController extends Controller
     {
         $this->authorizeExam($exam);
         $exam->update(['status' => 'active']);
+
+        // Notifikasi ke seluruh siswa kelas bahwa sesi telah dibuka
+        $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+        $exam->notifyClassroomStudents(
+            'Ujian Telah Dimulai!',
+            "Sesi ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} kini telah aktif. Silakan masuk dan mulai mengerjakan!",
+            'exam'
+        );
+
         ActivityLog::log('exam_activated', "Ujian diaktifkan: {$exam->title}", $exam);
         return back()->with('success', 'Ujian sekarang aktif.');
     }
@@ -244,6 +270,19 @@ class ExamController extends Controller
                         'pass_status'         => $passStatus,
                     ]
                 );
+            }
+
+            // Notifikasi ke seluruh siswa kelas
+            $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+            $exam->notifyClassroomStudents(
+                'Sesi Ujian Selesai',
+                "Sesi ujian {$exam->title} ({$exam->subject?->name}) untuk {$clsName} telah resmi ditutup oleh guru.",
+                'info'
+            );
+
+            // Notifikasi ke seluruh Admin
+            foreach (\App\Models\User::admins()->get() as $admin) {
+                Notification::send($admin->id, 'Sesi Ujian Selesai', "Guru {$exam->teacher?->name} telah menyelesaikan ujian {$exam->title} (" . ($classroom?->name ?? 'Kelas') . ").", 'exam', $exam);
             }
 
             ActivityLog::log('exam_completed', "Ujian diselesaikan oleh guru: {$exam->title}", $exam);

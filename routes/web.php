@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Student;
 use App\Http\Controllers\Teacher;
 use App\Http\Controllers\Admin;
@@ -18,10 +19,20 @@ Route::get('/', function () { return view('welcome'); })->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.submit')->middleware('throttle:10,1');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// ═══════════════════════════════════════════════════
+// NOTIFIKASI SISTEM (Semua Role Pengguna)
+// ═══════════════════════════════════════════════════
+Route::middleware('auth')->prefix('notifikasi')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('readAll');
+    Route::post('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
+    Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+});
 
 // ═══════════════════════════════════════════════════
 // STUDENT ROUTES
@@ -33,7 +44,10 @@ Route::middleware(['auth', 'role:student'])->prefix('siswa')->name('student.')->
     Route::get('/dashboard', [Student\DashboardController::class, 'index'])->name('dashboard');
 
     // Profil siswa
-    Route::get('/profil', function() { return view('student.profile'); })->name('profile');
+    Route::get('/profil',          [Student\ProfileController::class, 'index'])->name('profile');
+    Route::post('/profil/avatar',  [Student\ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::put('/profil',          [Student\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profil/password', [Student\ProfileController::class, 'updatePassword'])->name('profile.password');
 
     // Ujian
     Route::prefix('ujian')->name('exam.')->group(function () {

@@ -9,6 +9,7 @@ use App\Models\ExamQuestion;
 use App\Models\ExamResult;
 use App\Models\StudentAnswer;
 use App\Models\ActivityLog;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,8 @@ class ExamController extends Controller
     public function take(Exam $exam, Request $request)
     {
         $student = Auth::user();
+        $this->authorizeExam($exam, $student);
+
         $participant = ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->firstOrFail();
@@ -88,12 +91,23 @@ class ExamController extends Controller
             ->get();
 
         $settings = $exam->settings;
-        if ($settings?->shuffle_questions && !$participant->started_at->eq($participant->started_at)) {
-            // Shuffle seeded by participant ID for consistency
+        if ($settings?->shuffle_questions) {
+            $examQuestions = $examQuestions->sortBy(function ($eq) use ($participant) {
+                return crc32($participant->id . '_' . $eq->id);
+            })->values();
         }
 
         $currentIndex = max(1, min((int)$request->get('q', 1), $examQuestions->count()));
         $currentExamQuestion = $examQuestions[$currentIndex - 1] ?? $examQuestions->first();
+
+        if ($settings?->shuffle_options && $currentExamQuestion && $currentExamQuestion->question && $currentExamQuestion->question->relationLoaded('options')) {
+            $currentExamQuestion->question->setRelation(
+                'options',
+                $currentExamQuestion->question->options->sortBy(function ($opt) use ($participant) {
+                    return crc32($participant->id . '_' . $opt->id);
+                })->values()
+            );
+        }
 
         // Ambil semua jawaban siswa
         $answers = StudentAnswer::where('exam_participant_id', $participant->id)
@@ -112,6 +126,8 @@ class ExamController extends Controller
     public function saveAnswer(Request $request, Exam $exam)
     {
         $student = Auth::user();
+        $this->authorizeExam($exam, $student);
+
         $participant = ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->where('status', 'in_progress')
@@ -122,6 +138,7 @@ class ExamController extends Controller
             $this->processSubmit($exam, $participant, true);
             return response()->json([
                 'success'     => false,
+                'status'      => 'closed',
                 'exam_closed' => true,
                 'redirect'    => route('student.exam.result', $exam),
                 'message'     => 'Ujian telah ditutup oleh guru pengampu.',
@@ -133,6 +150,7 @@ class ExamController extends Controller
             $this->processSubmit($exam, $participant, true);
             return response()->json([
                 'success'     => false,
+                'status'      => 'timeout',
                 'timeout'     => true,
                 'redirect'    => route('student.exam.result', $exam),
                 'message'     => 'Waktu ujian telah berakhir.',
@@ -174,8 +192,14 @@ class ExamController extends Controller
 
         return response()->json([
             'success' => true,
+            'status'  => 'ok',
             'message' => 'Jawaban tersimpan',
-            'answer'  => $answer,
+            'answer'  => [
+                'id'                 => $answer->id,
+                'exam_question_id'   => $answer->exam_question_id,
+                'selected_option_id' => $answer->selected_option_id,
+                'is_marked'          => (bool)$answer->is_marked,
+            ],
         ]);
     }
 
@@ -183,6 +207,8 @@ class ExamController extends Controller
     public function submit(Request $request, Exam $exam)
     {
         $student = Auth::user();
+        $this->authorizeExam($exam, $student);
+
         $participant = ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->where('status', 'in_progress')
@@ -219,6 +245,8 @@ class ExamController extends Controller
     public function checkStatus(Exam $exam)
     {
         $student = Auth::user();
+        $this->authorizeExam($exam, $student);
+
         $participant = ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->first();
@@ -298,6 +326,28 @@ class ExamController extends Controller
             );
 
             ActivityLog::log('exam_submitted', "Siswa mengumpulkan ujian: {$exam->title}", $exam);
+
+            // Notifikasi ke Siswa yang bersangkutan
+            Notification::send(
+                $participant->student_id,
+                'Ujian Berhasil Dikumpulkan',
+                "Ujian {$exam->title} berhasil dikumpulkan dengan nilai {$totalScore} (" . ($passStatus === 'pass' ? 'Tuntas' : 'Remedial') . ").",
+                'result',
+                $exam
+            );
+
+            // Notifikasi ke Guru Pengampu ujian
+            if ($exam->teacher_id) {
+                $studentUser = $participant->student;
+                $studentName = $studentUser ? $studentUser->name : 'Siswa';
+                Notification::send(
+                    $exam->teacher_id,
+                    'Jawaban Siswa Masuk',
+                    "{$studentName} telah mengumpulkan ujian {$exam->title} (Nilai: {$totalScore}).",
+                    'exam',
+                    $exam
+                );
+            }
         });
 
         return redirect()->route('student.exam.result', $exam);

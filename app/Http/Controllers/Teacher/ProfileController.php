@@ -20,7 +20,7 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $user->load(['subjects', 'homeroomClassrooms', 'teachingClassrooms.subject']);
+        $user->load(['subjects', 'homeroomClassrooms', 'teachingClassrooms']);
 
         $activeYear = AcademicYear::getActive();
         $totalQuestions = $user->questions()->count();

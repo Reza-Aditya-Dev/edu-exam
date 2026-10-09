@@ -183,9 +183,7 @@
                     </div>
                 </a>
                 <div class="flex items-center gap-1">
-                    <button type="button" class="hidden lg:flex p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors" onclick="toggleSidebarCollapse()" title="Ciutkan Sidebar">
-                        <span class="material-symbols-outlined text-[20px]">menu_open</span>
-                    </button>
+                    
                     <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer" onclick="toggleSidebar()" title="Tutup Menu">
                         <span class="material-symbols-outlined text-[20px]">close</span>
                     </button>
@@ -317,7 +315,7 @@
                 </button>
                 <!-- Desktop Toggle (Collapse / Expand) -->
                 <button type="button" id="adminSidebarCollapseBtn" class="hidden lg:flex mr-2.5 p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer" onclick="toggleSidebarCollapse()" title="Buka / Tutup Sidebar" aria-label="Toggle Sidebar">
-                    <span class="material-symbols-outlined text-[22px]">menu</span>
+                    <span class="material-symbols-outlined scale-x-[-1]">dock_to_left</span>
                 </button>
                 <form action="{{ route('admin.students') }}" method="GET" class="w-full flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary-container transition-all">
                     <span class="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
@@ -332,10 +330,16 @@
                     <span class="material-symbols-outlined text-[16px]">school</span>
                     <span>Tahun Ajaran {{ $headerActiveYear ? $headerActiveYear->name : '2026/2027' }} • {{ ($headerActiveYear && $headerActiveYear->semester == 2) ? 'Genap' : 'Ganjil' }} (Aktif)</span>
                 </div>
-                <button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button" title="Notifikasi Sistem">
-                    <span class="material-symbols-outlined text-[22px]">notifications</span>
-                    <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full ring-2 ring-surface-container-lowest"></span>
+                <!-- Dark / Light Mode Toggle Button -->
+                <button type="button" 
+                        id="themeToggleBtn" 
+                        class="w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer focus:outline-none" 
+                        aria-label="Alihkan tema gelap/terang"
+                        title="Alihkan mode tema">
+                    <span id="themeMoonIcon" class="material-symbols-outlined text-[20px]">dark_mode</span>
+                    <span id="themeSunIcon" class="material-symbols-outlined text-[20px] text-amber-400 hidden">light_mode</span>
                 </button>
+                @include('partials.notification-dropdown')
                 <div class="h-8 w-px bg-surface-container-high hidden sm:block"></div>
                 <div class="flex items-center gap-3">
                     <div class="flex flex-col text-right hidden sm:flex">

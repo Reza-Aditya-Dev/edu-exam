@@ -125,9 +125,7 @@
                         <span class="font-label-sm text-label-sm text-on-surface-variant truncate">SMA Nusantara</span>
                     </div>
                 </a>
-                <button type="button" onclick="toggleSidebarCollapse()" class="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer" title="Ciutkan Sidebar">
-                    <span class="material-symbols-outlined text-[20px]">menu_open</span>
-                </button>
+                
             </div>
 
             <!-- Mini Brand Header (Collapsed) -->
@@ -175,15 +173,7 @@
 
            
 
-            <!-- Bottom Mini Logout (Collapsed) -->
-            <div class="sidebar-bottom-mini hidden p-2 my-2 mx-auto flex-col items-center shrink-0">
-                <form action="{{ route('logout') }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer" title="Keluar (Logout)" onclick="return confirm('Apakah Anda yakin ingin keluar dari akun guru?')">
-                        <span class="material-symbols-outlined text-[20px]">logout</span>
-                    </button>
-                </form>
-            </div>
+           
         </div>
     </aside>
 
@@ -198,7 +188,7 @@
                 </button>
                 <!-- Desktop toggle (collapse / expand) -->
                 <button type="button" id="sidebarCollapseBtn" class="hidden lg:flex w-10 h-10 rounded-lg items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer" onclick="toggleSidebarCollapse()" title="Buka / Tutup Sidebar" aria-label="Buka atau tutup sidebar">
-                    <span class="material-symbols-outlined text-[22px]">menu</span>
+                    <span class="material-symbols-outlined scale-x-[-1]">dock_to_left</span>
                 </button>
                 
                 @php
@@ -222,25 +212,23 @@
             </div>
 
             <div class="flex items-center gap-space-sm sm:gap-space-md flex-shrink-0">
-                <button aria-label="Notifikasi" title="{{ $unreadNotif }} notifikasi belum dibaca" class="relative p-space-sm rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button">
-                    <span class="material-symbols-outlined text-[22px]">notifications</span>
-                    @if($unreadNotif > 0)
-                        <span class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
-                    @endif
+                <!-- Dark / Light Mode Toggle Button -->
+                <button type="button" 
+                        id="themeToggleBtn" 
+                        class="w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer focus:outline-none" 
+                        aria-label="Alihkan tema gelap/terang"
+                        title="Alihkan mode tema">
+                    <span id="themeMoonIcon" class="material-symbols-outlined text-[20px]">dark_mode</span>
+                    <span id="themeSunIcon" class="material-symbols-outlined text-[20px] text-amber-400 hidden">light_mode</span>
                 </button>
+                @include('partials.notification-dropdown')
                 <a href="{{ route('teacher.profile') }}" class="flex items-center gap-space-sm pl-space-sm no-underline" title="Profil & Pengaturan Akun">
-                    <img alt="Foto profil" class="w-8 h-8 rounded-full object-cover shadow-[0_1px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200" src="{{ $teacherUser ? $teacherUser->avatar_url : '' }}"/>
+                    <img alt="Foto profil" class="w-8 h-8 rounded-full object-cover shadow-[0_1px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200 dark:ring-slate-700" src="{{ $teacherUser ? $teacherUser->avatar_url : '' }}"/>
                     <div class="hidden sm:flex flex-col text-left">
                         <span class="font-label-lg text-label-lg text-on-surface">{{ $teacherUser ? $teacherUser->name : 'Guru' }}</span>
                         <span class="font-label-sm text-label-sm text-on-surface-variant">{{ $teacherUser && $teacherUser->nip ? 'NIP ' . $teacherUser->nip : 'Guru Pengajar' }}</span>
                     </div>
                 </a>
-                <form action="{{ route('logout') }}" method="POST" class="m-0 hidden sm:block">
-                    @csrf
-                    <button type="submit" class="p-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer" title="Keluar (Logout)" onclick="return confirm('Apakah Anda yakin ingin keluar dari akun guru?')">
-                        <span class="material-symbols-outlined text-[20px]">logout</span>
-                    </button>
-                </form>
             </div>
         </header>
 
