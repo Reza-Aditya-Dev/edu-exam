@@ -568,6 +568,12 @@
                     el.setAttribute('aria-label', 'Beralih ke mode gelap');
                 });
             }
+
+            document.querySelectorAll('.theme-mode-label').forEach(el => {
+                el.textContent = isDark ? 'Gelap' : 'Terang';
+            });
+
+            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark } }));
         }
 
         function toggleTheme() {

@@ -77,7 +77,7 @@
             <!-- Title & Subtitle -->
             <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Manajemen Mata Pelajaran & Kurikulum</h1>
             <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
-                Daftar master mata pelajaran Kurikulum Merdeka SMA Nusantara, penetapan standar KKM sekolah, dan bank soal terdaftar.
+                Daftar master mata pelajaran Kurikulum Merdeka {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}, penetapan standar KKM sekolah, dan bank soal terdaftar.
             </p>
         </div>
         <!-- Actions -->
@@ -369,7 +369,7 @@
                     <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Kebijakan KKM Standar Sekolah</h3>
                 </div>
                 <p class="font-body-sm text-body-sm text-on-surface-variant mb-4 leading-relaxed">
-                    Berdasarkan panduan asesmen Kurikulum Merdeka SMA Nusantara, nilai Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) diseragamkan pada batas kelulusan minimal <strong class="text-secondary font-bold">{{ number_format($schoolKkm, 1) }}</strong> untuk seluruh mata pelajaran intra-kurikuler.
+                    Berdasarkan panduan asesmen Kurikulum Merdeka {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}, nilai Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) diseragamkan pada batas kelulusan minimal <strong class="text-secondary font-bold">{{ number_format($schoolKkm, 1) }}</strong> untuk seluruh mata pelajaran intra-kurikuler.
                 </p>
                 <div class="space-y-2.5">
                     <div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between font-label-sm text-label-sm border border-slate-100/60">

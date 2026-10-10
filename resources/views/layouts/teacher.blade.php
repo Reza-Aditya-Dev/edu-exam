@@ -122,7 +122,7 @@
                             <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">EduExam</span>
                             <span class="px-space-xs py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">Portal Guru</span>
                         </div>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">SMA Nusantara</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
                     </div>
                 </a>
                 
@@ -171,9 +171,6 @@
                 </a>
             </div>
 
-           
-
-           
         </div>
     </aside>
 

@@ -91,7 +91,8 @@ class ExamController extends Controller
             ->get();
 
         $settings = $exam->settings;
-        if ($settings?->shuffle_questions) {
+        $shouldShuffleQuestions = $settings ? (bool)$settings->shuffle_questions : true;
+        if ($shouldShuffleQuestions) {
             $examQuestions = $examQuestions->sortBy(function ($eq) use ($participant) {
                 return crc32($participant->id . '_' . $eq->id);
             })->values();
@@ -100,11 +101,12 @@ class ExamController extends Controller
         $currentIndex = max(1, min((int)$request->get('q', 1), $examQuestions->count()));
         $currentExamQuestion = $examQuestions[$currentIndex - 1] ?? $examQuestions->first();
 
-        if ($settings?->shuffle_options && $currentExamQuestion && $currentExamQuestion->question && $currentExamQuestion->question->relationLoaded('options')) {
+        // Urutan pilihan jawaban PG TIDAK diacak (tetap urut A, B, C, D, E sesuai nomor/urutan asli)
+        if ($currentExamQuestion && $currentExamQuestion->question && $currentExamQuestion->question->relationLoaded('options')) {
             $currentExamQuestion->question->setRelation(
                 'options',
-                $currentExamQuestion->question->options->sortBy(function ($opt) use ($participant) {
-                    return crc32($participant->id . '_' . $opt->id);
+                $currentExamQuestion->question->options->sortBy(function ($opt) {
+                    return [$opt->sort_order ?? 0, $opt->label ?? '', $opt->id];
                 })->values()
             );
         }
@@ -372,23 +374,41 @@ class ExamController extends Controller
     {
         $student = Auth::user();
         $query = ExamResult::where('student_id', $student->id)
-            ->with(['exam.subject', 'exam']);
+            ->with(['exam.subject', 'exam.teacher', 'exam.classroom']);
 
-        if ($request->filter === 'pass') {
+        if ($request->filter === 'pass' || $request->filter === 'lulus') {
             $query->where('pass_status', 'pass');
-        } elseif ($request->filter === 'fail') {
+        } elseif ($request->filter === 'fail' || $request->filter === 'remedial') {
             $query->where('pass_status', 'fail');
         }
 
-        $results = $query->latest()->paginate(10);
+        if ($request->filled('subject_id')) {
+            $query->whereHas('exam', function ($q) use ($request) {
+                $q->where('subject_id', $request->subject_id);
+            });
+        }
 
-        $allResults = ExamResult::where('student_id', $student->id)->get();
+        if ($search = trim($request->get('search') ?? $request->get('q') ?? '')) {
+            $query->whereHas('exam', function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhereHas('subject', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $perPage = in_array((int)$request->get('per_page'), [5, 10, 20]) ? (int)$request->get('per_page') : 10;
+        $results = $query->latest()->paginate($perPage)->withQueryString();
+
+        $allResults = ExamResult::where('student_id', $student->id)->with('exam.subject')->get();
         $totalCount = $allResults->count();
         $passedCount = $allResults->where('pass_status', 'pass')->count();
         $failedCount = $allResults->where('pass_status', 'fail')->count();
         $avgScore = $totalCount > 0 ? round($allResults->avg('total_score'), 1) : 0;
 
-        return view('student.exam.history', compact('results', 'totalCount', 'passedCount', 'failedCount', 'avgScore'));
+        $subjects = $allResults->map(fn($r) => $r->exam->subject ?? null)->filter()->unique('id')->values();
+
+        return view('student.exam.history', compact('results', 'totalCount', 'passedCount', 'failedCount', 'avgScore', 'subjects'));
     }
 
     // Validasi akses ujian

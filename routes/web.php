@@ -41,6 +41,7 @@ Route::middleware('auth')->prefix('notifikasi')->name('notifications.')->group(f
 Route::middleware(['auth', 'role:student'])->prefix('siswa')->name('student.')->group(function () {
 
     // Dashboard
+    Route::get('/',          [Student\DashboardController::class, 'index']);
     Route::get('/dashboard', [Student\DashboardController::class, 'index'])->name('dashboard');
 
     // Profil siswa

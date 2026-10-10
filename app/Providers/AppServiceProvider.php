@@ -21,6 +21,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Bagikan nama sekolah ke seluruh view secara global
+        View::composer('*', function ($view) {
+            try {
+                $schoolName = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
+                $view->with('schoolName', $schoolName);
+            } catch (\Throwable $e) {
+                $view->with('schoolName', 'SMA Nusantara');
+            }
+        });
+
         // Bagikan data notifikasi pengguna aktif ke seluruh layout
         View::composer(['layouts.admin', 'layouts.teacher', 'layouts.student', 'student.dashboard'], function ($view) {
             if (Auth::check()) {

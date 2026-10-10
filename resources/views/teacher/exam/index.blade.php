@@ -26,7 +26,7 @@
                     {{ $isCompletedView ? 'Hasil & Rekapitulasi Nilai Ujian' : 'Manajemen Jadwal & Sesi Ujian' }}
                 </h1>
                 <p class="font-body-md text-body-md text-on-surface-variant">
-                    {{ $isCompletedView ? 'Rekapitulasi perolehan nilai, statistik ketuntasan KKM, dan evaluasi hasil pengerjaan ujian siswa.' : 'Atur jadwal pelaksanaan, pantau sesi aktif, dan kelola arsip ujian SMA Nusantara.' }}
+                    {{ $isCompletedView ? 'Rekapitulasi perolehan nilai, statistik ketuntasan KKM, dan evaluasi hasil pengerjaan ujian siswa.' : 'Atur jadwal pelaksanaan, pantau sesi aktif, dan kelola arsip ujian ' . ($schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara')) . '.' }}
                 </p>
             </div>
             

@@ -15,13 +15,13 @@
             <div class="flex flex-col gap-space-xs max-w-2xl">
                 <div class="inline-flex items-center gap-space-xs w-fit px-3 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
                     <span class="w-2 h-2 rounded-full bg-secondary"></span>
-                    <span>SMA Nusantara • Guru {{ $primarySubject->name ?? 'Pengampu' }}{{ $homeroomClass ? ' • Wali Kelas ' . $homeroomClass->name : ' • CBT Online' }}</span>
+                    <span>{{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }} • Guru {{ $primarySubject->name ?? 'Pengampu' }}{{ $homeroomClass ? ' • Wali Kelas ' . $homeroomClass->name : ' • CBT Online' }}</span>
                 </div>
                 <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
                     Selamat datang, {{ $teacher->name }} <span class="inline-block animate-pulse">👋</span>
                 </h1>
                 <p class="font-body-md text-body-md text-on-surface-variant">
-                    Pantau evaluasi akademik siswa secara real-time, tren nilai ujian, dan aktivitas penilaian CBT SMA Nusantara.
+                    Pantau evaluasi akademik siswa secara real-time, tren nilai ujian, dan aktivitas penilaian CBT {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}.
                 </p>
             </div>
             

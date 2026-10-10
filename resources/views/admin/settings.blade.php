@@ -171,6 +171,30 @@
                                 <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface" type="text" name="school_contact" value="{{ old('school_contact', \App\Models\SchoolSetting::get('school_contact', 'info@smanusantara.sch.id / +62 21-7201928')) }}" />
                             </div>
                         </div>
+
+                        <!-- Nama Kepala Sekolah -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+                                <span>Nama Kepala Sekolah</span>
+                                <span class="text-outline font-normal text-body-sm">Beserta Gelar</span>
+                            </label>
+                            <div class="flex items-center bg-surface rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary shadow-sm border border-slate-200/60">
+                                <span class="material-symbols-outlined text-outline text-[20px] mr-3">person_pin</span>
+                                <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface font-semibold" type="text" name="principal_name" value="{{ old('principal_name', \App\Models\SchoolSetting::get('principal_name', 'Drs. H. Mulyadi, M.Pd')) }}" placeholder="Contoh: Drs. H. Mulyadi, M.Pd" />
+                            </div>
+                        </div>
+
+                        <!-- NIP Kepala Sekolah -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+                                <span>NIP Kepala Sekolah</span>
+                                <span class="text-outline font-normal text-body-sm">Nomor Induk Pegawai</span>
+                            </label>
+                            <div class="flex items-center bg-surface rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary shadow-sm border border-slate-200/60">
+                                <span class="material-symbols-outlined text-outline text-[20px] mr-3">fingerprint</span>
+                                <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface font-mono" type="text" name="principal_nip" value="{{ old('principal_nip', \App\Models\SchoolSetting::get('principal_nip', '19780512 200312 1 002')) }}" placeholder="Contoh: 19780512 200312 1 002" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -521,6 +545,8 @@
             document.querySelector('[name="school_accreditation"]').value = 'A (Unggul)';
             document.querySelector('[name="school_address"]').value = 'Jl. Garuda No. 45, Kebayoran Baru, Jakarta Selatan, DKI Jakarta 12120';
             document.querySelector('[name="school_contact"]').value = 'info@smanusantara.sch.id / +62 21-7201928';
+            document.querySelector('[name="principal_name"]').value = 'Drs. H. Mulyadi, M.Pd';
+            document.querySelector('[name="principal_nip"]').value = '19780512 200312 1 002';
             document.querySelector('[name="exam_default_duration"]').value = '60 Menit';
             document.querySelector('[name="exam_default_kkm"]').value = '75 Poin';
 

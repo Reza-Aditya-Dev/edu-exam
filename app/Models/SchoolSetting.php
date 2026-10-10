@@ -11,7 +11,7 @@ class SchoolSetting extends Model
     public static function get(string $key, $default = null)
     {
         $setting = static::where('key', $key)->first();
-        if (!$setting) return $default;
+        if (!$setting || $setting->value === null || $setting->value === '') return $default;
 
         return match($setting->type) {
             'boolean' => filter_var($setting->value, FILTER_VALIDATE_BOOLEAN),

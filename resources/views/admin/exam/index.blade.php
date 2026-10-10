@@ -81,7 +81,7 @@
             </div>
             <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">Manajemen Seluruh Ujian Sekolah</h1>
             <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
-                Monitoring dan pengawasan terpusat seluruh agenda CBT, ulangan harian, UTS, dan UAS di SMA Nusantara secara real-time.
+                Monitoring dan pengawasan terpusat seluruh agenda CBT, ulangan harian, UTS, dan UAS di {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }} secara real-time.
             </p>
         </div>
 

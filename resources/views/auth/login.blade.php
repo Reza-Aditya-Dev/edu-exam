@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Masuk — CBT EduExam SMA Nusantara')
+@section('title', 'Masuk — CBT EduExam ' . ($schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara')))
 
 @push('styles')
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -244,7 +244,7 @@ tailwind.config = {
             <div class="w-full mt-4 flex flex-col items-center gap-2 text-center">
                 <div class="px-3 py-1 bg-surface-container rounded-full text-on-surface text-[11px] font-medium inline-flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-[15px] text-secondary" style="font-variation-settings: 'FILL' 1;">school</span>
-                    <span>Sistem CBT • SMA Nusantara TP 2026/2027</span>
+                    <span>Sistem CBT • {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }} TP 2026/2027</span>
                 </div>
                 <div class="flex items-center gap-1.5 text-on-surface-variant text-xs">
                     <span>Butuh bantuan?</span>
