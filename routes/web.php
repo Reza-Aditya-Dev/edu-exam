@@ -185,4 +185,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Log Aktivitas
     Route::get('/log',                      [Admin\ManagementController::class, 'activityLogs'])->name('logs');
+    Route::post('/log/clear-old',           [Admin\ManagementController::class, 'clearOldLogs'])->name('logs.clear');
 });

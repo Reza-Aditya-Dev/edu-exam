@@ -1103,10 +1103,153 @@ class ManagementController extends Controller
     public function activityLogs(Request $request)
     {
         $query = ActivityLog::with('user');
-        if ($request->user_id) $query->where('user_id', $request->user_id);
-        if ($request->action)  $query->where('action', 'like', '%'.$request->action.'%');
-        $logs  = $query->latest()->paginate(30);
-        $users = \App\Models\User::select('id', 'name', 'role')->get();
-        return view('admin.activity_log', compact('logs', 'users'));
+
+        // Search query (keyword in description, action, ip_address)
+        if ($request->filled('q')) {
+            $keyword = trim($request->q);
+            $query->where(function ($q) use ($keyword) {
+                $q->where('description', 'like', '%' . $keyword . '%')
+                  ->orWhere('action', 'like', '%' . $keyword . '%')
+                  ->orWhere('ip_address', 'like', '%' . $keyword . '%')
+                  ->orWhereHas('user', function ($uq) use ($keyword) {
+                      $uq->where('name', 'like', '%' . $keyword . '%')
+                         ->orWhere('email', 'like', '%' . $keyword . '%')
+                         ->orWhere('username', 'like', '%' . $keyword . '%');
+                  });
+            });
+        }
+
+        // Specific action filter if passed
+        if ($request->filled('action')) {
+            $query->where('action', 'like', '%' . $request->action . '%');
+        }
+
+        // Filter Role
+        if ($request->filled('role') && $request->role !== 'all') {
+            if ($request->role === 'system') {
+                $query->whereNull('user_id');
+            } else {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where('role', $request->role);
+                });
+            }
+        }
+
+        // Filter User ID
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        // Filter Kategori
+        if ($request->filled('category') && $request->category !== 'all') {
+            $category = $request->category;
+            $query->where(function ($q) use ($category) {
+                if ($category === 'ujian') {
+                    $q->where('action', 'like', 'exam%');
+                } elseif ($category === 'siswa') {
+                    $q->where('action', 'like', 'student%');
+                } elseif ($category === 'guru') {
+                    $q->where('action', 'like', 'teacher%');
+                } elseif ($category === 'soal') {
+                    $q->where('action', 'like', 'question%');
+                } elseif ($category === 'keamanan') {
+                    $q->whereIn('action', ['login', 'logout'])
+                      ->orWhere('action', 'like', '%password%')
+                      ->orWhere('action', 'like', '%auth%');
+                } elseif ($category === 'sinkronisasi') {
+                    $q->where('action', 'like', '%sync%')
+                      ->orWhere('action', 'like', '%import%');
+                } elseif ($category === 'konfigurasi') {
+                    $q->where('action', 'like', 'settings%')
+                      ->orWhere('action', 'like', 'academic_year%')
+                      ->orWhere('action', 'like', 'classroom%')
+                      ->orWhere('action', 'like', 'subject%')
+                      ->orWhere('action', 'like', '%kkm%');
+                }
+            });
+        }
+
+        // Filter Tanggal
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        // Export CSV check
+        if ($request->get('export') === 'csv') {
+            return $this->exportLogsCsv($query->latest()->get());
+        }
+
+        // Telemetry metrics
+        $todayCount = ActivityLog::whereDate('created_at', today())->count();
+        $totalLogsCount = ActivityLog::count();
+        $activeExamsCount = \App\Models\Exam::where('status', 'published')->count();
+        $warningLogsCount = ActivityLog::where(function ($q) {
+            $q->where('action', 'like', '%delete%')
+              ->orWhere('action', 'like', '%destroy%')
+              ->orWhere('action', 'like', '%reset%')
+              ->orWhere('action', 'like', '%warning%');
+        })->count();
+
+        $logs  = $query->latest()->paginate(20)->withQueryString();
+        $users = \App\Models\User::select('id', 'name', 'role')->orderBy('name')->get();
+
+        return view('admin.activity_log', compact(
+            'logs', 
+            'users', 
+            'todayCount', 
+            'totalLogsCount', 
+            'activeExamsCount', 
+            'warningLogsCount'
+        ));
+    }
+
+    public function exportLogsCsv($records = null)
+    {
+        if ($records === null) {
+            $records = ActivityLog::with('user')->latest()->limit(2000)->get();
+        }
+
+        $filename = 'audit-log-' . date('Y-m-d_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($records) {
+            $file = fopen('php://output', 'w');
+            // Add UTF-8 BOM
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ['ID', 'Waktu', 'Pengguna', 'Peran', 'Aksi', 'Deskripsi', 'IP Address', 'User Agent']);
+
+            foreach ($records as $log) {
+                fputcsv($file, [
+                    $log->id,
+                    $log->created_at ? $log->created_at->format('Y-m-d H:i:s') : '',
+                    $log->user ? $log->user->name : 'Sistem Otomatis',
+                    $log->user ? ucfirst($log->user->role) : 'System Bot',
+                    $log->action,
+                    $log->description,
+                    $log->ip_address ?? '-',
+                    $log->user_agent ?? '-',
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function clearOldLogs(Request $request)
+    {
+        $days = (int) $request->input('days', 90);
+        $threshold = now()->subDays($days);
+        $deleted = ActivityLog::where('created_at', '<', $threshold)->delete();
+
+        ActivityLog::log('logs_purged', "Pembersihan log audit: sebanyak {$deleted} catatan lebih lama dari {$days} hari telah dibersihkan.");
+
+        return back()->with('success', "Berhasil membersihkan {$deleted} catatan log yang berusia lebih dari {$days} hari.");
     }
 }

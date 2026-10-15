@@ -88,27 +88,45 @@
                     </div>
 
                     <!-- Lampiran Gambar Soal -->
-                    <div class="p-4 bg-surface-container-low/70 border border-slate-200/80 rounded-2xl flex flex-col gap-2">
+                    <div class="p-4 bg-surface-container-low/70 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
                         <label class="font-label-sm text-label-sm text-on-surface-variant font-semibold flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-slate-500 text-[18px]">image</span>
                             <span>Lampiran Gambar Soal (Opsional)</span>
                         </label>
 
-                        @if($question->question_image)
-                            <div class="p-3 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <img src="{{ $question->image_url }}" alt="Gambar Soal" class="max-h-36 max-w-xs rounded-lg border border-slate-200 object-contain shadow-xs bg-slate-50">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-xs font-semibold text-slate-700">Gambar yang saat ini terpasang</span>
-                                    <label class="flex items-center gap-2 text-xs text-error font-semibold cursor-pointer mt-1 hover:opacity-80">
-                                        <input type="checkbox" name="remove_image" value="1" class="rounded text-error focus:ring-error">
+                        <!-- Area Preview Gambar (Existing / New Selected) -->
+                        <div id="imagePreviewContainer" class="{{ $question->question_image ? '' : 'hidden' }} p-3 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            <img id="imagePreviewImg" 
+                                 src="{{ $question->image_url ?? '' }}" 
+                                 data-original-src="{{ $question->image_url ?? '' }}" 
+                                 alt="Gambar Soal" 
+                                 class="max-h-36 max-w-xs rounded-lg border border-slate-200 object-contain shadow-xs bg-slate-50">
+                            
+                            <div class="flex flex-col gap-1.5">
+                                <span id="imagePreviewStatus" class="text-xs font-semibold text-slate-700">
+                                    {{ $question->question_image ? 'Gambar yang saat ini terpasang' : 'Pratinjau gambar baru' }}
+                                </span>
+                                
+                                @if($question->question_image)
+                                    <label id="removeImageLabel" class="flex items-center gap-2 text-xs text-error font-semibold cursor-pointer mt-0.5 hover:opacity-80">
+                                        <input type="checkbox" name="remove_image" id="remove_image" value="1" class="rounded text-error focus:ring-error">
                                         <span>Centang untuk menghapus gambar ini</span>
                                     </label>
-                                </div>
+                                @endif
+
+                                <button type="button" id="btnCancelNewImage" class="hidden text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg w-fit font-medium transition-colors items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">undo</span>
+                                    <span>Batal ganti (kembalikan gambar awal)</span>
+                                </button>
                             </div>
-                        @endif
+                        </div>
 
                         <div class="flex flex-col gap-1 mt-1">
-                            <input type="file" name="question_image" accept="image/*" class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-fixed file:text-on-primary-fixed hover:file:opacity-90 cursor-pointer">
+                            <input type="file" 
+                                   name="question_image" 
+                                   id="question_image_input"
+                                   accept="image/*" 
+                                   class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-fixed file:text-on-primary-fixed hover:file:opacity-90 cursor-pointer">
                             <p class="text-[11px] text-slate-400">Format: JPG, PNG, WEBP. Maksimal 2MB. Kosongkan jika tidak ingin mengubah gambar.</p>
                         </div>
                     </div>
@@ -429,5 +447,80 @@
             }
         });
     }
+
+    // Live preview lampiran gambar soal
+    document.addEventListener('DOMContentLoaded', function () {
+        const imageInput = document.getElementById('question_image_input');
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        const previewImg = document.getElementById('imagePreviewImg');
+        const previewStatus = document.getElementById('imagePreviewStatus');
+        const removeCheckbox = document.getElementById('remove_image');
+        const removeLabel = document.getElementById('removeImageLabel');
+        const btnCancel = document.getElementById('btnCancelNewImage');
+
+        if (!imageInput || !previewImg) return;
+
+        const originalSrc = previewImg.getAttribute('data-original-src') || '';
+        const hasOriginal = originalSrc.trim() !== '';
+
+        imageInput.addEventListener('change', function (e) {
+            const file = this.files && this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImg.src = event.target.result;
+                    previewContainer.classList.remove('hidden');
+                    previewStatus.textContent = 'Pratinjau gambar baru terpilih (belum disimpan)';
+                    previewStatus.className = 'text-xs font-semibold text-primary';
+
+                    if (btnCancel) {
+                        btnCancel.classList.remove('hidden');
+                        btnCancel.classList.add('flex');
+                    }
+                    if (removeCheckbox) {
+                        removeCheckbox.checked = false;
+                    }
+                    if (removeLabel) {
+                        removeLabel.classList.add('opacity-40', 'pointer-events-none');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        if (btnCancel) {
+            btnCancel.addEventListener('click', function () {
+                imageInput.value = ''; // reset file input
+                btnCancel.classList.add('hidden');
+                btnCancel.classList.remove('flex');
+
+                if (hasOriginal) {
+                    previewImg.src = originalSrc;
+                    previewStatus.textContent = 'Gambar yang saat ini terpasang';
+                    previewStatus.className = 'text-xs font-semibold text-slate-700';
+                    if (removeLabel) {
+                        removeLabel.classList.remove('opacity-40', 'pointer-events-none');
+                    }
+                } else {
+                    previewImg.src = '';
+                    previewContainer.classList.add('hidden');
+                }
+            });
+        }
+
+        if (removeCheckbox) {
+            removeCheckbox.addEventListener('change', function () {
+                if (this.checked) {
+                    previewImg.classList.add('opacity-30', 'grayscale');
+                    previewStatus.textContent = 'Gambar akan dihapus saat disimpan';
+                    previewStatus.className = 'text-xs font-semibold text-error';
+                } else {
+                    previewImg.classList.remove('opacity-30', 'grayscale');
+                    previewStatus.textContent = 'Gambar yang saat ini terpasang';
+                    previewStatus.className = 'text-xs font-semibold text-slate-700';
+                }
+            });
+        }
+    });
 </script>
 @endsection

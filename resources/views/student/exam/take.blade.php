@@ -205,9 +205,24 @@
         html.dark textarea::placeholder {
             color: #64748b;
         }
+        /* Anti-Copy & Anti-Selection Protection */
+        html, body, .question-text, .option-text, textarea {
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+        }
+        /* Tetap izinkan siswa mengetik dan memilih kursor di dalam textarea jawaban esai */
+        textarea#answer-text-input {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
     </style>
 </head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col items-center justify-start select-none">
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col items-center justify-start select-none" oncopy="return false;" oncut="return false;" oncontextmenu="return false;" ondragstart="return false;">
     <div class="w-full min-h-screen flex flex-col relative bg-surface">
         
         <!-- Fixed Sticky Header -->
@@ -1164,6 +1179,72 @@
         // Initial setup
         calculateAndSyncStatus();
         updateExamThemeUI(document.documentElement.classList.contains('dark'));
+
+        // ════════════ ANTI-CHEAT / ANTI-COPY ENFORCEMENT ════════════
+        (function() {
+            // Blokir klik kanan (context menu) di seluruh halaman ujian
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            }, false);
+
+            // Blokir event copy & cut
+            document.addEventListener('copy', function(e) {
+                e.preventDefault();
+                if (e.clipboardData) {
+                    e.clipboardData.clearData();
+                }
+                return false;
+            }, false);
+
+            document.addEventListener('cut', function(e) {
+                e.preventDefault();
+                return false;
+            }, false);
+
+            // Blokir drag teks atau elemen
+            document.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            }, false);
+
+            // Blokir shortcut keyboard untuk copy, select all, print, save, inspect
+            document.addEventListener('keydown', function(e) {
+                // Izinkan navigasi dan pengetikan biasa pada textarea jawaban esai (Ctrl+V paste jika dibutuhkan siswa / backspace dll)
+                const isEssayInput = e.target && e.target.id === 'answer-text-input';
+
+                // Cegah kombinasi Ctrl/Cmd
+                if (e.ctrlKey || e.metaKey) {
+                    const key = e.key.toLowerCase();
+                    // Cegah Ctrl+C (Copy), Ctrl+X (Cut) di luar maupun di dalam soal
+                    if (key === 'c' || key === 'x') {
+                        e.preventDefault();
+                        return false;
+                    }
+                    // Cegah Ctrl+A (Select All) jika di luar textarea jawaban
+                    if (key === 'a' && !isEssayInput) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    // Cegah Ctrl+P (Print), Ctrl+S (Save), Ctrl+U (View Source)
+                    if (key === 'p' || key === 's' || key === 'u') {
+                        e.preventDefault();
+                        return false;
+                    }
+                    // Cegah Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+                    if (e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+
+                // Cegah tombol F12 (Inspect Element)
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    return false;
+                }
+            }, false);
+        })();
     </script>
 </body>
 </html>
