@@ -255,47 +255,57 @@
                         <span class="text-primary font-bold">{{ $currentIndex }}</span><span class="text-on-surface-variant">/{{ $totalQ }}</span>
                     </div>
 
-                    <!-- Exam Ambient Audio Player Widget -->
+                    <!-- Vertical Separator -->
+                    <div class="h-5 w-px bg-surface-container-highest shrink-0 mx-0.5"></div>
+
+                    <!-- Exam Ambient Audio Player Widget (Spacious & Clean Capsule) -->
                     <div class="relative flex items-center">
                         <audio id="examAmbientAudio" loop preload="auto">
                             <source src="{{ asset('audio/ambient_exam.wav') }}" type="audio/wav">
                         </audio>
 
-                        <!-- Main Audio Toggle Button -->
-                        <button type="button" 
-                                id="musicToggleBtn" 
-                                onclick="toggleExamMusic()" 
-                                class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary flex items-center justify-center transition-all cursor-pointer focus:outline-none shrink-0 relative" 
-                                aria-label="Putar musik relaksasi ujian"
-                                title="Musik Ujian (Klik untuk Putar/Jeda)">
-                            <span id="musicPlayingPulse" class="absolute inset-0 rounded-full bg-primary/20 animate-ping hidden pointer-events-none"></span>
-                            <span id="musicStateIcon" class="material-symbols-outlined text-[18px] md:text-[20px] transition-transform">music_note</span>
-                        </button>
+                        <!-- Capsule Audio Controller -->
+                        <div class="flex items-center bg-surface-container-high hover:bg-surface-container-highest rounded-full p-0.5 shadow-sm border border-surface-container/60 transition-all">
+                            <!-- Play/Pause Toggle -->
+                            <button type="button" 
+                                    id="musicToggleBtn" 
+                                    onclick="toggleExamMusic()" 
+                                    class="h-8 md:h-9 px-2.5 md:px-3 rounded-full text-on-surface-variant hover:text-primary flex items-center gap-1.5 transition-all cursor-pointer focus:outline-none relative" 
+                                    aria-label="Putar musik relaksasi ujian"
+                                    title="Musik Ujian (Klik untuk Putar/Jeda)">
+                                <span id="musicPlayingPulse" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-ping hidden pointer-events-none"></span>
+                                <span id="musicStateIcon" class="material-symbols-outlined text-[18px] md:text-[20px] transition-transform">music_note</span>
+                                <span id="musicStateText" class="text-[11px] md:text-xs font-semibold hidden sm:inline">Musik</span>
+                            </button>
 
-                        <!-- Audio Control Popover Trigger / Quick Volume Toggle -->
-                        <button type="button"
-                                id="musicVolumePopoverBtn"
-                                onclick="toggleVolumePopover(event)"
-                                class="w-6 h-6 md:w-7 md:h-7 -ml-1 rounded-full bg-surface-container hover:bg-surface-container-highest text-on-surface-variant flex items-center justify-center transition-colors cursor-pointer focus:outline-none shrink-0 text-xs"
-                                title="Atur Volume Suara"
-                                aria-label="Atur Volume Suara">
-                            <span id="volumeStateIcon" class="material-symbols-outlined text-[14px] md:text-[16px]">volume_up</span>
-                        </button>
+                            <!-- Volume Button Divider -->
+                            <div class="h-4 w-px bg-outline-variant/30 shrink-0"></div>
+
+                            <!-- Audio Control Popover Trigger -->
+                            <button type="button"
+                                    id="musicVolumePopoverBtn"
+                                    onclick="toggleVolumePopover(event)"
+                                    class="w-7 h-7 md:w-8 md:h-8 rounded-full text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors cursor-pointer focus:outline-none shrink-0"
+                                    title="Atur Volume Suara"
+                                    aria-label="Atur Volume Suara">
+                                <span id="volumeStateIcon" class="material-symbols-outlined text-[15px] md:text-[17px]">volume_up</span>
+                            </button>
+                        </div>
 
                         <!-- Floating Volume Slider Popup -->
-                        <div id="volumeSliderCard" class="hidden absolute top-full mt-2 right-0 z-50 w-56 p-3.5 bg-surface-container-lowest border border-surface-container rounded-2xl shadow-xl flex-col gap-2.5 backdrop-blur-md">
-                            <div class="flex items-center justify-between text-xs text-on-surface font-semibold">
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">headphones</span>
+                        <div id="volumeSliderCard" class="hidden absolute top-full mt-2.5 right-0 z-50 w-60 p-4 bg-surface-container-lowest border border-surface-container rounded-2xl shadow-2xl flex-col gap-3 backdrop-blur-md">
+                            <div class="flex items-center justify-between text-xs text-on-surface font-semibold pb-1 border-b border-surface-container">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[17px] text-primary" style="font-variation-settings: 'FILL' 1;">headphones</span>
                                     <span>Musik Relaksasi</span>
                                 </span>
                                 <span id="volumePercentageText" class="text-primary font-mono font-bold">40%</span>
                             </div>
 
                             <!-- Slider Row -->
-                            <div class="flex items-center gap-2">
-                                <button type="button" onclick="muteUnmuteExamMusic()" class="text-on-surface-variant hover:text-primary focus:outline-none shrink-0" title="Mute/Unmute">
-                                    <span id="sliderMuteIcon" class="material-symbols-outlined text-[18px]">volume_up</span>
+                            <div class="flex items-center gap-2.5">
+                                <button type="button" onclick="muteUnmuteExamMusic()" class="text-on-surface-variant hover:text-primary focus:outline-none shrink-0 p-1 rounded-lg hover:bg-surface-container transition-colors" title="Mute/Unmute">
+                                    <span id="sliderMuteIcon" class="material-symbols-outlined text-[20px]">volume_up</span>
                                 </button>
                                 <input type="range" 
                                        id="examAudioVolumeSlider" 
@@ -308,14 +318,17 @@
                             </div>
 
                             <!-- Quick Presets -->
-                            <div class="flex items-center justify-between pt-1 border-t border-surface-container text-[10px]">
-                                <button type="button" onclick="setVolumePreset(0)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Bisu</button>
-                                <button type="button" onclick="setVolumePreset(30)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Lembut</button>
-                                <button type="button" onclick="setVolumePreset(70)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Sedang</button>
-                                <button type="button" onclick="setVolumePreset(100)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Maks</button>
+                            <div class="grid grid-cols-4 gap-1 pt-1 text-[10px]">
+                                <button type="button" onclick="setVolumePreset(0)" class="py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium text-center transition-colors">Bisu</button>
+                                <button type="button" onclick="setVolumePreset(30)" class="py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium text-center transition-colors">30%</button>
+                                <button type="button" onclick="setVolumePreset(70)" class="py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium text-center transition-colors">70%</button>
+                                <button type="button" onclick="setVolumePreset(100)" class="py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium text-center transition-colors">Maks</button>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Vertical Separator -->
+                    <div class="h-5 w-px bg-surface-container-highest shrink-0 mx-0.5"></div>
 
                     <!-- Theme Toggle Button -->
                     <button type="button" 
@@ -1222,6 +1235,7 @@
             const icon = document.getElementById('musicStateIcon');
             const pulse = document.getElementById('musicPlayingPulse');
             const btn = document.getElementById('musicToggleBtn');
+            const text = document.getElementById('musicStateText');
             isMusicPlaying = playing;
 
             if (playing) {
@@ -1229,9 +1243,13 @@
                     icon.textContent = 'pause';
                     icon.classList.add('text-primary');
                 }
+                if (text) {
+                    text.textContent = 'Jeda';
+                    text.classList.add('text-primary');
+                }
                 if (pulse) pulse.classList.remove('hidden');
                 if (btn) {
-                    btn.classList.add('ring-2', 'ring-primary/40', 'bg-primary-fixed/50');
+                    btn.classList.add('text-primary');
                     btn.setAttribute('title', 'Jeda Musik Relaksasi');
                 }
             } else {
@@ -1239,9 +1257,13 @@
                     icon.textContent = 'music_note';
                     icon.classList.remove('text-primary');
                 }
+                if (text) {
+                    text.textContent = 'Musik';
+                    text.classList.remove('text-primary');
+                }
                 if (pulse) pulse.classList.add('hidden');
                 if (btn) {
-                    btn.classList.remove('ring-2', 'ring-primary/40', 'bg-primary-fixed/50');
+                    btn.classList.remove('text-primary');
                     btn.setAttribute('title', 'Putar Musik Relaksasi Ujian');
                 }
             }
@@ -1303,16 +1325,44 @@
             if (isMusicPlaying) {
                 audio.pause();
                 updateMusicUI(false);
+                sessionStorage.setItem('exam_music_active', '0');
                 localStorage.setItem('exam_music_autoplay', '0');
             } else {
+                // Resume from saved position if exists
+                const savedPos = parseFloat(sessionStorage.getItem('exam_music_position') || '0');
+                if (savedPos > 0 && Number.isFinite(savedPos) && audio.currentTime === 0) {
+                    try { audio.currentTime = savedPos; } catch(e) {}
+                }
+
                 audio.play().then(() => {
                     updateMusicUI(true);
+                    sessionStorage.setItem('exam_music_active', '1');
                     localStorage.setItem('exam_music_autoplay', '1');
                 }).catch(err => {
                     console.warn('Playback prevented by browser policy:', err);
                 });
             }
         }
+
+        // Continuously persist current playback position so changing questions continues uninterrupted
+        setInterval(() => {
+            const audio = getExamAudio();
+            if (audio && !audio.paused && audio.currentTime > 0) {
+                sessionStorage.setItem('exam_music_position', audio.currentTime);
+                sessionStorage.setItem('exam_music_active', '1');
+            }
+        }, 800);
+
+        // Before user leaves the page to go to another question, record exact audio position
+        window.addEventListener('beforeunload', () => {
+            const audio = getExamAudio();
+            if (audio) {
+                sessionStorage.setItem('exam_music_position', audio.currentTime);
+                if (!audio.paused) {
+                    sessionStorage.setItem('exam_music_active', '1');
+                }
+            }
+        });
 
         function toggleVolumePopover(e) {
             if (e) e.stopPropagation();
@@ -1349,13 +1399,37 @@
             const initialVol = savedVol !== null ? parseFloat(savedVol) : 40;
             changeExamVolume(initialVol);
 
-            const savedAuto = localStorage.getItem('exam_music_autoplay');
-            if (savedAuto === '1') {
-                audio.play().then(() => {
-                    updateMusicUI(true);
-                }).catch(() => {
-                    updateMusicUI(false);
-                });
+            // Check if music was active before switching question
+            const wasActive = sessionStorage.getItem('exam_music_active') === '1' || localStorage.getItem('exam_music_autoplay') === '1';
+            const savedPosition = parseFloat(sessionStorage.getItem('exam_music_position') || '0');
+
+            if (wasActive) {
+                const applyPlay = () => {
+                    if (savedPosition > 0 && Number.isFinite(savedPosition)) {
+                        try { audio.currentTime = savedPosition; } catch(e) {}
+                    }
+                    audio.play().then(() => {
+                        updateMusicUI(true);
+                        sessionStorage.setItem('exam_music_active', '1');
+                    }).catch(() => {
+                        // If browser blocks autoplay until user interaction, show visual indicator
+                        updateMusicUI(false);
+                        const resumeOnInteraction = () => {
+                            audio.play().then(() => {
+                                updateMusicUI(true);
+                                sessionStorage.setItem('exam_music_active', '1');
+                            }).catch(() => {});
+                            document.removeEventListener('click', resumeOnInteraction);
+                        };
+                        document.addEventListener('click', resumeOnInteraction, { once: true });
+                    });
+                };
+
+                if (audio.readyState >= 1) {
+                    applyPlay();
+                } else {
+                    audio.addEventListener('loadedmetadata', applyPlay, { once: true });
+                }
             } else {
                 updateMusicUI(false);
             }
