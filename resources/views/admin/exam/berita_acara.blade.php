@@ -187,7 +187,7 @@
         <tr>
             <td class="label">Waktu & Durasi</td>
             <td class="colon">:</td>
-            <td class="value">{{ substr($exam->start_time, 0, 5) }} - {{ substr($exam->end_time, 0, 5) }} WIB ({{ $exam->duration_minutes }} Menit)</td>
+            <td class="value">{{ substr($exam->start_time, 0, 5) }} - {{ substr($exam->end_time, 0, 5) }} {{ $exam->timezone_code }} ({{ $exam->duration_minutes }} Menit)</td>
         </tr>
         <tr>
             <td class="label">Token Akses CBT</td>

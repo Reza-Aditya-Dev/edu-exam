@@ -19,14 +19,40 @@
         </a>
     </div>
 
+    @if(session('warning'))
+        <div class="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs md:text-sm font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-amber-600">info</span>
+            <span>{{ session('warning') }}</span>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-4 p-3.5 rounded-xl bg-error-container/50 border border-error/20 text-on-error-container text-xs md:text-sm font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-error">error</span>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
     <!-- Exam Hero Card -->
     <div class="relative overflow-hidden bg-surface-container-low rounded-2xl p-4 md:p-6 shadow-sm border border-surface-container mb-4 md:mb-6">
         <div class="absolute -right-4 -bottom-6 w-28 md:w-40 h-28 md:h-40 rounded-full bg-primary-fixed/30 pointer-events-none blur-xl"></div>
         <div class="flex items-center gap-1.5 mb-1.5">
-            <span class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-semibold">
-                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                Siap Dimulai
-            </span>
+            @if($exam->is_expired || $exam->status === 'completed')
+                <span class="inline-flex items-center gap-1 bg-error-container text-on-error-container px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                    Sesi Berakhir
+                </span>
+            @elseif(!$exam->is_started && $exam->status === 'scheduled')
+                <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-semibold border border-amber-200">
+                    <span class="material-symbols-outlined text-[13px]">schedule</span>
+                    Menunggu Jadwal Mulai
+                </span>
+            @else
+                <span class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    Siap Dimulai
+                </span>
+            @endif
             <span class="text-xs md:text-sm text-on-surface-variant font-medium">
                 • Kelas {{ $exam->classroom->name ?? 'Semua Kelas' }}
             </span>
@@ -115,10 +141,10 @@
                 <div class="bg-surface-container-lowest p-3 md:p-4 rounded-xl shadow-sm border border-surface-container flex flex-col justify-between">
                     <div class="flex items-center gap-1.5 text-on-surface-variant">
                         <span class="material-symbols-outlined text-[18px] md:text-[20px] text-primary">schedule</span>
-                        <span class="text-[11px] md:text-xs font-medium">Waktu Sesi</span>
+                        <span class="text-[11px] md:text-xs font-medium">Waktu Sesi ({{ $exam->timezone_code }})</span>
                     </div>
                     <div class="mt-1 text-xs md:text-sm font-bold text-on-surface truncate">
-                        {{ $exam->start_time ?? '08:00' }} - {{ $exam->end_time ?? '10:00' }} WIB
+                        {{ substr($exam->start_time ?? '08:00', 0, 5) }} - {{ substr($exam->end_time ?? '10:00', 0, 5) }} {{ $exam->timezone_code }}
                     </div>
                 </div>
             </div>
@@ -196,13 +222,35 @@
                 </span>
             </label>
 
-            <form action="{{ route('student.exam.start', $exam->id) }}" method="POST" id="startExamForm" class="w-full md:w-auto">
-                @csrf
-                <button type="submit" id="startExamBtn" disabled class="w-full md:w-60 h-12 bg-primary text-on-primary font-headline-sm text-sm font-semibold rounded-xl shadow-md flex items-center justify-center gap-1.5 opacity-40 cursor-not-allowed transition-all active:scale-[0.98]">
-                    <span>Mulai Ujian</span>
-                    <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-                </button>
-            </form>
+            @if($exam->is_expired || $exam->status === 'completed')
+                <div class="flex items-center gap-2 text-error font-semibold text-xs md:text-sm bg-error-container/40 px-3 py-2 rounded-xl border border-error/20">
+                    <span class="material-symbols-outlined text-[18px]">timer_off</span>
+                    <span>Waktu pelaksanaan ujian telah berakhir. Anda tidak dapat memulai ujian ini.</span>
+                </div>
+            @elseif(!$exam->is_started && $exam->status === 'scheduled')
+                @php
+                    $startCarbon = $exam->start_carbon;
+                    $startTimeFormatted = substr($exam->start_time, 0, 5) . ' ' . $exam->timezone_code;
+                @endphp
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+                    <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs md:text-sm bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
+                        <span class="material-symbols-outlined text-[18px] text-amber-600 animate-pulse">lock_clock</span>
+                        <span>Ujian belum dimulai. Sesi akan dibuka otomatis pukul <strong>{{ $startTimeFormatted }}</strong> (<span id="scheduledCountdown" class="font-mono font-bold text-amber-700">menghitung...</span>)</span>
+                    </div>
+                    <button type="button" onclick="window.location.reload()" class="h-10 px-3.5 bg-surface-container hover:bg-surface-container-high text-primary font-semibold text-xs rounded-xl flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">refresh</span>
+                        <span>Muat Ulang</span>
+                    </button>
+                </div>
+            @else
+                <form action="{{ route('student.exam.start', $exam->id) }}" method="POST" id="startExamForm" class="w-full md:w-auto">
+                    @csrf
+                    <button type="submit" id="startExamBtn" disabled class="w-full md:w-60 h-12 bg-primary text-on-primary font-headline-sm text-sm font-semibold rounded-xl shadow-md flex items-center justify-center gap-1.5 opacity-40 cursor-not-allowed transition-all active:scale-[0.98]">
+                        <span>Mulai Ujian</span>
+                        <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 </div>
@@ -233,6 +281,43 @@
                 }
             });
         }
+
+        // Countdown untuk ujian terjadwal yang belum masuk jam mulai
+        const countdownEl = document.getElementById('scheduledCountdown');
+        @if(isset($startCarbon) && !$exam->is_started && $exam->status === 'scheduled')
+            // Hitung selisih detik awal berdasarkan waktu server agar tidak terpengaruh jam perangkat siswa yang salah
+            const targetTimeMs = {{ $startCarbon->getTimestamp() * 1000 }};
+            const serverNowMs = {{ now()->getTimestamp() * 1000 }};
+            let clientOffsetMs = targetTimeMs - serverNowMs;
+            const clientStartPerf = performance.now();
+
+            function updateScheduledTimer() {
+                const elapsedClientMs = performance.now() - clientStartPerf;
+                const distance = clientOffsetMs - elapsedClientMs;
+
+                if (distance <= 0) {
+                    countdownEl.textContent = 'Membuka Ujian...';
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1200);
+                    return;
+                }
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                let display = '';
+                if (hours > 0) display += hours + 'j ';
+                display += (minutes < 10 ? '0' : '') + minutes + 'm ';
+                display += (seconds < 10 ? '0' : '') + seconds + 'd lagi';
+
+                countdownEl.textContent = display;
+            }
+
+            updateScheduledTimer();
+            setInterval(updateScheduledTimer, 1000);
+        @endif
     });
 </script>
 @endsection

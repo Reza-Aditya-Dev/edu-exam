@@ -66,7 +66,7 @@
     @elseif(isset($unreadNotificationCount) && $unreadNotificationCount > 0 && isset($latestNotifications) && $latestNotifications->isNotEmpty())
         @php $latestUnread = $latestNotifications->firstWhere('is_read', false) ?? $latestNotifications->first(); @endphp
         @if($latestUnread)
-            <section class="bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl p-space-md mb-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <section id="studentNotificationBanner" class="bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl p-space-md mb-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div class="flex items-start sm:items-center gap-3.5 min-w-0">
                     <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary shrink-0 shadow-sm">
                         <span class="material-symbols-outlined text-[20px]">notifications_active</span>
@@ -222,7 +222,7 @@
                                         {{ $upcomingExam->title }}
                                     </h4>
                                     <p class="font-body-sm text-xs text-slate-500">
-                                        {{ $upcomingExam->subject->name ?? 'Mata Pelajaran' }} • {{ $upcomingExam->duration_minutes }} Menit
+                                        {{ $upcomingExam->subject->name ?? 'Mata Pelajaran' }} • {{ substr($upcomingExam->start_time, 0, 5) }} {{ $upcomingExam->timezone_code }} ({{ $upcomingExam->duration_minutes }} Mnt)
                                     </p>
                                 </div>
                                 <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between">

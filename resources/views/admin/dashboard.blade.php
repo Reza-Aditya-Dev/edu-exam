@@ -303,7 +303,7 @@
                                             {{ $exam->exam_date ? $exam->exam_date->translatedFormat('d M Y') : '-' }}
                                         </span>
                                         <span class="font-mono font-semibold text-on-surface">
-                                            {{ substr($exam->start_time, 0, 5) }} - {{ substr($exam->end_time, 0, 5) }} WIB
+                                            {{ substr($exam->start_time, 0, 5) }} - {{ substr($exam->end_time, 0, 5) }} {{ $exam->timezone_code }}
                                         </span>
                                     </div>
                                 </div>

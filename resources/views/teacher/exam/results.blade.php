@@ -21,10 +21,38 @@
     </div>
     
     <div class="flex flex-wrap items-center gap-2">
-        <button type="button" onclick="window.print()" class="btn btn-secondary text-xs font-semibold px-3 py-2 flex items-center gap-1.5 cursor-pointer">
-            <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
-            Cetak Rekap
-        </button>
+        <!-- Dropdown Cetak Rekap Nilai -->
+        <div class="relative inline-block text-left" id="dropdownRekapContainer">
+            <button type="button" onclick="toggleDropdownRekap(event)" id="btnDropdownRekap" class="btn btn-secondary text-xs font-semibold px-3 py-2 flex items-center gap-1.5 cursor-pointer hover:bg-slate-100 transition-colors">
+                <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+                <span>Cetak Rekap Nilai</span>
+                <span class="material-symbols-outlined text-slate-400" style="font-size: 16px;">expand_more</span>
+            </button>
+            <div id="dropdownRekapMenu" class="hidden absolute left-0 sm:right-0 sm:left-auto mt-1.5 w-48 rounded-xl bg-white shadow-xl border border-slate-200 py-1.5 z-50 text-slate-700 animate-in fade-in duration-150">
+                <a href="{{ route('teacher.exams.export_results', ['exam' => $exam->id, 'format' => 'pdf']) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors no-underline">
+                    <span class="material-symbols-outlined text-rose-500" style="font-size: 18px;">picture_as_pdf</span>
+                    <div class="flex flex-col">
+                        <span>Unduh PDF</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Format cetak siap pakai (A4 Landscape)</span>
+                    </div>
+                </a>
+                <a href="{{ route('teacher.exams.export_results', ['exam' => $exam->id, 'format' => 'excel']) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors no-underline">
+                    <span class="material-symbols-outlined text-emerald-600" style="font-size: 18px;">table_view</span>
+                    <div class="flex flex-col">
+                        <span>Unduh Excel</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Format spreadsheet (.xls/.xlsx)</span>
+                    </div>
+                </a>
+                <div class="my-1 border-t border-slate-100"></div>
+                <button type="button" onclick="window.print()" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 text-left cursor-pointer border-none bg-transparent">
+                    <span class="material-symbols-outlined text-slate-500" style="font-size: 18px;">print</span>
+                    <div class="flex flex-col">
+                        <span>Cetak Langsung (Browser)</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Gunakan dialog printer browser</span>
+                    </div>
+                </button>
+            </div>
+        </div>
         <a href="{{ route('teacher.exams.analytics', $exam) }}" class="btn btn-secondary text-xs font-semibold px-3.5 py-2 flex items-center gap-1.5">
             <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
             Analisis Soal
@@ -137,9 +165,18 @@
                         </div>
                     </td>
                     <td>
-                        <span class="badge {{ $result->pass_status === 'pass' ? 'badge-success' : 'badge-danger' }} text-xs font-semibold">
-                            {{ $result->pass_label }}
-                        </span>
+                        <div class="flex flex-col gap-1">
+                            @if($result->is_pending_review)
+                                <span class="badge bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    <span>Menunggu Koreksi</span>
+                                </span>
+                            @else
+                                <span class="badge {{ $result->pass_status === 'pass' ? 'badge-success' : 'badge-danger' }} text-xs font-semibold">
+                                    {{ $result->pass_label }}
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td style="text-align: right;">
                         <div class="flex items-center justify-end gap-1.5">
@@ -169,5 +206,24 @@
         </table>
     </div>
 </div>
-
 @endsection
+
+@push('scripts')
+<script>
+    function toggleDropdownRekap(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('dropdownRekapMenu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('dropdownRekapContainer');
+        const menu = document.getElementById('dropdownRekapMenu');
+        if (container && menu && !container.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+</script>
+@endpush

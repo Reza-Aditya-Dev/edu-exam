@@ -178,14 +178,15 @@
         }
     });
 
-    // Mark single notification as read
+    // Mark single notification as read (returns Promise)
     function markSingleNotificationAsRead(notifId) {
-        fetch('{{ url("/notifikasi") }}/' + notifId + '/read', {
+        return fetch('{{ url("/notifikasi") }}/' + notifId + '/read', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(res => res.json())
@@ -199,18 +200,23 @@
                 }
                 updateUnreadBadge(data.unread_count);
             }
+            return data;
         })
-        .catch(err => console.error('Error marking notification read:', err));
+        .catch(err => {
+            console.error('Error marking notification read:', err);
+            return null;
+        });
     }
 
     // Mark all notifications as read
     function markAllNotificationsAsRead() {
-        fetch('{{ route("notifications.readAll") }}', {
+        return fetch('{{ route("notifications.readAll") }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(res => res.json())
@@ -224,13 +230,18 @@
                 }
                 updateUnreadBadge(0);
             }
+            return data;
         })
-        .catch(err => console.error('Error marking all notifications read:', err));
+        .catch(err => {
+            console.error('Error marking all notifications read:', err);
+            return null;
+        });
     }
 
-    // Handle click on item
-    function handleNotifClick(notifId, type) {
-        markSingleNotificationAsRead(notifId);
+    // Handle click on item: pastikan notifikasi ditandai dibaca sebelum redirect
+    async function handleNotifClick(notifId, type) {
+        await markSingleNotificationAsRead(notifId);
+
         // Optional redirect based on role and type
         const role = '{{ auth()->user()?->role }}';
         if (type === 'exam' || type === 'result') {
@@ -257,6 +268,7 @@
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
             } else {
+                badge.textContent = '';
                 badge.classList.remove('flex');
                 badge.classList.add('hidden');
             }
@@ -282,5 +294,49 @@
                 markAllBtn.classList.add('hidden');
             }
         }
+
+        // Sinkronkan juga banner dashboard jika ada dan count menjadi 0
+        const dashboardBanner = document.getElementById('studentNotificationBanner');
+        if (dashboardBanner && count === 0) {
+            dashboardBanner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            dashboardBanner.style.opacity = '0';
+            dashboardBanner.style.transform = 'translateY(-10px)';
+            setTimeout(() => dashboardBanner.remove(), 300);
+        }
     }
+
+    // Auto-polling notifikasi baru secara live setiap 30 detik
+    (function initNotificationPolling() {
+        let currentUnread = {{ $unreadCount }};
+
+        setInterval(async () => {
+            try {
+                const res = await fetch('{{ route("notifications.index") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (data && typeof data.unread_count !== 'undefined') {
+                    // Update badge jika ada perubahan angka
+                    if (data.unread_count !== currentUnread) {
+                        currentUnread = data.unread_count;
+                        updateUnreadBadge(currentUnread);
+
+                        // Jika ada notifikasi baru dan bertambah, update tooltip
+                        const bellBtn = document.getElementById('notificationBellBtn');
+                        if (bellBtn) {
+                            bellBtn.setAttribute('title', `Notifikasi (${currentUnread} belum dibaca)`);
+                        }
+                    }
+                }
+            } catch (e) {
+                // Ignore network errors during polling
+            }
+        }, 30000);
+    })();
 </script>

@@ -255,6 +255,68 @@
                         <span class="text-primary font-bold">{{ $currentIndex }}</span><span class="text-on-surface-variant">/{{ $totalQ }}</span>
                     </div>
 
+                    <!-- Exam Ambient Audio Player Widget -->
+                    <div class="relative flex items-center">
+                        <audio id="examAmbientAudio" loop preload="auto">
+                            <source src="{{ asset('audio/ambient_exam.wav') }}" type="audio/wav">
+                        </audio>
+
+                        <!-- Main Audio Toggle Button -->
+                        <button type="button" 
+                                id="musicToggleBtn" 
+                                onclick="toggleExamMusic()" 
+                                class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary flex items-center justify-center transition-all cursor-pointer focus:outline-none shrink-0 relative" 
+                                aria-label="Putar musik relaksasi ujian"
+                                title="Musik Ujian (Klik untuk Putar/Jeda)">
+                            <span id="musicPlayingPulse" class="absolute inset-0 rounded-full bg-primary/20 animate-ping hidden pointer-events-none"></span>
+                            <span id="musicStateIcon" class="material-symbols-outlined text-[18px] md:text-[20px] transition-transform">music_note</span>
+                        </button>
+
+                        <!-- Audio Control Popover Trigger / Quick Volume Toggle -->
+                        <button type="button"
+                                id="musicVolumePopoverBtn"
+                                onclick="toggleVolumePopover(event)"
+                                class="w-6 h-6 md:w-7 md:h-7 -ml-1 rounded-full bg-surface-container hover:bg-surface-container-highest text-on-surface-variant flex items-center justify-center transition-colors cursor-pointer focus:outline-none shrink-0 text-xs"
+                                title="Atur Volume Suara"
+                                aria-label="Atur Volume Suara">
+                            <span id="volumeStateIcon" class="material-symbols-outlined text-[14px] md:text-[16px]">volume_up</span>
+                        </button>
+
+                        <!-- Floating Volume Slider Popup -->
+                        <div id="volumeSliderCard" class="hidden absolute top-full mt-2 right-0 z-50 w-56 p-3.5 bg-surface-container-lowest border border-surface-container rounded-2xl shadow-xl flex-col gap-2.5 backdrop-blur-md">
+                            <div class="flex items-center justify-between text-xs text-on-surface font-semibold">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">headphones</span>
+                                    <span>Musik Relaksasi</span>
+                                </span>
+                                <span id="volumePercentageText" class="text-primary font-mono font-bold">40%</span>
+                            </div>
+
+                            <!-- Slider Row -->
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="muteUnmuteExamMusic()" class="text-on-surface-variant hover:text-primary focus:outline-none shrink-0" title="Mute/Unmute">
+                                    <span id="sliderMuteIcon" class="material-symbols-outlined text-[18px]">volume_up</span>
+                                </button>
+                                <input type="range" 
+                                       id="examAudioVolumeSlider" 
+                                       min="0" 
+                                       max="100" 
+                                       value="40" 
+                                       oninput="changeExamVolume(this.value)" 
+                                       class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none" 
+                                       aria-label="Volume Musik">
+                            </div>
+
+                            <!-- Quick Presets -->
+                            <div class="flex items-center justify-between pt-1 border-t border-surface-container text-[10px]">
+                                <button type="button" onclick="setVolumePreset(0)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Bisu</button>
+                                <button type="button" onclick="setVolumePreset(30)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Lembut</button>
+                                <button type="button" onclick="setVolumePreset(70)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Sedang</button>
+                                <button type="button" onclick="setVolumePreset(100)" class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium">Maks</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Theme Toggle Button -->
                     <button type="button" 
                             id="themeToggleBtn" 
@@ -1148,6 +1210,157 @@
             }
         }
 
+        // ════════════ EXAM BACKGROUND MUSIC CONTROLLER ════════════
+        let isMusicPlaying = false;
+        let lastNonZeroVolume = 40;
+
+        function getExamAudio() {
+            return document.getElementById('examAmbientAudio');
+        }
+
+        function updateMusicUI(playing) {
+            const icon = document.getElementById('musicStateIcon');
+            const pulse = document.getElementById('musicPlayingPulse');
+            const btn = document.getElementById('musicToggleBtn');
+            isMusicPlaying = playing;
+
+            if (playing) {
+                if (icon) {
+                    icon.textContent = 'pause';
+                    icon.classList.add('text-primary');
+                }
+                if (pulse) pulse.classList.remove('hidden');
+                if (btn) {
+                    btn.classList.add('ring-2', 'ring-primary/40', 'bg-primary-fixed/50');
+                    btn.setAttribute('title', 'Jeda Musik Relaksasi');
+                }
+            } else {
+                if (icon) {
+                    icon.textContent = 'music_note';
+                    icon.classList.remove('text-primary');
+                }
+                if (pulse) pulse.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('ring-2', 'ring-primary/40', 'bg-primary-fixed/50');
+                    btn.setAttribute('title', 'Putar Musik Relaksasi Ujian');
+                }
+            }
+        }
+
+        function updateVolumeUI(volumePercent) {
+            const slider = document.getElementById('examAudioVolumeSlider');
+            const text = document.getElementById('volumePercentageText');
+            const stateIcon = document.getElementById('volumeStateIcon');
+            const sliderMuteIcon = document.getElementById('sliderMuteIcon');
+
+            if (slider) slider.value = volumePercent;
+            if (text) text.textContent = Math.round(volumePercent) + '%';
+
+            let iconName = 'volume_up';
+            if (volumePercent <= 0) {
+                iconName = 'volume_off';
+            } else if (volumePercent < 50) {
+                iconName = 'volume_down';
+            }
+
+            if (stateIcon) stateIcon.textContent = iconName;
+            if (sliderMuteIcon) sliderMuteIcon.textContent = iconName;
+        }
+
+        function changeExamVolume(val) {
+            const audio = getExamAudio();
+            const numericVal = Math.max(0, Math.min(100, parseFloat(val)));
+            if (numericVal > 0) {
+                lastNonZeroVolume = numericVal;
+            }
+            if (audio) {
+                audio.volume = numericVal / 100;
+            }
+            updateVolumeUI(numericVal);
+            localStorage.setItem('exam_music_volume', numericVal);
+        }
+
+        function setVolumePreset(val) {
+            changeExamVolume(val);
+        }
+
+        function muteUnmuteExamMusic() {
+            const audio = getExamAudio();
+            if (!audio) return;
+
+            if (audio.volume > 0) {
+                lastNonZeroVolume = audio.volume * 100;
+                changeExamVolume(0);
+            } else {
+                changeExamVolume(lastNonZeroVolume > 0 ? lastNonZeroVolume : 40);
+            }
+        }
+
+        function toggleExamMusic() {
+            const audio = getExamAudio();
+            if (!audio) return;
+
+            if (isMusicPlaying) {
+                audio.pause();
+                updateMusicUI(false);
+                localStorage.setItem('exam_music_autoplay', '0');
+            } else {
+                audio.play().then(() => {
+                    updateMusicUI(true);
+                    localStorage.setItem('exam_music_autoplay', '1');
+                }).catch(err => {
+                    console.warn('Playback prevented by browser policy:', err);
+                });
+            }
+        }
+
+        function toggleVolumePopover(e) {
+            if (e) e.stopPropagation();
+            const card = document.getElementById('volumeSliderCard');
+            if (card) {
+                const isHidden = card.classList.contains('hidden');
+                if (isHidden) {
+                    card.classList.remove('hidden');
+                    card.classList.add('flex');
+                } else {
+                    card.classList.add('hidden');
+                    card.classList.remove('flex');
+                }
+            }
+        }
+
+        // Close volume popover when clicking outside
+        document.addEventListener('click', function(e) {
+            const card = document.getElementById('volumeSliderCard');
+            const popoverBtn = document.getElementById('musicVolumePopoverBtn');
+            if (card && !card.classList.contains('hidden')) {
+                if (!card.contains(e.target) && (!popoverBtn || !popoverBtn.contains(e.target))) {
+                    card.classList.add('hidden');
+                    card.classList.remove('flex');
+                }
+            }
+        });
+
+        function initExamMusic() {
+            const audio = getExamAudio();
+            if (!audio) return;
+
+            const savedVol = localStorage.getItem('exam_music_volume');
+            const initialVol = savedVol !== null ? parseFloat(savedVol) : 40;
+            changeExamVolume(initialVol);
+
+            const savedAuto = localStorage.getItem('exam_music_autoplay');
+            if (savedAuto === '1') {
+                audio.play().then(() => {
+                    updateMusicUI(true);
+                }).catch(() => {
+                    updateMusicUI(false);
+                });
+            } else {
+                updateMusicUI(false);
+            }
+        }
+
         // Theme mode controller for exam interface
         function updateExamThemeUI(isDark) {
             const moon = document.getElementById('themeMoonIcon');
@@ -1179,6 +1392,7 @@
         // Initial setup
         calculateAndSyncStatus();
         updateExamThemeUI(document.documentElement.classList.contains('dark'));
+        initExamMusic();
 
         // ════════════ ANTI-CHEAT / ANTI-COPY ENFORCEMENT ════════════
         (function() {

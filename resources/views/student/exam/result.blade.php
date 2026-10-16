@@ -63,30 +63,41 @@
                     <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
                         <circle cx="80" cy="80" fill="none" r="68" stroke="#E5EEFF" stroke-width="12"></circle>
                         <circle class="transition-all duration-1000 ease-out" cx="80" cy="80" fill="none" r="68"
-                                stroke="{{ $isPassed ? '#006c49' : '#ba1a1a' }}"
+                                stroke="{{ $result->is_pending_review ? '#d97706' : ($isPassed ? '#006c49' : '#ba1a1a') }}"
                                 stroke-dasharray="{{ $circumference }}"
                                 stroke-dashoffset="{{ $offset }}"
                                 stroke-linecap="round" stroke-width="12"></circle>
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-4xl md:text-5xl font-headline-lg {{ $isPassed ? 'text-secondary' : 'text-error' }} font-extrabold tracking-tight leading-none">
+                        <span class="text-4xl md:text-5xl font-headline-lg {{ $result->is_pending_review ? 'text-amber-600' : ($isPassed ? 'text-secondary' : 'text-error') }} font-extrabold tracking-tight leading-none">
                             {{ $score }}
                         </span>
                         <span class="text-[10px] md:text-xs text-on-surface-variant mt-1 font-semibold uppercase tracking-wider">
-                            Nilai Ujian
+                            {{ $result->is_pending_review ? 'Nilai Sementara' : 'Nilai Ujian' }}
                         </span>
                     </div>
                 </div>
 
-                <!-- Status Badge "LULUS" or "REMEDIAL" -->
-                <div class="mt-1 mb-3 inline-flex items-center gap-1.5 px-4 md:px-5 py-1.5 md:py-2 rounded-full shadow-sm text-white {{ $isPassed ? 'bg-secondary' : 'bg-error' }}">
-                    <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
-                        {{ $isPassed ? 'check_circle' : 'cancel' }}
-                    </span>
-                    <span class="font-label-lg text-xs md:text-sm font-bold tracking-wide">
-                        {{ $isPassed ? 'LULUS' : 'REMEDIAL' }}
-                    </span>
-                </div>
+                <!-- Status Badge "LULUS" or "REMEDIAL" or "MENUNGGU KOREKSI" -->
+                @if($result->is_pending_review)
+                    <div class="mt-1 mb-3 inline-flex items-center gap-1.5 px-4 md:px-5 py-1.5 md:py-2 rounded-full shadow-sm text-amber-900 bg-amber-100 border border-amber-300">
+                        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                            pending_actions
+                        </span>
+                        <span class="font-label-lg text-xs md:text-sm font-bold tracking-wide">
+                            MENUNGGU KOREKSI GURU
+                        </span>
+                    </div>
+                @else
+                    <div class="mt-1 mb-3 inline-flex items-center gap-1.5 px-4 md:px-5 py-1.5 md:py-2 rounded-full shadow-sm text-white {{ $isPassed ? 'bg-secondary' : 'bg-error' }}">
+                        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                            {{ $isPassed ? 'check_circle' : 'cancel' }}
+                        </span>
+                        <span class="font-label-lg text-xs md:text-sm font-bold tracking-wide">
+                            {{ $isPassed ? 'LULUS' : 'REMEDIAL' }}
+                        </span>
+                    </div>
+                @endif
 
                 <!-- KKM Benchmark Container -->
                 <div class="w-full bg-surface-container-low rounded-xl py-2.5 px-3 md:px-4 flex items-center justify-between border border-surface-container">
@@ -94,9 +105,15 @@
                         <span class="material-symbols-outlined text-[18px]">flag</span>
                         <span>Target Kelulusan (KKM): <strong class="font-semibold text-on-surface">{{ $kkm }}</strong></span>
                     </div>
-                    <span class="text-xs md:text-sm font-bold px-2 py-0.5 rounded-full {{ $diff >= 0 ? 'text-secondary bg-secondary-container/60' : 'text-error bg-error-container/60' }}">
-                        {{ $diff >= 0 ? "+$diff poin" : "$diff poin" }}
-                    </span>
+                    @if($result->is_pending_review)
+                        <span class="text-[11px] md:text-xs font-semibold px-2 py-0.5 rounded-full text-amber-700 bg-amber-100">
+                            Evaluasi Esai Berlangsung
+                        </span>
+                    @else
+                        <span class="text-xs md:text-sm font-bold px-2 py-0.5 rounded-full {{ $diff >= 0 ? 'text-secondary bg-secondary-container/60' : 'text-error bg-error-container/60' }}">
+                            {{ $diff >= 0 ? "+$diff poin" : "$diff poin" }}
+                        </span>
+                    @endif
                 </div>
             </div>
         </div>

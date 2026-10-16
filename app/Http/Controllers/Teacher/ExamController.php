@@ -21,6 +21,7 @@ class ExamController extends Controller
     public function index(Request $request)
     {
         $teacher = Auth::user();
+        Exam::syncScheduledAndExpiredExams();
         $baseQuery = Exam::forTeacher($teacher->id);
 
         $stats = [
@@ -68,14 +69,58 @@ class ExamController extends Controller
             'subject_id'      => 'required|exists:subjects,id',
             'classroom_id'    => 'required|exists:classrooms,id',
             'academic_year_id'=> 'required|exists:academic_years,id',
-            'exam_type'       => 'required|in:UTS,UAS,UH,Quiz,Remedial,Lainnya',
-            'exam_date'       => 'required|date',
-            'start_time'      => 'required',
-            'end_time'        => 'required',
+            'timezone'        => 'required|in:Asia/Jakarta,Asia/Makassar,Asia/Jayapura',
+            'exam_date'       => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) use ($request) {
+                    $tz = $request->input('timezone', 'Asia/Jakarta');
+                    $todayInTz = now()->setTimezone($tz)->format('Y-m-d');
+                    if ($value < $todayInTz) {
+                        $fail('Tanggal pelaksanaan ujian tidak boleh lebih awal dari hari ini (' . $todayInTz . ').');
+                    }
+                },
+            ],
+            'start_time'      => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->filled('exam_date')) {
+                        $tz = $request->input('timezone', 'Asia/Jakarta');
+                        $nowInTz = now()->setTimezone($tz);
+                        $todayInTz = $nowInTz->format('Y-m-d');
+                        if ($request->exam_date === $todayInTz) {
+                            $currentHm = $nowInTz->format('H:i');
+                            $tzCode = \App\Models\Exam::SUPPORTED_TIMEZONES[$tz]['code'] ?? 'WIB';
+                            if ($value < $currentHm) {
+                                $fail("Waktu mulai ujian tidak boleh lebih awal dari waktu saat ini ({$currentHm} {$tzCode}).");
+                            }
+                        }
+                    }
+                },
+            ],
+            'end_time'        => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->filled('start_time')) {
+                        if ($value <= $request->start_time) {
+                            $fail('Waktu selesai ujian harus lebih besar (setelah) dari waktu mulai ujian.');
+                        }
+                    }
+                },
+            ],
             'duration_minutes'=> 'required|integer|min:1|max:480',
             'passing_grade'   => 'required|numeric|min:0|max:100',
             'question_ids'    => 'required|array|min:1',
             'question_ids.*'  => 'exists:questions,id',
+        ], [
+            'timezone.required'        => 'Zona waktu pelaksanaan ujian wajib dipilih.',
+            'timezone.in'              => 'Zona waktu tidak valid. Pilih WIB, WITA, atau WIT.',
+            'start_time.required'      => 'Jam mulai ujian wajib diisi.',
+            'end_time.required'        => 'Jam selesai ujian wajib diisi.',
+            'question_ids.required'    => 'Silakan masukkan minimal 1 butir soal ke dalam ujian.',
+            'question_ids.min'         => 'Silakan masukkan minimal 1 butir soal ke dalam ujian.',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -91,6 +136,7 @@ class ExamController extends Controller
                 'exam_date'       => $request->exam_date,
                 'start_time'      => $request->start_time,
                 'end_time'        => $request->end_time,
+                'timezone'        => $request->input('timezone', 'Asia/Jakarta'),
                 'duration_minutes'=> $request->duration_minutes,
                 'total_questions' => count($request->question_ids),
                 'passing_grade'   => $request->passing_grade,
@@ -156,15 +202,60 @@ class ExamController extends Controller
 
         $request->validate([
             'title'           => 'required|string|max:255',
-            'exam_date'       => 'required|date',
-            'duration_minutes'=> 'required|integer|min:1',
+            'timezone'        => 'required|in:Asia/Jakarta,Asia/Makassar,Asia/Jayapura',
+            'exam_date'       => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) use ($request) {
+                    $tz = $request->input('timezone', 'Asia/Jakarta');
+                    $todayInTz = now()->setTimezone($tz)->format('Y-m-d');
+                    if ($value < $todayInTz) {
+                        $fail('Tanggal pelaksanaan ujian tidak boleh lebih awal dari hari ini (' . $todayInTz . ').');
+                    }
+                },
+            ],
+            'start_time'      => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->filled('exam_date')) {
+                        $tz = $request->input('timezone', 'Asia/Jakarta');
+                        $nowInTz = now()->setTimezone($tz);
+                        $todayInTz = $nowInTz->format('Y-m-d');
+                        if ($request->exam_date === $todayInTz) {
+                            $currentHm = $nowInTz->format('H:i');
+                            $tzCode = \App\Models\Exam::SUPPORTED_TIMEZONES[$tz]['code'] ?? 'WIB';
+                            if ($value < $currentHm) {
+                                $fail("Waktu mulai ujian tidak boleh lebih awal dari waktu saat ini ({$currentHm} {$tzCode}).");
+                            }
+                        }
+                    }
+                },
+            ],
+            'end_time'        => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->filled('start_time')) {
+                        if ($value <= $request->start_time) {
+                            $fail('Waktu selesai ujian harus lebih besar (setelah) dari waktu mulai ujian.');
+                        }
+                    }
+                },
+            ],
+            'duration_minutes'=> 'required|integer|min:1|max:480',
             'passing_grade'   => 'required|numeric|min:0|max:100',
+        ], [
+            'timezone.required'        => 'Zona waktu pelaksanaan ujian wajib dipilih.',
+            'timezone.in'              => 'Zona waktu tidak valid. Pilih WIB, WITA, atau WIT.',
+            'start_time.required'      => 'Jam mulai ujian wajib diisi.',
+            'end_time.required'        => 'Jam selesai ujian wajib diisi.',
         ]);
 
         DB::transaction(function () use ($request, $exam) {
             $exam->update($request->only([
                 'title', 'exam_type', 'description', 'instructions',
-                'exam_date', 'start_time', 'end_time', 'duration_minutes', 'passing_grade',
+                'exam_date', 'start_time', 'end_time', 'timezone', 'duration_minutes', 'passing_grade',
             ]));
 
             if ($request->question_ids) {
@@ -243,19 +334,72 @@ class ExamController extends Controller
                 ->where('status', 'in_progress')
                 ->get();
 
+            $examQuestions = ExamQuestion::where('exam_id', $exam->id)->with('question')->get();
+
             foreach ($participants as $participant) {
-                $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get();
-                $totalScore    = $answers->sum('score_obtained');
-                $correctCount  = $answers->where('is_correct', true)->count();
-                $wrongCount    = $answers->where('is_correct', false)->whereNotNull('selected_option_id')->count();
-                $totalQ        = ExamQuestion::where('exam_id', $exam->id)->count();
-                $unanswered    = $totalQ - $answers->whereNotNull('selected_option_id')->count();
-                $timeSpent     = $participant->time_spent_minutes;
-                $passStatus    = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+                $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get()->keyBy('exam_question_id');
+                $totalScore = 0;
+                $correctCount = 0;
+                $wrongCount = 0;
+                $unansweredCount = 0;
+                $hasPendingEssay = false;
+
+                foreach ($examQuestions as $eq) {
+                    $q = $eq->question;
+                    $ans = $answers->get($eq->id);
+                    $hasAnswer = $ans && ($ans->selected_option_id !== null || !empty(trim($ans->answer_text ?? '')));
+
+                    if (!$hasAnswer) {
+                        $unansweredCount++;
+                    }
+
+                    if ($q && in_array($q->type, ['multiple_choice', 'true_false'])) {
+                        if ($ans && $ans->is_correct) {
+                            $correctCount++;
+                            $totalScore += (float)$ans->score_obtained;
+                        } elseif ($hasAnswer) {
+                            $wrongCount++;
+                        }
+                    } elseif ($q && $q->type === 'essay') {
+                        if ($ans && $ans->is_correct === true) {
+                            $correctCount++;
+                            $totalScore += (float)$ans->score_obtained;
+                        } elseif ($ans && $ans->is_correct === false) {
+                            $wrongCount++;
+                            $totalScore += (float)$ans->score_obtained;
+                        } else {
+                            $hasPendingEssay = true;
+                            if ($ans && $ans->score_obtained > 0) {
+                                $totalScore += (float)$ans->score_obtained;
+                            }
+                        }
+                    } else {
+                        if ($ans && $ans->is_correct) {
+                            $correctCount++;
+                        } elseif ($hasAnswer) {
+                            $wrongCount++;
+                        }
+                        if ($ans) {
+                            $totalScore += (float)$ans->score_obtained;
+                        }
+                    }
+                }
+
+                $passStatus = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+                $gradingStatus = $hasPendingEssay ? 'pending_review' : 'graded';
+
+                // Tetapkan waktu pengumpulan satu kali secara konsisten
+                $submittedAt = now();
+
+                // Hitung durasi pengerjaan (dalam menit) berdasarkan waktu mulai riil dan waktu pengumpulan
+                $timeSpent = 0;
+                if ($participant->started_at) {
+                    $timeSpent = (int) $participant->started_at->diffInMinutes($submittedAt);
+                }
 
                 $participant->update([
                     'status'       => 'submitted',
-                    'submitted_at' => now(),
+                    'submitted_at' => $submittedAt,
                 ]);
 
                 ExamResult::updateOrCreate(
@@ -265,9 +409,10 @@ class ExamController extends Controller
                         'total_score'         => $totalScore,
                         'correct_answers'     => $correctCount,
                         'wrong_answers'       => $wrongCount,
-                        'unanswered'          => $unanswered,
+                        'unanswered'          => $unansweredCount,
                         'time_spent_minutes'  => $timeSpent,
                         'pass_status'         => $passStatus,
+                        'grading_status'      => $gradingStatus,
                     ]
                 );
             }
@@ -387,6 +532,168 @@ class ExamController extends Controller
         return view('teacher.exam.results', compact('exam', 'results', 'stats'));
     }
 
+    // Ekspor Rekap Nilai Ujian (PDF & Excel)
+    public function exportResults(Request $request, Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        $results = ExamResult::where('exam_id', $exam->id)
+            ->with(['student', 'participant'])
+            ->orderByDesc('total_score')
+            ->get();
+
+        $stats = [
+            'total'     => $results->count(),
+            'avg'       => round($results->avg('total_score'), 1),
+            'max'       => $results->max('total_score'),
+            'min'       => $results->min('total_score'),
+            'pass'      => $results->where('pass_status', 'pass')->count(),
+            'fail'      => $results->where('pass_status', 'fail')->count(),
+        ];
+
+        $exam->load(['subject', 'classroom', 'teacher']);
+        $format = strtolower($request->query('format', 'pdf'));
+
+        $safeTitle = \Illuminate\Support\Str::slug($exam->title, '_');
+        $timestamp = date('Ymd_His');
+
+        if ($format === 'excel' || $format === 'xlsx') {
+            return $this->exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp);
+        }
+
+        // Default: Export PDF (Landscape A4 untuk tabel hasil ujian multi-kolom yang rapi & tidak terpotong)
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('teacher.exam.results_pdf', compact('exam', 'results', 'stats'))
+            ->setPaper('a4', 'landscape');
+
+        $filename = "rekap_nilai_{$safeTitle}_{$timestamp}.pdf";
+        return $pdf->download($filename);
+    }
+
+    // Helper ekspor Excel format XML Spreadsheet (.xls/.xlsx yang kompatibel dan rapi dengan styling)
+    protected function exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp)
+    {
+        $filename = "rekap_nilai_{$safeTitle}_{$timestamp}.xls";
+
+        $examTitle = htmlspecialchars($exam->title, ENT_QUOTES, 'UTF-8');
+        $subjectName = htmlspecialchars($exam->subject->name ?? '-', ENT_QUOTES, 'UTF-8');
+        $className = htmlspecialchars($exam->classroom->name ?? '-', ENT_QUOTES, 'UTF-8');
+        $examDate = $exam->exam_date ? $exam->exam_date->format('d M Y') : '-';
+        $passingGrade = $exam->passing_grade;
+        $teacherName = htmlspecialchars($exam->teacher->name ?? '-', ENT_QUOTES, 'UTF-8');
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        $xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        $xml .= ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+        $xml .= ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+        $xml .= ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        $xml .= ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+
+        // Styles
+        $xml .= '<Styles>' . "\n";
+        $xml .= ' <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="HeaderTitle"><Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#1E1B4B"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="MetaLabel"><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="MetaVal"><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        
+        $xml .= ' <Style ss:ID="Th"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#1E293B"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="ThLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#1E293B"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>' . "\n";
+
+        $xml .= ' <Style ss:ID="TdCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdScorePass"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#059669"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdScoreFail"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#DC2626"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdStatusPass"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#065F46"/><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdStatusFail"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#991B1B"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="TdStatusPending"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#92400E"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= '</Styles>' . "\n";
+
+        // Worksheet
+        $xml .= '<Worksheet ss:Name="Rekap Nilai">' . "\n";
+        $xml .= ' <Table x:FullColumns="1" x:FullRows="1" ss:DefaultRowHeight="20">' . "\n";
+        $xml .= '  <Column ss:Width="40"/>' . "\n";  // No
+        $xml .= '  <Column ss:Width="190"/>' . "\n"; // Nama Siswa
+        $xml .= '  <Column ss:Width="90"/>' . "\n";  // NIS
+        $xml .= '  <Column ss:Width="170"/>' . "\n"; // Waktu Pengerjaan
+        $xml .= '  <Column ss:Width="160"/>' . "\n"; // Benar / Salah / Kosong
+        $xml .= '  <Column ss:Width="80"/>' . "\n";  // Nilai Akhir
+        $xml .= '  <Column ss:Width="110"/>' . "\n"; // Status
+
+        // Info Ujian
+        $xml .= '  <Row ss:Height="24"><Cell ss:StyleID="HeaderTitle" ss:MergeAcross="6"><Data ss:Type="String">REKAP HASIL UJIAN - ' . strtoupper($examTitle) . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Mata Pelajaran</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: ' . $subjectName . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Kelas / Rombel</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: ' . $className . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Pelaksanaan</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: ' . $examDate . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">KKM / Guru</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: ' . $passingGrade . ' • ' . $teacherName . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Ringkasan Nilai</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: Peserta: ' . $stats['total'] . ' | Rata-rata: ' . $stats['avg'] . ' | Lulus: ' . $stats['pass'] . ' | Remedial: ' . $stats['fail'] . '</Data></Cell></Row>' . "\n";
+        $xml .= '  <Row ss:Height="10"></Row>' . "\n";
+
+        // Table Header: Kolom dan urutan sama persis dengan halaman web
+        $xml .= '  <Row ss:Height="24">' . "\n";
+        $xml .= '   <Cell ss:StyleID="Th"><Data ss:Type="String">No</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="ThLeft"><Data ss:Type="String">Nama Siswa</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="Th"><Data ss:Type="String">NIS</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="ThLeft"><Data ss:Type="String">Waktu Pengerjaan</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="Th"><Data ss:Type="String">Benar / Salah / Kosong</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="Th"><Data ss:Type="String">Nilai Akhir</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="Th"><Data ss:Type="String">Status</Data></Cell>' . "\n";
+        $xml .= '  </Row>' . "\n";
+
+        // Table Rows
+        foreach ($results as $index => $result) {
+            $studentName = htmlspecialchars($result->student->name ?? '-', ENT_QUOTES, 'UTF-8');
+            $nis = htmlspecialchars($result->student->nis ?? '-', ENT_QUOTES, 'UTF-8');
+            $waktuFormatted = $result->time_spent_minutes . ' Menit (Dikumpulkan: ' . ($result->created_at ? $result->created_at->format('H:i') . ' WIB' : '-') . ')';
+            $bskFormatted = $result->correct_answers . ' B / ' . $result->wrong_answers . ' S / ' . $result->unanswered . ' K';
+            $score = round($result->total_score);
+
+            $scoreStyle = ($result->pass_status === 'pass') ? 'TdScorePass' : 'TdScoreFail';
+            if ($result->is_pending_review) {
+                $statusText = 'Menunggu Koreksi';
+                $statusStyle = 'TdStatusPending';
+            } elseif ($result->pass_status === 'pass') {
+                $statusText = 'Lulus';
+                $statusStyle = 'TdStatusPass';
+            } else {
+                $statusText = 'Tidak Lulus';
+                $statusStyle = 'TdStatusFail';
+            }
+
+            $xml .= '  <Row ss:Height="22">' . "\n";
+            $xml .= '   <Cell ss:StyleID="TdCenter"><Data ss:Type="Number">' . ($index + 1) . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $studentName . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $nis . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . htmlspecialchars($waktuFormatted, ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . htmlspecialchars($bskFormatted, ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="' . $scoreStyle . '"><Data ss:Type="Number">' . $score . '</Data></Cell>' . "\n";
+            $xml .= '   <Cell ss:StyleID="' . $statusStyle . '"><Data ss:Type="String">' . $statusText . '</Data></Cell>' . "\n";
+            $xml .= '  </Row>' . "\n";
+        }
+
+        $xml .= ' </Table>' . "\n";
+        $xml .= ' <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
+        $xml .= '  <FreezePanes/>' . "\n";
+        $xml .= '  <FrozenNoSplit/>' . "\n";
+        $xml .= '  <SplitHorizontal>8</SplitHorizontal>' . "\n";
+        $xml .= '  <TopRowBottomPane>8</TopRowBottomPane>' . "\n";
+        $xml .= '  <ActivePane>2</ActivePane>' . "\n";
+        $xml .= '  <Selected/>' . "\n";
+        $xml .= '  <Panes><Pane><Number>3</Number></Pane><Pane><Number>2</Number><ActiveRow>8</ActiveRow></Pane></Panes>' . "\n";
+        $xml .= '  <ProtectObjects>False</ProtectObjects>' . "\n";
+        $xml .= '  <ProtectScenarios>False</ProtectScenarios>' . "\n";
+        $xml .= ' </WorksheetOptions>' . "\n";
+        $xml .= ' <AutoFilter x:Range="R8C1:R8C7" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
+        $xml .= '</Worksheet>' . "\n";
+        $xml .= '</Workbook>';
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control' => 'max-age=0, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma' => 'public',
+        ]);
+    }
+
     // Detail jawaban satu siswa
     public function studentAnswerDetail(Exam $exam, $studentId)
     {
@@ -402,6 +709,157 @@ class ExamController extends Controller
             ->sortBy('examQuestion.question_order');
 
         return view('teacher.exam.student_detail', compact('exam', 'student', 'participant', 'result', 'answers'));
+    }
+
+    // Penilaian Soal Esai oleh Guru
+    public function gradeEssayAnswer(Request $request, Exam $exam, $studentId)
+    {
+        $this->authorizeExam($exam);
+
+        $request->validate([
+            'answer_id' => 'required|exists:student_answers,id',
+            'score'     => 'required|numeric|min:0',
+        ]);
+
+        $participant = ExamParticipant::where('exam_id', $exam->id)
+            ->where('student_id', $studentId)
+            ->firstOrFail();
+
+        $answer = StudentAnswer::where('id', $request->answer_id)
+            ->where('exam_participant_id', $participant->id)
+            ->firstOrFail();
+
+        $examQuestion = ExamQuestion::where('id', $answer->exam_question_id)
+            ->where('exam_id', $exam->id)
+            ->firstOrFail();
+
+        $question = $examQuestion->question;
+
+        if (!$question || $question->type !== 'essay') {
+            return back()->with('error', 'Hanya soal bertipe esai yang dapat dinilai melalui fitur ini.');
+        }
+
+        // Bobot maksimal dari pertanyaan
+        $maxScore = (float)$question->score;
+        $inputScore = (float)$request->score;
+
+        if ($inputScore > $maxScore) {
+            return back()->with('error', "Skor yang dimasukkan ({$inputScore}) melebihi bobot maksimal soal ({$maxScore} poin).");
+        }
+
+        DB::transaction(function () use ($answer, $inputScore, $maxScore, $exam, $participant, $studentId) {
+            // Perbarui skor esai
+            $isCorrect = $inputScore >= $maxScore ? true : ($inputScore <= 0 ? false : null);
+
+            $answer->update([
+                'score_obtained' => $inputScore,
+                'is_correct'     => $isCorrect,
+            ]);
+
+            // Hitung ulang seluruh capaian siswa
+            $examQuestions = ExamQuestion::where('exam_id', $exam->id)->with('question')->get();
+            $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get()->keyBy('exam_question_id');
+
+            $totalScore = 0;
+            $correctCount = 0;
+            $wrongCount = 0;
+            $unansweredCount = 0;
+            $hasPendingEssay = false;
+
+            foreach ($examQuestions as $eq) {
+                $q = $eq->question;
+                $ans = $answers->get($eq->id);
+                $hasAnswer = $ans && ($ans->selected_option_id !== null || !empty(trim($ans->answer_text ?? '')));
+
+                if (!$hasAnswer) {
+                    $unansweredCount++;
+                }
+
+                if ($q && in_array($q->type, ['multiple_choice', 'true_false'])) {
+                    if ($ans && $ans->is_correct) {
+                        $correctCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } elseif ($hasAnswer) {
+                        $wrongCount++;
+                    }
+                } elseif ($q && $q->type === 'essay') {
+                    if ($ans && $ans->is_correct === true) {
+                        $correctCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } elseif ($ans && $ans->is_correct === false) {
+                        $wrongCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } else {
+                        // Jika is_correct === null: Cek apakah sudah pernah dinilai (skor > 0 sebagian atau belum dinilai)
+                        // Jika belum ada input nilai sama sekali, dianggap pending review
+                        // Catatan: jika guru memberi nilai sebagian misal 5 dari 10, is_correct adalah null namun skor sudah diinput
+                        // Kita tentukan status pending jika jawaban belum diisi nilai oleh guru
+                        // Untuk memastikan, jika belum disentuh koreksi:
+                        if ($ans && $ans->score_obtained !== null && $ans->answered_at !== null) {
+                            // Cek apakah guru sudah mengoreksi:
+                            // Jika skor sudah diinput, kita tambahkan ke totalScore
+                            $totalScore += (float)$ans->score_obtained;
+                        } else {
+                            $hasPendingEssay = true;
+                        }
+                    }
+                } else {
+                    if ($ans && $ans->is_correct) {
+                        $correctCount++;
+                    } elseif ($hasAnswer) {
+                        $wrongCount++;
+                    }
+                    if ($ans) {
+                        $totalScore += (float)$ans->score_obtained;
+                    }
+                }
+            }
+
+            // Cek apakah masih ada esai lain pada ujian ini yang belum dinilai sama sekali
+            $essayQuestions = $examQuestions->filter(fn($eq) => $eq->question && $eq->question->type === 'essay');
+            $pendingEssaysCount = 0;
+            foreach ($essayQuestions as $eq) {
+                $ans = $answers->get($eq->id);
+                // Belum dinilai jika is_correct null dan score_obtained == 0 serta belum ada input penilaian
+                // Untuk konsistensi, jika is_correct === null dan score_obtained == 0 serta teks jawaban ada, itu butuh koreksi
+                if (!$ans || ($ans->is_correct === null && (float)$ans->score_obtained == 0 && !empty(trim($ans->answer_text ?? '')))) {
+                    $pendingEssaysCount++;
+                }
+            }
+
+            $passStatus = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+            $gradingStatus = $pendingEssaysCount > 0 ? 'pending_review' : 'graded';
+
+            ExamResult::updateOrCreate(
+                ['exam_id' => $exam->id, 'student_id' => $studentId],
+                [
+                    'exam_participant_id' => $participant->id,
+                    'total_score'         => $totalScore,
+                    'correct_answers'     => $correctCount,
+                    'wrong_answers'       => $wrongCount,
+                    'unanswered'          => $unansweredCount,
+                    'pass_status'         => $passStatus,
+                    'grading_status'      => $gradingStatus,
+                ]
+            );
+
+            ActivityLog::log('essay_graded', "Guru menilai jawaban esai siswa untuk ujian {$exam->title} (Skor: {$inputScore})", $exam);
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $updatedResult = ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->first();
+            return response()->json([
+                'success'        => true,
+                'message'        => 'Nilai esai berhasil disimpan.',
+                'score_obtained' => $inputScore,
+                'total_score'    => $updatedResult->total_score,
+                'pass_status'    => $updatedResult->pass_status,
+                'grading_status' => $updatedResult->grading_status,
+                'grading_label'  => $updatedResult->grading_label,
+            ]);
+        }
+
+        return back()->with('success', "Nilai esai sebesar {$inputScore} berhasil disimpan dan nilai akhir siswa telah diperbarui.");
     }
 
     // Analitik ujian

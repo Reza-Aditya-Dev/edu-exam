@@ -421,7 +421,7 @@
                         <div class="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-xs hover:bg-surface-container transition-colors border border-slate-100">
                             <div class="flex items-center justify-between">
                                 <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold">
-                                    {{ \Carbon\Carbon::parse($sExam->exam_date)->translatedFormat('d M') }}, {{ $timeStr }} WIB
+                                    {{ \Carbon\Carbon::parse($sExam->exam_date)->translatedFormat('d M') }}, {{ $timeStr }} {{ $sExam->timezone_code }}
                                 </span>
                                 <span class="inline-flex items-center gap-1 font-label-sm text-label-sm {{ $diffDays <= 1 ? 'text-primary' : 'text-tertiary' }} font-bold">
                                     <span class="material-symbols-outlined text-[14px]">hourglass_top</span>

@@ -22,6 +22,10 @@ class ExamController extends Controller
         $student = Auth::user();
         $this->authorizeExam($exam, $student);
 
+        // Otomatis sinkronisasi status ujian (buka jika jadwal mulai telah tiba, tutup jika habis waktu)
+        $exam->activateIfDue();
+        $exam->closeIfExpired();
+
         $participant = ExamParticipant::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->first();
@@ -37,8 +41,21 @@ class ExamController extends Controller
         $student = Auth::user();
         $this->authorizeExam($exam, $student);
 
+        // Coba aktifkan jika waktu ujian telah tiba
+        $exam->activateIfDue();
+
+        if ($exam->status === 'scheduled' && !$exam->is_started) {
+            $jamMulai = substr($exam->start_time, 0, 5) . ' ' . $exam->timezone_code;
+            return redirect()->route('student.exam.show', $exam)->with('warning', "Ujian belum dimulai. Silakan kembali sesuai jadwal ({$jamMulai}).");
+        }
+
+        if ($exam->is_expired || $exam->status === 'completed') {
+            $exam->closeIfExpired();
+            return redirect()->route('student.exam.show', $exam)->with('error', 'Waktu pelaksanaan ujian telah berakhir. Anda tidak dapat memulai ujian ini.');
+        }
+
         if ($exam->status !== 'active') {
-            return redirect()->route('student.dashboard')->with('error', 'Ujian belum dibuka atau waktu pengerjaan ujian telah berakhir.');
+            return redirect()->route('student.dashboard')->with('error', 'Ujian belum dibuka untuk dikerjakan.');
         }
 
         // Cek sudah ada participant
@@ -74,9 +91,10 @@ class ExamController extends Controller
             return redirect()->route('student.exam.result', $exam);
         }
 
-        // Cek jika guru sudah menutup ujian
-        if ($exam->status !== 'active') {
-            return $this->autoSubmit($exam, $participant, 'Ujian telah ditutup oleh guru pengampu.');
+        // Cek jika guru sudah menutup ujian atau jadwal ujian sudah habis
+        if ($exam->status !== 'active' || $exam->is_expired) {
+            $exam->closeIfExpired();
+            return $this->autoSubmit($exam, $participant, 'Waktu sesi ujian telah berakhir. Jawaban dikumpulkan otomatis.');
         }
 
         // Cek waktu habis (otomatis berakhir jika melewati batas waktu)
@@ -135,15 +153,16 @@ class ExamController extends Controller
             ->where('status', 'in_progress')
             ->firstOrFail();
 
-        // Cek jika guru telah menutup ujian
-        if ($exam->status !== 'active') {
+        // Cek jika guru telah menutup ujian atau sesi ujian sudah berakhir
+        if ($exam->status !== 'active' || $exam->is_expired) {
+            $exam->closeIfExpired();
             $this->processSubmit($exam, $participant, true);
             return response()->json([
                 'success'     => false,
                 'status'      => 'closed',
                 'exam_closed' => true,
                 'redirect'    => route('student.exam.result', $exam),
-                'message'     => 'Ujian telah ditutup oleh guru pengampu.',
+                'message'     => 'Waktu sesi ujian telah berakhir.',
             ]);
         }
 
@@ -178,6 +197,16 @@ class ExamController extends Controller
             $option = $question->options->firstWhere('id', $request->selected_option_id);
             $isCorrect = $option?->is_correct;
             $scoreObtained = $isCorrect ? $question->score : 0;
+        }
+
+        $existingAnswer = StudentAnswer::where('exam_participant_id', $participant->id)
+            ->where('exam_question_id', $request->exam_question_id)
+            ->first();
+
+        // Jangan timpa skor esai yang sudah dinilai guru jika siswa hanya menyimpan ulang
+        if ($existingAnswer && $question->type === 'essay' && $existingAnswer->is_correct !== null) {
+            $isCorrect = $existingAnswer->is_correct;
+            $scoreObtained = $existingAnswer->score_obtained;
         }
 
         $answer = StudentAnswer::updateOrCreate(
@@ -261,13 +290,14 @@ class ExamController extends Controller
             ]);
         }
 
-        // Cek jika guru menutup ujian
-        if ($exam->status !== 'active') {
+        // Cek jika guru menutup ujian atau sesi ujian sudah berakhir
+        if ($exam->status !== 'active' || $exam->is_expired) {
+            $exam->closeIfExpired();
             $this->processSubmit($exam, $participant, true);
             return response()->json([
                 'active'   => false,
                 'redirect' => route('student.exam.result', $exam),
-                'message'  => 'Ujian telah ditutup oleh guru pengampu.',
+                'message'  => 'Waktu sesi ujian telah berakhir.',
             ]);
         }
 
@@ -299,18 +329,75 @@ class ExamController extends Controller
     private function processSubmit(Exam $exam, ExamParticipant $participant, bool $isTimeout = false)
     {
         DB::transaction(function () use ($exam, $participant, $isTimeout) {
-            $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get();
-            $totalScore    = $answers->sum('score_obtained');
-            $correctCount  = $answers->where('is_correct', true)->count();
-            $wrongCount    = $answers->where('is_correct', false)->whereNotNull('selected_option_id')->count();
-            $totalQ        = ExamQuestion::where('exam_id', $exam->id)->count();
-            $unanswered    = $totalQ - $answers->whereNotNull('selected_option_id')->count();
-            $timeSpent     = $participant->time_spent_minutes;
-            $passStatus    = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+            $examQuestions = ExamQuestion::where('exam_id', $exam->id)
+                ->with('question')
+                ->get();
+            $answers = StudentAnswer::where('exam_participant_id', $participant->id)->get()->keyBy('exam_question_id');
+
+            $totalScore = 0;
+            $correctCount = 0;
+            $wrongCount = 0;
+            $unansweredCount = 0;
+            $hasPendingEssay = false;
+
+            foreach ($examQuestions as $eq) {
+                $q = $eq->question;
+                $ans = $answers->get($eq->id);
+                $hasAnswer = $ans && ($ans->selected_option_id !== null || !empty(trim($ans->answer_text ?? '')));
+
+                if (!$hasAnswer) {
+                    $unansweredCount++;
+                }
+
+                if ($q && in_array($q->type, ['multiple_choice', 'true_false'])) {
+                    if ($ans && $ans->is_correct) {
+                        $correctCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } elseif ($hasAnswer) {
+                        $wrongCount++;
+                    }
+                } elseif ($q && $q->type === 'essay') {
+                    if ($ans && $ans->is_correct === true) {
+                        $correctCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } elseif ($ans && $ans->is_correct === false) {
+                        $wrongCount++;
+                        $totalScore += (float)$ans->score_obtained;
+                    } else {
+                        // is_correct === null: Belum dikoreksi oleh guru
+                        $hasPendingEssay = true;
+                        if ($ans && $ans->score_obtained > 0) {
+                            $totalScore += (float)$ans->score_obtained;
+                        }
+                    }
+                } else {
+                    // Tipe lain (jika ada seperti short_answer)
+                    if ($ans && $ans->is_correct) {
+                        $correctCount++;
+                    } elseif ($hasAnswer) {
+                        $wrongCount++;
+                    }
+                    if ($ans) {
+                        $totalScore += (float)$ans->score_obtained;
+                    }
+                }
+            }
+
+            $passStatus = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+            $gradingStatus = $hasPendingEssay ? 'pending_review' : 'graded';
+
+            // Tetapkan waktu pengumpulan satu kali secara konsisten
+            $submittedAt = now();
+
+            // Hitung durasi pengerjaan (dalam menit) berdasarkan waktu mulai riil dan waktu pengumpulan
+            $timeSpent = 0;
+            if ($participant->started_at) {
+                $timeSpent = (int) $participant->started_at->diffInMinutes($submittedAt);
+            }
 
             $participant->update([
-                'status'       => $isTimeout ? 'timed_out' : 'submitted',
-                'submitted_at' => now(),
+                'status'             => $isTimeout ? 'timed_out' : 'submitted',
+                'submitted_at'       => $submittedAt,
                 'is_late_submission' => $isTimeout,
             ]);
 
@@ -318,22 +405,24 @@ class ExamController extends Controller
                 ['exam_id' => $exam->id, 'student_id' => $participant->student_id],
                 [
                     'exam_participant_id' => $participant->id,
-                    'total_score'    => $totalScore,
-                    'correct_answers'=> $correctCount,
-                    'wrong_answers'  => $wrongCount,
-                    'unanswered'     => $unanswered,
-                    'time_spent_minutes' => $timeSpent,
-                    'pass_status'    => $passStatus,
+                    'total_score'         => $totalScore,
+                    'correct_answers'     => $correctCount,
+                    'wrong_answers'       => $wrongCount,
+                    'unanswered'          => $unansweredCount,
+                    'time_spent_minutes'  => $timeSpent,
+                    'pass_status'         => $passStatus,
+                    'grading_status'      => $gradingStatus,
                 ]
             );
 
             ActivityLog::log('exam_submitted', "Siswa mengumpulkan ujian: {$exam->title}", $exam);
 
             // Notifikasi ke Siswa yang bersangkutan
+            $statusNote = $hasPendingEssay ? 'Menunggu koreksi esai oleh guru' : ($passStatus === 'pass' ? 'Tuntas' : 'Remedial');
             Notification::send(
                 $participant->student_id,
                 'Ujian Berhasil Dikumpulkan',
-                "Ujian {$exam->title} berhasil dikumpulkan dengan nilai {$totalScore} (" . ($passStatus === 'pass' ? 'Tuntas' : 'Remedial') . ").",
+                "Ujian {$exam->title} berhasil dikumpulkan dengan nilai sementara {$totalScore} ({$statusNote}).",
                 'result',
                 $exam
             );
@@ -345,7 +434,7 @@ class ExamController extends Controller
                 Notification::send(
                     $exam->teacher_id,
                     'Jawaban Siswa Masuk',
-                    "{$studentName} telah mengumpulkan ujian {$exam->title} (Nilai: {$totalScore}).",
+                    "{$studentName} telah mengumpulkan ujian {$exam->title}." . ($hasPendingEssay ? ' Terdapat jawaban esai yang perlu dikoreksi.' : " (Nilai: {$totalScore})."),
                     'exam',
                     $exam
                 );

@@ -19,6 +19,8 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        Exam::syncScheduledAndExpiredExams();
+
         // 1. Core Master Data Statistics
         $totalStudents      = User::students()->count();
         $activeStudents     = User::students()->where('is_active', true)->count();

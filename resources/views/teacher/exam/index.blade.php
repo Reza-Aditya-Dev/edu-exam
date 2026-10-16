@@ -226,7 +226,7 @@
                                 </div>
                                 <div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
                                     <span class="material-symbols-outlined text-[16px] text-secondary">calendar_today</span>
-                                    <span>{{ $exam->exam_date->format('d M Y') }} • {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }} WIB</span>
+                                    <span>{{ $exam->exam_date->format('d M Y') }} • {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }} {{ $exam->timezone_code }}</span>
                                 </div>
                             </div>
                         </div>
@@ -335,7 +335,7 @@
                             <div class="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-space-sm flex-shrink-0">
                                 <div class="flex items-center gap-1.5 px-space-md py-1 rounded-lg bg-surface-container-low text-on-surface font-label-sm text-label-sm font-semibold border border-slate-100">
                                     <span class="material-symbols-outlined text-[16px] text-primary-container">event</span>
-                                    <span>{{ $exam->exam_date->format('d M Y') }} • {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} WIB</span>
+                                    <span>{{ $exam->exam_date->format('d M Y') }} • {{ \Carbon\Carbon::parse($exam->start_time)->format('H:i') }} {{ $exam->timezone_code }}</span>
                                 </div>
                                 <span class="font-body-sm text-body-sm text-on-surface-variant">Sistem acak soal &amp; Safe Exam Browser aktif</span>
                             </div>

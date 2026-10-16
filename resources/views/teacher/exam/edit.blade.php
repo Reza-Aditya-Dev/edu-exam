@@ -285,26 +285,52 @@
                 </div>
                 
                 <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-5">
-                    <h4 class="font-headline font-bold text-slate-800 text-xs uppercase tracking-wider mb-3">Waktu & Nilai Kelulusan</h4>
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-headline font-bold text-slate-800 text-xs uppercase tracking-wider">Waktu &amp; Nilai Kelulusan</h4>
+                        <span id="tzBadge" class="text-[11px] font-bold text-indigo-700 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200">
+                            {{ $exam->timezone_code }} ({{ $exam->timezone === 'Asia/Jayapura' ? 'UTC+9' : ($exam->timezone === 'Asia/Makassar' ? 'UTC+8' : 'UTC+7') }})
+                        </span>
+                    </div>
+
+                    <!-- Pilihan Zona Waktu -->
+                    <div class="mb-3 p-3 bg-white border border-slate-200/80 rounded-xl">
+                        <label class="text-[11px] font-semibold text-slate-700 block mb-1">
+                            Zona Waktu Ujian <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="timezone" id="examTimezone" required class="form-control text-xs font-semibold" onchange="onTimezoneChanged(); validateDateTimeInputs();">
+                            <option value="Asia/Jakarta" {{ old('timezone', $exam->timezone ?? 'Asia/Jakarta') === 'Asia/Jakarta' ? 'selected' : '' }}>WIB — Waktu Indonesia Barat (Asia/Jakarta)</option>
+                            <option value="Asia/Makassar" {{ old('timezone', $exam->timezone ?? 'Asia/Jakarta') === 'Asia/Makassar' ? 'selected' : '' }}>WITA — Waktu Indonesia Tengah (Asia/Makassar)</option>
+                            <option value="Asia/Jayapura" {{ old('timezone', $exam->timezone ?? 'Asia/Jakarta') === 'Asia/Jayapura' ? 'selected' : '' }}>WIT — Waktu Indonesia Timur (Asia/Jayapura)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Pilih zona waktu lokasi sekolah tempat ujian dilaksanakan agar jadwal buka dan tutup ujian tepat di wilayah Anda.
+                        </p>
+                        @error('timezone') <span class="text-xs text-rose-500 font-medium block mt-1">{{ $message }}</span> @enderror
+                    </div>
                     
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600 block mb-1">Tanggal Ujian <span class="text-rose-500">*</span></label>
-                            <input type="date" name="exam_date" class="form-control text-xs" required value="{{ old('exam_date', $exam->exam_date ? $exam->exam_date->format('Y-m-d') : date('Y-m-d')) }}">
+                            <input type="date" name="exam_date" id="examDate" min="{{ date('Y-m-d') }}" class="form-control text-xs" required value="{{ old('exam_date', $exam->exam_date ? $exam->exam_date->format('Y-m-d') : date('Y-m-d')) }}" onchange="validateDateTimeInputs(); calculateDuration();">
+                            @error('exam_date') <span class="text-xs text-rose-500 font-medium block mt-1">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600 block mb-1">Mulai <span class="text-rose-500">*</span></label>
-                            <input type="time" name="start_time" class="form-control text-xs" required value="{{ old('start_time', $exam->start_time) }}">
+                            <input type="time" name="start_time" id="startTime" class="form-control text-xs" required value="{{ old('start_time', substr($exam->start_time, 0, 5)) }}" onchange="validateDateTimeInputs(); calculateDuration();">
+                            @error('start_time') <span class="text-xs text-rose-500 font-medium block mt-1">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600 block mb-1">Selesai <span class="text-rose-500">*</span></label>
-                            <input type="time" name="end_time" class="form-control text-xs" required value="{{ old('end_time', $exam->end_time) }}">
+                            <input type="time" name="end_time" id="endTime" class="form-control text-xs" required value="{{ old('end_time', substr($exam->end_time, 0, 5)) }}" onchange="validateDateTimeInputs(); calculateDuration();">
+                            @error('end_time') <span class="text-xs text-rose-500 font-medium block mt-1">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600 block mb-1">Durasi (Menit) <span class="text-rose-500">*</span></label>
-                            <input type="number" name="duration_minutes" class="form-control text-xs font-bold text-indigo-700" required value="{{ old('duration_minutes', $exam->duration_minutes) }}" min="5">
+                            <input type="number" name="duration_minutes" id="durationMinutes" class="form-control text-xs font-bold text-indigo-700" required value="{{ old('duration_minutes', $exam->duration_minutes) }}" min="5">
+                            @error('duration_minutes') <span class="text-xs text-rose-500 font-medium block mt-1">{{ $message }}</span> @enderror
                         </div>
                     </div>
+                    <div id="clientTimeWarning" class="hidden text-xs text-rose-600 font-medium mb-3 p-2 bg-rose-50 rounded-lg border border-rose-200"></div>
                     
                     <div class="max-w-xs">
                         <label class="text-[11px] font-semibold text-slate-600 block mb-1">Nilai KKM (Batas Lulus) <span class="text-rose-500">*</span></label>
@@ -468,7 +494,117 @@
         loadQuestions();
     });
 
+    function onTimezoneChanged() {
+        const tzSelect = document.getElementById('examTimezone');
+        const tzBadge = document.getElementById('tzBadge');
+        if (!tzSelect) return;
+
+        const val = tzSelect.value;
+        let code = 'WIB';
+        let utc = 'UTC+7';
+        if (val === 'Asia/Makassar') {
+            code = 'WITA';
+            utc = 'UTC+8';
+        } else if (val === 'Asia/Jayapura') {
+            code = 'WIT';
+            utc = 'UTC+9';
+        }
+
+        if (tzBadge) {
+            tzBadge.textContent = `${code} (${utc})`;
+        }
+    }
+
+    function getNowInSelectedTimezone(timeZone) {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        let y = '', m = '', d = '', h = '', min = '';
+        for (const p of parts) {
+            if (p.type === 'year') y = p.value;
+            if (p.type === 'month') m = p.value;
+            if (p.type === 'day') d = p.value;
+            if (p.type === 'hour') h = p.value;
+            if (p.type === 'minute') min = p.value;
+        }
+        if (h === '24') h = '00';
+        return {
+            todayStr: `${y}-${m}-${d}`,
+            currentHm: `${h}:${min}`
+        };
+    }
+
+    function validateDateTimeInputs() {
+        const dateInput = document.getElementById('examDate');
+        const startInput = document.getElementById('startTime');
+        const endInput = document.getElementById('endTime');
+        const tzSelect = document.getElementById('examTimezone');
+        const warning = document.getElementById('clientTimeWarning');
+        if (!dateInput || !startInput || !endInput || !warning) return true;
+
+        warning.classList.add('hidden');
+        warning.textContent = '';
+
+        const selectedDate = dateInput.value;
+        const selectedStart = startInput.value;
+        const selectedEnd = endInput.value;
+        const selectedTz = tzSelect ? tzSelect.value : 'Asia/Jakarta';
+        const tzCode = selectedTz === 'Asia/Makassar' ? 'WITA' : (selectedTz === 'Asia/Jayapura' ? 'WIT' : 'WIB');
+
+        const { todayStr, currentHm } = getNowInSelectedTimezone(selectedTz);
+
+        if (selectedDate && selectedDate < todayStr) {
+            warning.textContent = `Tanggal pelaksanaan tidak boleh lebih awal dari hari ini di zona ${tzCode} (${todayStr}).`;
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        if (selectedDate && selectedDate === todayStr && selectedStart && selectedStart < currentHm) {
+            warning.textContent = `Waktu mulai ujian (${selectedStart}) tidak boleh lebih awal dari waktu saat ini (${currentHm} ${tzCode}).`;
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        if (selectedStart && selectedEnd && selectedEnd <= selectedStart) {
+            warning.textContent = 'Waktu selesai ujian harus lebih besar (setelah) dari waktu mulai ujian.';
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        return true;
+    }
+
+    function calculateDuration() {
+        const start = document.getElementById('startTime').value;
+        const end = document.getElementById('endTime').value;
+        if(start && end) {
+            const [sh, sm] = start.split(':').map(Number);
+            const [eh, em] = end.split(':').map(Number);
+            const diff = (eh * 60 + em) - (sh * 60 + sm);
+            if(diff > 0) {
+                document.getElementById('durationMinutes').value = diff;
+            } else {
+                document.getElementById('durationMinutes').value = 0;
+            }
+        }
+    }
+
     function nextStep(current) {
+        if(current === 1) {
+            if(!validateDateTimeInputs()) {
+                const warning = document.getElementById('clientTimeWarning');
+                alert(warning && warning.textContent ? warning.textContent : 'Jadwal pelaksanaan ujian tidak valid!');
+                return;
+            }
+        }
         if(current === 2) {
             if(selectedQuestions.size === 0) { alert('Silakan pilih minimal 1 butir soal untuk ujian ini!'); return; }
             document.getElementById('finalQCount').textContent = selectedQuestions.size;
@@ -588,6 +724,23 @@
             document.getElementById('deleteExamFormFromEdit').submit();
         }
     }
+
+    document.getElementById('examForm').addEventListener('submit', function(e) {
+        if (!validateDateTimeInputs()) {
+            e.preventDefault();
+            const warning = document.getElementById('clientTimeWarning');
+            alert(warning && warning.textContent ? warning.textContent : 'Jadwal pelaksanaan ujian tidak valid!');
+            // Switch back to step 1 to let user see and correct the error
+            document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.step-item').forEach(s => {
+                s.classList.remove('active');
+                s.classList.remove('completed');
+            });
+            document.getElementById('step-1').classList.add('active');
+            document.getElementById('step-nav-1').classList.add('active');
+            return false;
+        }
+    });
 </script>
 
 <form id="deleteExamFormFromEdit" action="{{ route('teacher.exams.destroy', $exam->id) }}" method="POST" class="hidden">

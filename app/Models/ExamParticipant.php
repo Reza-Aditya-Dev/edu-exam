@@ -28,7 +28,25 @@ class ExamParticipant extends Model
     public function getRemainingSecondsAttribute(): int
     {
         if (!$this->started_at) return 0;
-        $endTime = $this->started_at->copy()->addMinutes($this->exam->duration_minutes);
-        return max(0, (int) now()->diffInSeconds($endTime, false));
+
+        // 1. Batas waktu berdasarkan durasi pengerjaan siswa
+        $durationEndTime = $this->started_at->copy()->addMinutes($this->exam->duration_minutes);
+        $remainingByDuration = (int) now()->diffInSeconds($durationEndTime, false);
+
+        // 2. Batas waktu berdasarkan jam sesi berakhirnya ujian (end_carbon dalam zona waktu ujian)
+        $remainingBySession = null;
+        if ($this->exam && $this->exam->end_carbon) {
+            $endCarbon = $this->exam->end_carbon;
+            $nowInTimezone = now()->setTimezone($this->exam->timezone);
+            $remainingBySession = (int) $nowInTimezone->diffInSeconds($endCarbon, false);
+        }
+
+        if ($remainingBySession !== null) {
+            $effectiveRemaining = min($remainingByDuration, $remainingBySession);
+        } else {
+            $effectiveRemaining = $remainingByDuration;
+        }
+
+        return max(0, $effectiveRemaining);
     }
 }

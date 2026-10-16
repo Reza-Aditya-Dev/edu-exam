@@ -108,17 +108,26 @@
                     </div>
                 </div>
 
-                @if($result->pass_status === 'pass')
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shadow-sm">
-                        <span class="material-symbols-outlined text-[16px]">verified</span>
-                        <span>LULUS KKM (Target {{ round($exam->passing_grade) }})</span>
-                    </div>
-                @else
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold shadow-sm">
-                        <span class="material-symbols-outlined text-[16px]">cancel</span>
-                        <span>BELUM LULUS (Target {{ round($exam->passing_grade) }})</span>
-                    </div>
-                @endif
+                <div class="flex items-center gap-2 flex-wrap">
+                    @if($result->is_pending_review)
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-label-sm text-label-sm font-bold shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">pending_actions</span>
+                            <span>MENUNGGU KOREKSI ESAI</span>
+                        </div>
+                    @endif
+
+                    @if($result->pass_status === 'pass')
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">verified</span>
+                            <span>LULUS KKM (Target {{ round($exam->passing_grade) }})</span>
+                        </div>
+                    @else
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">cancel</span>
+                            <span>BELUM LULUS (Target {{ round($exam->passing_grade) }})</span>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- Quick Metrics Breakdown -->
@@ -216,17 +225,92 @@
                     data-status="{{ $statusType }}" 
                     class="question-item bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-slate-100 transition-all scroll-mt-28"
                 >
+                    @php
+                        $isEssay = $q->type === 'essay';
+                        $maxQScore = (float)($q->score ?? $scorePerQ);
+                        $obtainedScore = (float)$answer->score_obtained;
+                    @endphp
+
                     <!-- Banner Header -->
-                    @if($isCorrect)
+                    @if($isEssay)
+                        @if($isCorrect === true)
+                            <div class="bg-surface-container-low px-space-lg py-3 flex items-center justify-between border-b border-slate-100 flex-wrap gap-2">
+                                <div class="flex items-center gap-space-sm flex-wrap">
+                                    <span class="px-2.5 py-1 rounded bg-surface-container-highest text-on-surface font-label-lg text-label-lg font-bold">
+                                        Soal No. {{ $qNum }} (Esai)
+                                    </span>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+                                        <span class="material-symbols-outlined text-[14px]">check</span>
+                                        <span>SELESAI DINILAI ({{ $obtainedScore }}/{{ $maxQScore }})</span>
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+                                    <span class="material-symbols-outlined text-[16px]">verified</span>
+                                    <span>Poin Penuh</span>
+                                </div>
+                            </div>
+                        @elseif($isCorrect === false)
+                            <div class="bg-error-container/40 px-space-lg py-3 flex items-center justify-between border-b border-rose-100 flex-wrap gap-2">
+                                <div class="flex items-center gap-space-sm flex-wrap">
+                                    <span class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface font-label-lg text-label-lg font-bold">
+                                        Soal No. {{ $qNum }} (Esai)
+                                    </span>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">
+                                        <span class="material-symbols-outlined text-[14px]">close</span>
+                                        <span>DINILAI 0 (0/{{ $maxQScore }})</span>
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-error font-label-sm text-label-sm font-semibold">
+                                    <span class="material-symbols-outlined text-[16px]">cancel</span>
+                                    <span>Tidak Mendapat Poin</span>
+                                </div>
+                            </div>
+                        @elseif($obtainedScore > 0)
+                            <div class="bg-amber-50 px-space-lg py-3 flex items-center justify-between border-b border-amber-200 flex-wrap gap-2">
+                                <div class="flex items-center gap-space-sm flex-wrap">
+                                    <span class="px-2.5 py-1 rounded bg-surface-container-highest text-on-surface font-label-lg text-label-lg font-bold">
+                                        Soal No. {{ $qNum }} (Esai)
+                                    </span>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-label-sm text-label-sm font-semibold">
+                                        <span class="material-symbols-outlined text-[14px]">edit</span>
+                                        <span>SEBAGIAN ({{ $obtainedScore }}/{{ $maxQScore }})</span>
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-amber-700 font-label-sm text-label-sm font-semibold">
+                                    <span class="material-symbols-outlined text-[16px]">tune</span>
+                                    <span>Nilai Sebagian</span>
+                                </div>
+                            </div>
+                        @else
+                            <div class="bg-amber-50/70 px-space-lg py-3 flex items-center justify-between border-b border-amber-200 flex-wrap gap-2">
+                                <div class="flex items-center gap-space-sm flex-wrap">
+                                    <span class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface font-label-lg text-label-lg font-bold">
+                                        Soal No. {{ $qNum }} (Esai)
+                                    </span>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-label-sm text-label-sm font-bold">
+                                        <span class="material-symbols-outlined text-[14px]">pending</span>
+                                        <span>PERLU KOREKSI GURU</span>
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-amber-700 font-label-sm text-label-sm font-medium">
+                                    <span>Belum Dinilai</span>
+                                </div>
+                            </div>
+                        @endif
+                    @elseif($isCorrect)
                         <div class="bg-surface-container-low px-space-lg py-3 flex items-center justify-between border-b border-slate-100">
                             <div class="flex items-center gap-space-sm flex-wrap">
                                 <span class="px-2.5 py-1 rounded bg-surface-container-highest text-on-surface font-label-lg text-label-lg font-bold">
                                     Soal No. {{ $qNum }}
                                 </span>
-                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $scorePerQ }} Poin</span>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
                                     <span class="material-symbols-outlined text-[14px]">check</span>
-                                    <span>BENAR (+{{ $scorePerQ }})</span>
+                                    <span>BENAR (+{{ $obtainedScore }})</span>
                                 </span>
                             </div>
                             <div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
@@ -240,7 +324,7 @@
                                 <span class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface font-label-lg text-label-lg font-bold">
                                     Soal No. {{ $qNum }}
                                 </span>
-                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $scorePerQ }} Poin</span>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">
                                     <span class="material-symbols-outlined text-[14px]">close</span>
                                     <span>SALAH (0 Poin)</span>
@@ -257,7 +341,7 @@
                                 <span class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface font-label-lg text-label-lg font-bold">
                                     Soal No. {{ $qNum }}
                                 </span>
-                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $scorePerQ }} Poin</span>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Bobot: {{ $maxQScore }} Poin</span>
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold">
                                     <span class="material-symbols-outlined text-[14px]">remove</span>
                                     <span>KOSONG (0 Poin)</span>
@@ -294,7 +378,7 @@
                                         $badgeLetter = 'bg-surface-container text-on-surface-variant';
 
                                         if ($isSelected && $isCorrectOpt) {
-                                            $boxClass = 'bg-secondary-container/30 border-secondary/40 shadow-xs';
+                                             $boxClass = 'bg-secondary-container/30 border-secondary/40 shadow-xs';
                                             $badgeLetter = 'bg-secondary text-on-secondary font-bold';
                                         } elseif ($isSelected && !$isCorrectOpt) {
                                             $boxClass = 'bg-error-container/25 border-error/40 shadow-xs';
@@ -337,12 +421,65 @@
                                 @endforeach
                             </div>
                         @elseif($q->type === 'essay')
-                            <!-- Essay Answer View -->
-                            <div class="p-4 rounded-xl bg-surface-container-low border border-slate-200">
-                                <span class="font-label-sm text-label-sm text-on-surface-variant block mb-1 uppercase tracking-wider font-semibold">Jawaban Teks Siswa:</span>
-                                <div class="p-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md">
-                                    {{ $answer->answer_text ?: '(Siswa tidak mengisikan jawaban)' }}
+                            <!-- Essay Answer View & Teacher Grading Panel -->
+                            <div class="flex flex-col gap-3">
+                                <div class="p-4 rounded-xl bg-surface-container-low border border-slate-200">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Jawaban Teks Siswa:</span>
+                                        <span class="text-xs text-on-surface-variant font-medium">
+                                            {{ !empty(trim($answer->answer_text ?? '')) ? str_word_count($answer->answer_text) . ' kata' : 'Kosong' }}
+                                        </span>
+                                    </div>
+                                    <div class="p-3.5 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md leading-relaxed whitespace-pre-wrap border border-slate-200/60">
+                                        {{ $answer->answer_text ?: '(Siswa tidak mengisikan teks jawaban)' }}
+                                    </div>
                                 </div>
+
+                                <!-- Form Penilaian Esai Guru -->
+                                <form action="{{ route('teacher.exams.grade_essay', ['exam' => $exam->id, 'studentId' => $student->id]) }}" method="POST" class="p-4 rounded-xl bg-surface-container-lowest border-2 border-primary/20 shadow-xs flex flex-col gap-3" onsubmit="submitEssayGrade(event, this)">
+                                    @csrf
+                                    <input type="hidden" name="answer_id" value="{{ $answer->id }}">
+                                    
+                                    <div class="flex items-center justify-between flex-wrap gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-primary text-[20px]">grading</span>
+                                            <span class="font-label-md text-label-md font-bold text-on-surface">Penilaian Jawaban Esai:</span>
+                                        </div>
+                                        <span class="text-xs font-semibold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-md">
+                                            Rentang Nilai: 0 sampai {{ $maxQScore }} Poin
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 flex-wrap">
+                                        <div class="flex items-center gap-2">
+                                            <label for="score-input-{{ $answer->id }}" class="text-xs font-bold text-on-surface">Beri Nilai:</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.5" 
+                                                min="0" 
+                                                max="{{ $maxQScore }}" 
+                                                id="score-input-{{ $answer->id }}"
+                                                name="score" 
+                                                value="{{ $answer->score_obtained ?? 0 }}" 
+                                                class="w-28 p-2 rounded-lg border border-slate-300 font-headline-sm text-sm font-bold text-center focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white" 
+                                                required
+                                            >
+                                            <span class="text-xs text-on-surface-variant font-semibold">/ {{ $maxQScore }}</span>
+                                        </div>
+
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-primary-container text-white font-label-md text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">
+                                            <span class="material-symbols-outlined text-[16px]">save</span>
+                                            <span>Simpan Nilai</span>
+                                        </button>
+
+                                        <!-- Quick Grade Buttons -->
+                                        <div class="flex items-center gap-1 text-xs">
+                                            <button type="button" onclick="quickFillScore({{ $answer->id }}, 0)" class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold" title="Beri Nilai 0">0 Poin</button>
+                                            <button type="button" onclick="quickFillScore({{ $answer->id }}, {{ round($maxQScore / 2, 1) }})" class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold" title="Beri Nilai Setengah (50%)">50%</button>
+                                            <button type="button" onclick="quickFillScore({{ $answer->id }}, {{ $maxQScore }})" class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold" title="Beri Nilai Penuh (100%)">Penuh ({{ $maxQScore }})</button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
                         @endif
 
@@ -611,6 +748,51 @@
         document.getElementById('savedTeacherNoteDisplay').innerText = '“' + text + '”';
         alert('Catatan evaluasi siswa berhasil diperbarui.');
         document.getElementById('input-catatan').value = '';
+    }
+
+    // 5. Quick Fill Score for Essay
+    function quickFillScore(answerId, score) {
+        const input = document.getElementById('score-input-' + answerId);
+        if (input) {
+            input.value = score;
+            input.focus();
+        }
+    }
+
+    // 6. Submit Essay Grade via AJAX
+    function submitEssayGrade(e, form) {
+        e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Nilai esai berhasil disimpan!');
+                // Reload halaman agar seluruh metrik, grafik, dan total score terupdate akurat
+                window.location.reload();
+            } else {
+                alert(data.message || 'Gagal menyimpan nilai esai.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(err => {
+            // Fallback submit form secara regular jika fetch gagal
+            form.submit();
+        });
     }
 </script>
 @endsection

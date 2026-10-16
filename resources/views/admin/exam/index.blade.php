@@ -647,7 +647,18 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block font-label-md text-label-md text-on-surface mb-1.5 font-semibold">
+                        Zona Waktu <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="timezone" required class="w-full bg-surface-container-low border border-slate-200/80 rounded-lg px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container font-semibold">
+                        <option value="Asia/Jakarta" selected>WIB (Jakarta)</option>
+                        <option value="Asia/Makassar">WITA (Makassar)</option>
+                        <option value="Asia/Jayapura">WIT (Jayapura)</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block font-label-md text-label-md text-on-surface mb-1.5 font-semibold">
                         Tanggal Pelaksanaan <span class="text-rose-500">*</span>
@@ -812,7 +823,18 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block font-label-md text-label-md text-on-surface mb-1.5 font-semibold">
+                        Zona Waktu <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="edit_timezone" name="timezone" required class="w-full bg-surface-container-low border border-slate-200/80 rounded-lg px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container font-semibold">
+                        <option value="Asia/Jakarta">WIB (Jakarta)</option>
+                        <option value="Asia/Makassar">WITA (Makassar)</option>
+                        <option value="Asia/Jayapura">WIT (Jayapura)</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block font-label-md text-label-md text-on-surface mb-1.5 font-semibold">
                         Tanggal Pelaksanaan <span class="text-rose-500">*</span>
@@ -1058,6 +1080,7 @@
         document.getElementById('edit_subject_id').value = exam.subject_id || '';
         document.getElementById('edit_classroom_id').value = exam.classroom_id || '';
         document.getElementById('edit_teacher_id').value = exam.teacher_id || '';
+        document.getElementById('edit_timezone').value = exam.timezone || 'Asia/Jakarta';
         document.getElementById('edit_exam_date').value = (exam.exam_date ? exam.exam_date.substring(0, 10) : '');
         document.getElementById('edit_start_time').value = (exam.start_time ? exam.start_time.substring(0, 5) : '08:00');
         document.getElementById('edit_end_time').value = (exam.end_time ? exam.end_time.substring(0, 5) : '09:30');

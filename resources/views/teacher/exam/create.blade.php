@@ -155,26 +155,53 @@
                         @error('classroom_id') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
                     </div>
 
-                    <!-- Tanggal Pelaksanaan -->
-                    <div class="flex flex-col gap-1.5">
-                        <label class="font-label-lg text-label-lg text-on-surface">Tanggal Pelaksanaan <span class="text-error">*</span></label>
-                        <div class="relative flex items-center">
-                            <input name="exam_date" id="examDate" class="w-full h-12 pl-11 pr-space-md rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm transition-all cursor-pointer" type="date" value="{{ old('exam_date', date('Y-m-d')) }}" required/>
-                            <span class="material-symbols-outlined absolute left-space-md text-on-surface-variant text-[20px]">calendar_month</span>
+                    <!-- Tanggal Pelaksanaan & Zona Waktu -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:col-span-2">
+                        <!-- Tanggal Pelaksanaan -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-lg text-label-lg text-on-surface">Tanggal Pelaksanaan <span class="text-error">*</span></label>
+                            <div class="relative flex items-center">
+                                <input name="exam_date" id="examDate" min="{{ date('Y-m-d') }}" class="w-full h-12 pl-11 pr-space-md rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm transition-all cursor-pointer" type="date" value="{{ old('exam_date', date('Y-m-d')) }}" required onchange="validateDateTimeInputs(); calculateDuration();"/>
+                                <span class="material-symbols-outlined absolute left-space-md text-on-surface-variant text-[20px]">calendar_month</span>
+                            </div>
+                            @error('exam_date') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
                         </div>
-                        @error('exam_date') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
+
+                        <!-- Pilihan Zona Waktu -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-lg text-label-lg text-on-surface flex items-center justify-between">
+                                <span>Zona Waktu Ujian <span class="text-error">*</span></span>
+                                <span id="tzBadge" class="text-[11px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">WIB (UTC+7)</span>
+                            </label>
+                            <div class="relative flex items-center">
+                                <select name="timezone" id="examTimezone" required class="w-full h-12 pl-11 pr-space-md rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm transition-all cursor-pointer appearance-none" onchange="onTimezoneChanged(); validateDateTimeInputs();">
+                                    <option value="Asia/Jakarta" {{ old('timezone', 'Asia/Jakarta') === 'Asia/Jakarta' ? 'selected' : '' }}>WIB — Waktu Indonesia Barat (Asia/Jakarta)</option>
+                                    <option value="Asia/Makassar" {{ old('timezone') === 'Asia/Makassar' ? 'selected' : '' }}>WITA — Waktu Indonesia Tengah (Asia/Makassar)</option>
+                                    <option value="Asia/Jayapura" {{ old('timezone') === 'Asia/Jayapura' ? 'selected' : '' }}>WIT — Waktu Indonesia Timur (Asia/Jayapura)</option>
+                                </select>
+                                <span class="material-symbols-outlined absolute left-space-md text-on-surface-variant text-[20px]">schedule</span>
+                                <span class="material-symbols-outlined absolute right-space-md text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
+                            </div>
+                            <span class="text-[11px] text-on-surface-variant leading-tight">
+                                Pilih zona waktu lokasi sekolah tempat ujian dilaksanakan untuk jadwal buka dan tutup yang akurat.
+                            </span>
+                            @error('timezone') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
+                        </div>
                     </div>
 
                     <!-- Waktu Pelaksanaan & Durasi -->
-                    <div class="flex flex-col gap-1.5">
-                        <label class="font-label-lg text-label-lg text-on-surface">Waktu Sesi &amp; Durasi Efektif <span class="text-error">*</span></label>
-                        <div class="grid grid-cols-3 gap-2">
+                    <div class="flex flex-col gap-1.5 md:col-span-2">
+                        <label class="font-label-lg text-label-lg text-on-surface flex items-center justify-between">
+                            <span>Waktu Sesi &amp; Durasi Efektif <span class="text-error">*</span></span>
+                            <span class="text-xs text-primary font-semibold" id="tzTimePrompt">Waktu Sesi mengikuti zona waktu yang dipilih</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div class="relative flex flex-col">
-                                <input name="start_time" id="startTime" class="w-full h-12 px-2.5 rounded-lg bg-surface-container-low font-body-md text-body-md text-center text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm" type="time" value="{{ old('start_time', '08:00') }}" required onchange="calculateDuration()"/>
+                                <input name="start_time" id="startTime" class="w-full h-12 px-2.5 rounded-lg bg-surface-container-low font-body-md text-body-md text-center text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm" type="time" value="{{ old('start_time', '08:00') }}" required onchange="validateDateTimeInputs(); calculateDuration();"/>
                                 <span class="text-[10px] text-on-surface-variant text-center mt-1">Mulai</span>
                             </div>
                             <div class="relative flex flex-col">
-                                <input name="end_time" id="endTime" class="w-full h-12 px-2.5 rounded-lg bg-surface-container-low font-body-md text-body-md text-center text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm" type="time" value="{{ old('end_time', '09:30') }}" required onchange="calculateDuration()"/>
+                                <input name="end_time" id="endTime" class="w-full h-12 px-2.5 rounded-lg bg-surface-container-low font-body-md text-body-md text-center text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-indigo-300 shadow-sm" type="time" value="{{ old('end_time', '09:30') }}" required onchange="validateDateTimeInputs(); calculateDuration();"/>
                                 <span class="text-[10px] text-on-surface-variant text-center mt-1">Selesai</span>
                             </div>
                             <div class="relative flex flex-col">
@@ -186,6 +213,9 @@
                                 <span class="text-[10px] text-on-surface-variant text-center mt-1">Durasi</span>
                             </div>
                         </div>
+                        <div id="clientTimeWarning" class="hidden text-xs text-error font-medium mt-0.5"></div>
+                        @error('start_time') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
+                        @error('end_time') <span class="text-xs text-error font-medium mt-0.5">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Instruksi & Tata Tertib Siswa (Full Width) -->
@@ -556,16 +586,113 @@
         updateSummary();
     }
 
+    function onTimezoneChanged() {
+        const tzSelect = document.getElementById('examTimezone');
+        const tzBadge = document.getElementById('tzBadge');
+        const tzPrompt = document.getElementById('tzTimePrompt');
+        if (!tzSelect) return;
+
+        const val = tzSelect.value;
+        let code = 'WIB';
+        let utc = 'UTC+7';
+        if (val === 'Asia/Makassar') {
+            code = 'WITA';
+            utc = 'UTC+8';
+        } else if (val === 'Asia/Jayapura') {
+            code = 'WIT';
+            utc = 'UTC+9';
+        }
+
+        if (tzBadge) {
+            tzBadge.textContent = `${code} (${utc})`;
+        }
+        if (tzPrompt) {
+            tzPrompt.textContent = `Waktu Sesi mengikuti zona ${code}`;
+        }
+    }
+
+    function getNowInSelectedTimezone(timeZone) {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        let y = '', m = '', d = '', h = '', min = '';
+        for (const p of parts) {
+            if (p.type === 'year') y = p.value;
+            if (p.type === 'month') m = p.value;
+            if (p.type === 'day') d = p.value;
+            if (p.type === 'hour') h = p.value;
+            if (p.type === 'minute') min = p.value;
+        }
+        // Jam 24 fix in some browsers
+        if (h === '24') h = '00';
+        return {
+            todayStr: `${y}-${m}-${d}`,
+            currentHm: `${h}:${min}`
+        };
+    }
+
+    function validateDateTimeInputs() {
+        const dateInput = document.getElementById('examDate');
+        const startInput = document.getElementById('startTime');
+        const endInput = document.getElementById('endTime');
+        const tzSelect = document.getElementById('examTimezone');
+        const warning = document.getElementById('clientTimeWarning');
+        if (!dateInput || !startInput || !endInput || !warning) return true;
+
+        warning.classList.add('hidden');
+        warning.textContent = '';
+
+        const selectedDate = dateInput.value;
+        const selectedStart = startInput.value;
+        const selectedEnd = endInput.value;
+        const selectedTz = tzSelect ? tzSelect.value : 'Asia/Jakarta';
+        const tzCode = selectedTz === 'Asia/Makassar' ? 'WITA' : (selectedTz === 'Asia/Jayapura' ? 'WIT' : 'WIB');
+
+        const { todayStr, currentHm } = getNowInSelectedTimezone(selectedTz);
+
+        if (selectedDate && selectedDate < todayStr) {
+            warning.textContent = `Tanggal pelaksanaan tidak boleh lebih awal dari hari ini di zona ${tzCode} (${todayStr}).`;
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        if (selectedDate && selectedDate === todayStr && selectedStart && selectedStart < currentHm) {
+            warning.textContent = `Waktu mulai ujian (${selectedStart}) tidak boleh lebih awal dari waktu saat ini (${currentHm} ${tzCode}).`;
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        if (selectedStart && selectedEnd && selectedEnd <= selectedStart) {
+            warning.textContent = 'Waktu selesai ujian harus lebih besar (setelah) dari waktu mulai ujian.';
+            warning.classList.remove('hidden');
+            return false;
+        }
+
+        return true;
+    }
+
     function calculateDuration() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
         if(start && end) {
             const [sh, sm] = start.split(':').map(Number);
             const [eh, em] = end.split(':').map(Number);
-            let diff = (eh * 60 + em) - (sh * 60 + sm);
-            if(diff <= 0) diff += 24 * 60; // Cross midnight handler
-            document.getElementById('durationMinutes').value = diff;
-            document.getElementById('durationDisplay').textContent = `${diff} Menit`;
+            const diff = (eh * 60 + em) - (sh * 60 + sm);
+            if(diff > 0) {
+                document.getElementById('durationMinutes').value = diff;
+                document.getElementById('durationDisplay').textContent = `${diff} Menit`;
+            } else {
+                document.getElementById('durationMinutes').value = 0;
+                document.getElementById('durationDisplay').textContent = `0 Menit`;
+            }
         }
     }
 
@@ -1103,6 +1230,12 @@
             document.getElementById('classroomSelect').focus();
             return;
         }
+        if(!validateDateTimeInputs()) {
+            const warning = document.getElementById('clientTimeWarning');
+            alert(warning && warning.textContent ? warning.textContent : 'Jadwal pelaksanaan ujian tidak valid!');
+            return;
+        }
+
         if(selectedQuestions.size === 0) {
             alert('Silakan masukkan minimal 1 butir soal ke dalam ujian dengan menekan tombol "+ Tambah dari Bank Soal"!');
             openQuestionModal();

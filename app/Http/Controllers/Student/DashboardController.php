@@ -14,6 +14,7 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $student = Auth::user();
+        Exam::syncScheduledAndExpiredExams();
         $classroom = $student->currentClassroom();
         $search = trim($request->get('search') ?? $request->get('q') ?? '');
 

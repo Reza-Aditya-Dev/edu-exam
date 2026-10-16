@@ -249,6 +249,19 @@
                     <span class="font-medium text-xs">{{ session('info') }}</span>
                 </div>
             @endif
+            @if($errors->any())
+                <div class="alert alert-error mb-4">
+                    <span class="material-symbols-outlined text-rose-600 shrink-0" style="font-size: 20px;">error</span>
+                    <div class="flex flex-col gap-0.5 text-xs font-medium">
+                        <span class="font-bold">Terjadi kesalahan pengisian formulir:</span>
+                        <ul class="list-disc pl-4 space-y-0.5">
+                            @foreach($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
             
             @yield('teacher-content')
         </main>

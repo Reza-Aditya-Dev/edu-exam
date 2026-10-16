@@ -9,7 +9,7 @@ class ExamResult extends Model
     protected $fillable = [
         'exam_id', 'student_id', 'exam_participant_id',
         'total_score', 'correct_answers', 'wrong_answers',
-        'unanswered', 'time_spent_minutes', 'pass_status',
+        'unanswered', 'time_spent_minutes', 'pass_status', 'grading_status',
     ];
 
     protected $casts = [
@@ -25,4 +25,6 @@ class ExamResult extends Model
 
     public function getIsPassAttribute(): bool   { return $this->pass_status === 'pass'; }
     public function getPassLabelAttribute(): string { return $this->pass_status === 'pass' ? 'Lulus' : 'Tidak Lulus'; }
+    public function getIsPendingReviewAttribute(): bool { return $this->grading_status === 'pending_review'; }
+    public function getGradingLabelAttribute(): string { return $this->grading_status === 'pending_review' ? 'Menunggu Koreksi' : 'Selesai Dikoreksi'; }
 }

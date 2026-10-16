@@ -15,6 +15,7 @@ class DashboardController extends Controller
     public function index()
     {
         $teacher = Auth::user();
+        Exam::syncScheduledAndExpiredExams();
 
         // 1. Ujian Aktif (Live Ongoing)
         $activeExams = Exam::forTeacher($teacher->id)
