@@ -180,14 +180,20 @@
         <div class="text-center z-10 px-4 mb-1">
             <div class="flex items-center justify-center gap-2 mb-1">
                 {{-- Logo Shield Icon matching reference --}}
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
-                    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">local_library</span>
+                <div class="w-10 h-10 rounded-xl bg-white border border-slate-200/80 p-1 flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden">
+                    @if(!empty($schoolLogo))
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                    @else
+                        <div class="w-full h-full rounded-lg bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
+                            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">local_library</span>
+                        </div>
+                    @endif
                 </div>
                 <h1 class="font-headline text-[22px] font-black text-slate-900 tracking-tight">EduExam</h1>
             </div>
             <p class="text-[11px] font-medium text-slate-500 leading-tight">Portal Ujian Digital</p>
             <p class="text-[11px] font-bold text-slate-800 leading-tight mt-0.5">
-                {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}
+                {{ $schoolName ?? 'SMA Nusantara' }}
             </p>
         </div>
 
@@ -372,8 +378,14 @@
                 {{-- ===== TOP BAR ===== --}}
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
-                        <div class="logo-icon-left">
-                            <span class="material-symbols-outlined text-white text-2xl" style="font-variation-settings: 'FILL' 1;">school</span>
+                        <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-1 flex items-center justify-center shadow-md overflow-hidden">
+                            @if(!empty($schoolLogo))
+                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                            @else
+                                <div class="w-full h-full rounded-lg bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings: 'FILL' 1;">school</span>
+                                </div>
+                            @endif
                         </div>
                         <div>
                             <h2 class="font-headline text-lg font-extrabold text-white tracking-tight leading-tight">EduExam</h2>
@@ -388,7 +400,7 @@
                         <span class="text-[11px] text-white leading-relaxed">
                             Portal Ujian Digital<br>
                             <strong class="font-semibold text-white">
-                                {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}
+                                {{ $schoolName ?? 'SMA Nusantara' }}
                             </strong>
                         </span>
                     </div>
@@ -459,13 +471,19 @@
 
                     {{-- Branding --}}
                     <div class="text-center mb-4">
-                        <div class="logo-icon-right">
-                            <span class="material-symbols-outlined text-white text-[26px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                        <div class="w-16 h-16 rounded-2xl bg-white border border-slate-200/80 p-1.5 flex items-center justify-center shadow-md shadow-blue-500/15 mx-auto mb-3 overflow-hidden">
+                            @if(!empty($schoolLogo))
+                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                            @else
+                                <div class="w-full h-full rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
+                                    <span class="material-symbols-outlined text-white text-[28px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                                </div>
+                            @endif
                         </div>
                         <h2 class="font-headline text-xl font-extrabold text-slate-900 tracking-tight">EduExam</h2>
                         <p class="text-[11px] text-slate-500 mt-0.5">Portal Guru, Siswa, dan Administrator</p>
                         <p class="text-[13px] font-bold text-slate-900 mt-0.5">
-                            {{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}
+                            {{ $schoolName ?? 'SMA Nusantara' }}
                         </p>
                     </div>
 

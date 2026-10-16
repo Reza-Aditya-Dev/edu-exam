@@ -148,10 +148,15 @@
     </div>
 
     <!-- Header Kop Surat -->
-    <div class="header">
-        <h1 class="school-name">{{ $schoolName }}</h1>
-        <div class="school-info">
-            NPSN: {{ $schoolNpsn }} &bull; {{ $schoolAddress }} &bull; Portal CBT EduExam
+    <div class="header" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+        @if(!empty($schoolLogo))
+            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName }}" style="max-height: 56px; max-width: 70px; object-contain: contain;">
+        @endif
+        <div style="text-align: center;">
+            <h1 class="school-name">{{ $schoolName }}</h1>
+            <div class="school-info">
+                NPSN: {{ $schoolNpsn }} &bull; {{ $schoolAddress }} &bull; Portal CBT EduExam
+            </div>
         </div>
     </div>
 

@@ -21,13 +21,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Bagikan nama sekolah ke seluruh view secara global
+        // Bagikan identitas sekolah (nama & logo) ke seluruh view secara global
         View::composer('*', function ($view) {
             try {
                 $schoolName = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
-                $view->with('schoolName', $schoolName);
+                $schoolLogo = \App\Models\SchoolSetting::get('school_logo', null);
+                $view->with([
+                    'schoolName' => $schoolName,
+                    'schoolLogo' => $schoolLogo,
+                ]);
             } catch (\Throwable $e) {
-                $view->with('schoolName', 'SMA Nusantara');
+                $view->with([
+                    'schoolName' => 'SMA Nusantara',
+                    'schoolLogo' => null,
+                ]);
             }
         });
 

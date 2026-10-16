@@ -272,6 +272,11 @@
     <div class="header-container">
         <table class="header-table">
             <tr>
+                @if(!empty($schoolLogo))
+                    <td style="width: 55px; vertical-align: top; padding-right: 10px;">
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" style="max-height: 48px; max-width: 55px; object-fit: contain;">
+                    </td>
+                @endif
                 <td>
                     <div>
                         <span class="badge badge-primary">{{ $exam->subject->name ?? '-' }}</span>
@@ -279,6 +284,8 @@
                     </div>
                     <div class="title">{{ $exam->title }}</div>
                     <div class="meta-info">
+                        {{ $schoolName ?? 'EduExam CBT' }}
+                        &nbsp;•&nbsp;
                         Pelaksanaan: <strong>{{ $exam->exam_date ? $exam->exam_date->format('d M Y') : '-' }}</strong>
                         &nbsp;•&nbsp;
                         KKM: <strong>{{ $exam->passing_grade }}</strong>

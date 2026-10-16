@@ -170,8 +170,14 @@
             <!-- Brand Header Full (Expanded) -->
             <div class="sidebar-brand-full h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-space-sm no-underline min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md flex-shrink-0">
-                        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                    <div class="w-10 h-10 rounded-xl bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                        @if(!empty($schoolLogo))
+                            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                        @else
+                            <div class="w-full h-full rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
+                                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="flex flex-col ml-space-xs min-w-0">
@@ -179,11 +185,10 @@
                             <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">EduExam</span>
                             <span class="px-space-xs py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">Portal Admin</span>
                         </div>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ $schoolName ?? 'SMA Nusantara' }}</span>
                     </div>
                 </a>
                 <div class="flex items-center gap-1">
-                    
                     <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer" onclick="toggleSidebar()" title="Tutup Menu">
                         <span class="material-symbols-outlined text-[20px]">close</span>
                     </button>
@@ -192,8 +197,14 @@
 
             <!-- Brand Header Mini (Collapsed) -->
             <div class="sidebar-brand-mini hidden h-20 w-full items-center justify-center bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
-                <button type="button" onclick="toggleSidebarCollapse()" class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md hover:scale-105 transition-transform cursor-pointer" title="Buka Sidebar">
-                    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                <button type="button" onclick="toggleSidebarCollapse()" class="w-10 h-10 rounded-xl bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm hover:scale-105 transition-transform cursor-pointer overflow-hidden" title="Buka Sidebar">
+                    @if(!empty($schoolLogo))
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                    @else
+                        <div class="w-full h-full rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
+                            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                        </div>
+                    @endif
                 </button>
             </div>
 

@@ -305,19 +305,24 @@ tailwind.config = {
             <!-- Brand -->
              <div class="sidebar-brand-full h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50 shrink-0 border-b border-surface-container-low/80">
                 <a href="{{ route('student.dashboard') }}" class="flex items-center gap-space-sm no-underline min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md flex-shrink-0">
-                        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                    <div class="w-10 h-10 rounded-xl bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                        @if(!empty($schoolLogo))
+                            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                        @else
+                            <div class="w-full h-full rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
+                                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="flex flex-col ml-space-xs min-w-0">
                         <div class="flex items-center gap-space-xs">
                             <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">EduExam</span>
                         </div>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ $schoolName ?? 'SMA Nusantara' }}</span>
                     </div>
                 </a>
                 <div class="flex items-center gap-1">
-                    
                     <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container cursor-pointer" onclick="toggleSidebar()" title="Tutup Menu">
                         <span class="material-symbols-outlined text-[20px]">close</span>
                     </button>
@@ -389,12 +394,18 @@ tailwind.config = {
 
                 <!-- Brand on Mobile -->
                 <div class="flex md:hidden items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-md flex-shrink-0">
-                        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                    <div class="w-9 h-9 rounded-lg bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                        @if(!empty($schoolLogo))
+                            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                        @else
+                            <div class="w-full h-full rounded-md bg-primary-container flex items-center justify-center text-on-primary">
+                                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                            </div>
+                        @endif
                     </div>
                     <div class="flex flex-col min-w-0">
                         <span class="font-headline-sm text-sm font-bold text-on-surface truncate leading-tight">EduExam</span>
-                        <span class="text-[11px] text-on-surface-variant leading-none font-medium truncate">{{ $schoolName ?? \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara') }}</span>
+                        <span class="text-[11px] text-on-surface-variant leading-none font-medium truncate">{{ $schoolName ?? 'SMA Nusantara' }}</span>
                     </div>
                 </div>
 

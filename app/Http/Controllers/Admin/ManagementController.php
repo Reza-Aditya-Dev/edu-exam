@@ -1079,6 +1079,7 @@ class ManagementController extends Controller
             'school_logo_file.max'   => 'Ukuran berkas logo maksimal 2 MB.',
         ]);
 
+        $newLogoPath = null;
         if ($request->hasFile('school_logo_file')) {
             $file = $request->file('school_logo_file');
             $dir = public_path('uploads/settings');
@@ -1091,10 +1092,16 @@ class ManagementController extends Controller
             }
             $filename = 'logo_' . time() . '_' . \Illuminate\Support\Str::random(6) . '.' . $ext;
             $file->move($dir, $filename);
-            SchoolSetting::set('school_logo', '/uploads/settings/' . $filename);
+            $newLogoPath = '/uploads/settings/' . $filename;
+            SchoolSetting::set('school_logo', $newLogoPath);
         }
 
         foreach ($request->except(['_token', '_method', 'school_logo_file']) as $key => $value) {
+            // Jika ada file logo baru yang diupload, abaikan input hidden 'school_logo' agar tidak menimpa path baru
+            if ($key === 'school_logo' && $newLogoPath !== null) {
+                continue;
+            }
+
             if ($value !== null) {
                 SchoolSetting::set($key, $value);
             }

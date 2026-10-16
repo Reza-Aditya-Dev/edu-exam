@@ -115,10 +115,16 @@
             
             <!-- Logo -->
             <a href="{{ url('/') }}" class="flex items-center gap-2 sm:gap-2.5 no-underline group flex-shrink-0">
-                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#2563eb] flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:bg-blue-700 transition">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 3.27L18.84 9 12 12.73 5.16 9 12 6.27zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
-                    </svg>
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 p-1 flex items-center justify-center text-white shadow-md shadow-blue-500/10 overflow-hidden">
+                    @if(!empty($schoolLogo))
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                    @else
+                        <div class="w-full h-full rounded-lg bg-[#2563eb] flex items-center justify-center text-white group-hover:bg-blue-700 transition">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 3.27L18.84 9 12 12.73 5.16 9 12 6.27zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
+                            </svg>
+                        </div>
+                    @endif
                 </div>
                 <div class="font-extrabold text-xl sm:text-2xl text-[#0b1c30] dark:text-white tracking-tight transition-colors">
                     Edu<span class="text-[#2563eb]">Exam</span>
