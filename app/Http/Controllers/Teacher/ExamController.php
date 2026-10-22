@@ -152,15 +152,18 @@ class ExamController extends Controller
             }
 
             ExamSetting::create([
-                'exam_id'                 => $exam->id,
-                'shuffle_questions'       => $request->boolean('shuffle_questions'),
-                'shuffle_options'         => $request->boolean('shuffle_options'),
-                'auto_save'               => $request->boolean('auto_save', true),
-                'auto_submit'             => $request->boolean('auto_submit', true),
-                'show_result_immediately' => $request->boolean('show_result_immediately', true),
-                'allow_review'            => $request->boolean('allow_review'),
-                'show_correct_answers'    => $request->boolean('show_correct_answers'),
-                'max_attempts'            => $request->max_attempts ?? 1,
+                'exam_id'                  => $exam->id,
+                'shuffle_questions'        => $request->boolean('shuffle_questions'),
+                'shuffle_options'          => $request->boolean('shuffle_options'),
+                'auto_save'                => $request->boolean('auto_save', true),
+                'auto_submit'              => $request->boolean('auto_submit', true),
+                'show_result_immediately'  => $request->boolean('show_result_immediately', true),
+                'allow_review'             => $request->boolean('allow_review'),
+                'show_correct_answers'     => $request->boolean('show_correct_answers'),
+                'enable_anti_cheat'        => $request->boolean('enable_anti_cheat', true),
+                'max_violations'           => (int)$request->input('max_violations', 3),
+                'violation_penalty_points' => (float)$request->input('violation_penalty_points', 0),
+                'max_attempts'             => $request->max_attempts ?? 1,
             ]);
 
             ActivityLog::log('exam_created', "Ujian dibuat: {$exam->title}", $exam);
@@ -272,13 +275,16 @@ class ExamController extends Controller
 
             if ($exam->settings) {
                 $exam->settings->update([
-                    'shuffle_questions'       => $request->boolean('shuffle_questions'),
-                    'shuffle_options'         => $request->boolean('shuffle_options'),
-                    'auto_save'               => $request->boolean('auto_save', true),
-                    'auto_submit'             => $request->boolean('auto_submit', true),
-                    'show_result_immediately' => $request->boolean('show_result_immediately', true),
-                    'allow_review'            => $request->boolean('allow_review'),
-                    'show_correct_answers'    => $request->boolean('show_correct_answers'),
+                    'shuffle_questions'        => $request->boolean('shuffle_questions'),
+                    'shuffle_options'          => $request->boolean('shuffle_options'),
+                    'auto_save'                => $request->boolean('auto_save', true),
+                    'auto_submit'              => $request->boolean('auto_submit', true),
+                    'show_result_immediately'  => $request->boolean('show_result_immediately', true),
+                    'allow_review'             => $request->boolean('allow_review'),
+                    'show_correct_answers'     => $request->boolean('show_correct_answers'),
+                    'enable_anti_cheat'        => $request->boolean('enable_anti_cheat', true),
+                    'max_violations'           => (int)$request->input('max_violations', 3),
+                    'violation_penalty_points' => (float)$request->input('violation_penalty_points', 0),
                 ]);
             }
 
@@ -388,19 +394,19 @@ class ExamController extends Controller
                 $passStatus = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
                 $gradingStatus = $hasPendingEssay ? 'pending_review' : 'graded';
 
-                // Tetapkan waktu pengumpulan satu kali secara konsisten
-                $submittedAt = now();
-
-                // Hitung durasi pengerjaan (dalam menit) berdasarkan waktu mulai riil dan waktu pengumpulan
-                $timeSpent = 0;
-                if ($participant->started_at) {
-                    $timeSpent = (int) $participant->started_at->diffInMinutes($submittedAt);
-                }
+                // Tetapkan waktu pengumpulan: jika melewati batas akhir ujian, batasi pada end_carbon jika ada
+                $nowMoment = now();
+                $submittedAt = ($exam->end_carbon && $nowMoment->greaterThan($exam->end_carbon))
+                    ? $exam->end_carbon
+                    : $nowMoment;
 
                 $participant->update([
                     'status'       => 'submitted',
                     'submitted_at' => $submittedAt,
                 ]);
+
+                // Hitung durasi pengerjaan (dalam menit) setelah submitted_at tersimpan
+                $timeSpent = $participant->calculateTimeSpentMinutes($submittedAt);
 
                 ExamResult::updateOrCreate(
                     ['exam_id' => $exam->id, 'student_id' => $participant->student_id],
@@ -434,6 +440,99 @@ class ExamController extends Controller
         });
 
         return back()->with('success', 'Ujian berhasil ditutup dan seluruh pengerjaan siswa telah diselesaikan.');
+    }
+
+    /**
+     * Perpanjang waktu ujian yang sedang berlangsung (Active Exam)
+     */
+    public function extendTime(Request $request, Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        $request->validate([
+            'added_minutes' => ['required', 'integer', 'min:1', 'max:240'],
+        ]);
+
+        $addedMinutes = (int) $request->input('added_minutes');
+
+        DB::transaction(function () use ($exam, $addedMinutes) {
+            $tz = $exam->timezone;
+            $nowInTz = now()->setTimezone($tz);
+
+            // Perpanjang durasi ujian
+            $newDuration = $exam->duration_minutes + $addedMinutes;
+
+            // Jika end_time ujian lebih kecil dari waktu sekarang + addedMinutes, sesuaikan end_time
+            $endCarbon = $exam->end_carbon;
+            $newEndCarbon = $endCarbon ? $endCarbon->copy()->addMinutes($addedMinutes) : $nowInTz->copy()->addMinutes($newDuration);
+
+            // Jika end_carbon sebelumnya sudah lewat waktu sekarang, dorong dari waktu sekarang
+            if ($endCarbon && $endCarbon->lessThan($nowInTz)) {
+                $newEndCarbon = $nowInTz->copy()->addMinutes($addedMinutes);
+            }
+
+            $updateData = [
+                'duration_minutes' => $newDuration,
+                'end_time'         => $newEndCarbon->format('H:i:s'),
+                'exam_date'        => $newEndCarbon->format('Y-m-d'),
+                'status'           => 'active',
+            ];
+
+            $exam->update($updateData);
+
+            // Notifikasi ke siswa kelas
+            $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+            $exam->notifyClassroomStudents(
+                'Perpanjangan Waktu Ujian',
+                "Waktu pengerjaan ujian {$exam->title} ({$exam->subject?->name}) telah diperpanjang sebanyak {$addedMinutes} menit hingga pukul " . $newEndCarbon->format('H:i') . " {$exam->timezone_code}.",
+                'info'
+            );
+
+            ActivityLog::log('exam_time_extended', "Waktu ujian '{$exam->title}' diperpanjang {$addedMinutes} menit oleh guru.", $exam);
+        });
+
+        return back()->with('success', "Waktu ujian berhasil diperpanjang sebanyak {$addedMinutes} menit.");
+    }
+
+    /**
+     * Membuka kembali ujian yang sudah berakhir (Completed Exam)
+     */
+    public function reopen(Request $request, Exam $exam)
+    {
+        $this->authorizeExam($exam);
+
+        $request->validate([
+            'duration_minutes' => ['required', 'integer', 'min:5', 'max:360'],
+        ]);
+
+        $durationMinutes = (int) $request->input('duration_minutes');
+
+        DB::transaction(function () use ($exam, $durationMinutes) {
+            $tz = $exam->timezone;
+            $nowInTz = now()->setTimezone($tz);
+            $newEndCarbon = $nowInTz->copy()->addMinutes($durationMinutes);
+
+            $exam->update([
+                'status'           => 'active',
+                'exam_date'        => $nowInTz->format('Y-m-d'),
+                'start_time'       => $nowInTz->format('H:i:s'),
+                'end_time'         => $newEndCarbon->format('H:i:s'),
+                'duration_minutes' => $durationMinutes,
+            ]);
+
+            // Siswa yang berstatus submitted TETAP submitted (tidak bisa mengulang)
+            // Hanya siswa yang belum submit atau yang direset nilainya oleh guru yang dapat masuk mengerjakan
+            $clsName = $exam->classroom?->name ?? 'Kelas Anda';
+            $exam->notifyClassroomStudents(
+                'Ujian Dibuka Kembali',
+                "Sesi ujian {$exam->title} ({$exam->subject?->name}) telah dibuka kembali oleh guru selama {$durationMinutes} menit (hingga pukul " . $newEndCarbon->format('H:i') . " {$exam->timezone_code}). Siswa yang belum menyelesaikan ujian kini dapat melanjutkan.",
+                'exam'
+            );
+
+            ActivityLog::log('exam_reopened', "Ujian '{$exam->title}' yang telah berakhir dibuka kembali oleh guru selama {$durationMinutes} menit.", $exam);
+        });
+
+        return back()->with('success', "Ujian berhasil dibuka kembali sebagai sesi aktif selama {$durationMinutes} menit.");
     }
 
     public function destroy(Exam $exam)
@@ -529,7 +628,20 @@ class ExamController extends Controller
         ];
 
         $exam->load(['subject', 'classroom']);
-        return view('teacher.exam.results', compact('exam', 'results', 'stats'));
+        
+        $schoolName = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
+        $rawLogo = \App\Models\SchoolSetting::get('school_logo', '');
+        $schoolLogoUrl = null;
+        if (!empty($rawLogo)) {
+            $logoRel = ltrim($rawLogo, '/\\');
+            if (file_exists(public_path($logoRel))) {
+                $schoolLogoUrl = asset($logoRel);
+            } elseif (filter_var($rawLogo, FILTER_VALIDATE_URL)) {
+                $schoolLogoUrl = $rawLogo;
+            }
+        }
+
+        return view('teacher.exam.results', compact('exam', 'results', 'stats', 'schoolName', 'schoolLogoUrl'));
     }
 
     // Ekspor Rekap Nilai Ujian (PDF & Excel)
@@ -557,12 +669,32 @@ class ExamController extends Controller
         $safeTitle = \Illuminate\Support\Str::slug($exam->title, '_');
         $timestamp = date('Ymd_His');
 
+        $schoolName = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
+        $schoolNpsn = \App\Models\SchoolSetting::get('school_npsn', '');
+        $schoolAddress = \App\Models\SchoolSetting::get('school_address', '');
+        $rawLogo = \App\Models\SchoolSetting::get('school_logo', '');
+
+        // Resolve logo as Base64 for 100% reliable Dompdf rendering
+        $schoolLogo = null;
+        if (!empty($rawLogo)) {
+            $logoRel = ltrim($rawLogo, '/\\');
+            $logoFullPath = public_path($logoRel);
+            if (file_exists($logoFullPath) && is_file($logoFullPath)) {
+                $mime = mime_content_type($logoFullPath) ?: 'image/png';
+                $schoolLogo = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoFullPath));
+            } elseif (filter_var($rawLogo, FILTER_VALIDATE_URL)) {
+                $schoolLogo = $rawLogo;
+            }
+        }
+
+        $schoolLogoBase64 = $schoolLogo;
+
         if ($format === 'excel' || $format === 'xlsx') {
-            return $this->exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp);
+            return $this->exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp, $schoolName, $schoolNpsn, $schoolAddress);
         }
 
         // Default: Export PDF (Landscape A4 untuk tabel hasil ujian multi-kolom yang rapi & tidak terpotong)
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('teacher.exam.results_pdf', compact('exam', 'results', 'stats'))
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('teacher.exam.results_pdf', compact('exam', 'results', 'stats', 'schoolName', 'schoolLogo', 'schoolLogoBase64'))
             ->setPaper('a4', 'landscape');
 
         $filename = "rekap_nilai_{$safeTitle}_{$timestamp}.pdf";
@@ -570,7 +702,7 @@ class ExamController extends Controller
     }
 
     // Helper ekspor Excel format XML Spreadsheet (.xls/.xlsx yang kompatibel dan rapi dengan styling)
-    protected function exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp)
+    protected function exportResultsExcel($exam, $results, $stats, $safeTitle, $timestamp, $schoolName = 'SMA Nusantara', $schoolNpsn = '', $schoolAddress = '')
     {
         $filename = "rekap_nilai_{$safeTitle}_{$timestamp}.xls";
 
@@ -580,6 +712,11 @@ class ExamController extends Controller
         $examDate = $exam->exam_date ? $exam->exam_date->format('d M Y') : '-';
         $passingGrade = $exam->passing_grade;
         $teacherName = htmlspecialchars($exam->teacher->name ?? '-', ENT_QUOTES, 'UTF-8');
+
+        $schoolNameEsc    = htmlspecialchars($schoolName, ENT_QUOTES, 'UTF-8');
+        $schoolNpsnEsc    = htmlspecialchars($schoolNpsn, ENT_QUOTES, 'UTF-8');
+        $schoolAddressEsc = htmlspecialchars($schoolAddress, ENT_QUOTES, 'UTF-8');
+        $schoolMeta = (!empty($schoolNpsnEsc) ? "NPSN: {$schoolNpsnEsc} • " : '') . $schoolAddressEsc;
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $xml .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
@@ -592,7 +729,14 @@ class ExamController extends Controller
         // Styles
         $xml .= '<Styles>' . "\n";
         $xml .= ' <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/></Style>' . "\n";
-        $xml .= ' <Style ss:ID="HeaderTitle"><Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#1E1B4B"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        
+        // Header Kop Sekolah Resmi
+        $xml .= ' <Style ss:ID="SchoolName"><Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#1E3A8A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="SchoolSub"><Font ss:FontName="Calibri" ss:Size="9" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+        $xml .= ' <Style ss:ID="BadgeCBT"><Font ss:FontName="Calibri" ss:Size="9.5" ss:Bold="1" ss:Color="#1D4ED8"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/></Borders></Style>' . "\n";
+        $xml .= ' <Style ss:ID="DividerBlue"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1E3A8A"/></Borders></Style>' . "\n";
+
+        $xml .= ' <Style ss:ID="HeaderTitle"><Font ss:FontName="Calibri" ss:Size="13" ss:Bold="1" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
         $xml .= ' <Style ss:ID="MetaLabel"><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
         $xml .= ' <Style ss:ID="MetaVal"><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
         
@@ -619,6 +763,23 @@ class ExamController extends Controller
         $xml .= '  <Column ss:Width="80"/>' . "\n";  // Nilai Akhir
         $xml .= '  <Column ss:Width="110"/>' . "\n"; // Status
 
+        // Kop Identitas Sekolah Resmi
+        $xml .= '  <Row ss:Height="24">' . "\n";
+        $xml .= '   <Cell ss:StyleID="SchoolName" ss:MergeAcross="4"><Data ss:Type="String">' . strtoupper($schoolNameEsc) . '</Data></Cell>' . "\n";
+        $xml .= '   <Cell ss:StyleID="BadgeCBT" ss:MergeAcross="1"><Data ss:Type="String">EDUXEAM CBT PLATFORM</Data></Cell>' . "\n";
+        $xml .= '  </Row>' . "\n";
+        if (!empty($schoolMeta)) {
+            $xml .= '  <Row ss:Height="18">' . "\n";
+            $xml .= '   <Cell ss:StyleID="SchoolSub" ss:MergeAcross="6"><Data ss:Type="String">' . $schoolMeta . '</Data></Cell>' . "\n";
+            $xml .= '  </Row>' . "\n";
+        }
+        $xml .= '  <Row ss:Height="4">' . "\n";
+        for ($c = 0; $c < 7; $c++) {
+            $xml .= '   <Cell ss:StyleID="DividerBlue"/>' . "\n";
+        }
+        $xml .= '  </Row>' . "\n";
+        $xml .= '  <Row ss:Height="6"></Row>' . "\n";
+
         // Info Ujian
         $xml .= '  <Row ss:Height="24"><Cell ss:StyleID="HeaderTitle" ss:MergeAcross="6"><Data ss:Type="String">REKAP HASIL UJIAN - ' . strtoupper($examTitle) . '</Data></Cell></Row>' . "\n";
         $xml .= '  <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Mata Pelajaran</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="5"><Data ss:Type="String">: ' . $subjectName . '</Data></Cell></Row>' . "\n";
@@ -643,12 +804,15 @@ class ExamController extends Controller
         foreach ($results as $index => $result) {
             $studentName = htmlspecialchars($result->student->name ?? '-', ENT_QUOTES, 'UTF-8');
             $nis = htmlspecialchars($result->student->nis ?? '-', ENT_QUOTES, 'UTF-8');
-            $waktuFormatted = $result->time_spent_minutes . ' Menit (Dikumpulkan: ' . ($result->created_at ? $result->created_at->format('H:i') . ' WIB' : '-') . ')';
+            $waktuFormatted = $result->time_spent_minutes . ' Menit (Dikumpulkan: ' . $result->formatted_submitted_time . ')';
             $bskFormatted = $result->correct_answers . ' B / ' . $result->wrong_answers . ' S / ' . $result->unanswered . ' K';
             $score = round($result->total_score);
 
-            $scoreStyle = ($result->pass_status === 'pass') ? 'TdScorePass' : 'TdScoreFail';
-            if ($result->is_pending_review) {
+            $scoreStyle = ($result->pass_status === 'pass' && !$result->is_disqualified) ? 'TdScorePass' : 'TdScoreFail';
+            if ($result->is_disqualified) {
+                $statusText = 'Didiskualifikasi';
+                $statusStyle = 'TdStatusFail';
+            } elseif ($result->is_pending_review) {
                 $statusText = 'Menunggu Koreksi';
                 $statusStyle = 'TdStatusPending';
             } elseif ($result->pass_status === 'pass') {
@@ -674,15 +838,15 @@ class ExamController extends Controller
         $xml .= ' <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
         $xml .= '  <FreezePanes/>' . "\n";
         $xml .= '  <FrozenNoSplit/>' . "\n";
-        $xml .= '  <SplitHorizontal>8</SplitHorizontal>' . "\n";
-        $xml .= '  <TopRowBottomPane>8</TopRowBottomPane>' . "\n";
+        $xml .= '  <SplitHorizontal>13</SplitHorizontal>' . "\n";
+        $xml .= '  <TopRowBottomPane>13</TopRowBottomPane>' . "\n";
         $xml .= '  <ActivePane>2</ActivePane>' . "\n";
         $xml .= '  <Selected/>' . "\n";
-        $xml .= '  <Panes><Pane><Number>3</Number></Pane><Pane><Number>2</Number><ActiveRow>8</ActiveRow></Pane></Panes>' . "\n";
+        $xml .= '  <Panes><Pane><Number>3</Number></Pane><Pane><Number>2</Number><ActiveRow>13</ActiveRow></Pane></Panes>' . "\n";
         $xml .= '  <ProtectObjects>False</ProtectObjects>' . "\n";
         $xml .= '  <ProtectScenarios>False</ProtectScenarios>' . "\n";
         $xml .= ' </WorksheetOptions>' . "\n";
-        $xml .= ' <AutoFilter x:Range="R8C1:R8C7" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
+        $xml .= ' <AutoFilter x:Range="R13C1:R13C7" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
         $xml .= '</Worksheet>' . "\n";
         $xml .= '</Workbook>';
 
@@ -707,8 +871,11 @@ class ExamController extends Controller
             ->with(['examQuestion.question.options', 'selectedOption'])
             ->get()
             ->sortBy('examQuestion.question_order');
+        $violations = \App\Models\ExamViolation::where('exam_participant_id', $participant->id)
+            ->orderBy('occurred_at', 'asc')
+            ->get();
 
-        return view('teacher.exam.student_detail', compact('exam', 'student', 'participant', 'result', 'answers'));
+        return view('teacher.exam.student_detail', compact('exam', 'student', 'participant', 'result', 'answers', 'violations'));
     }
 
     // Penilaian Soal Esai oleh Guru
@@ -860,6 +1027,104 @@ class ExamController extends Controller
         }
 
         return back()->with('success', "Nilai esai sebesar {$inputScore} berhasil disimpan dan nilai akhir siswa telah diperbarui.");
+    }
+
+    // Diskualifikasi Siswa oleh Guru (Kecurangan / Pelanggaran Berat)
+    public function disqualifyStudent(Request $request, Exam $exam, $studentId)
+    {
+        $this->authorizeExam($exam);
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $student = \App\Models\User::findOrFail($studentId);
+        $result = ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->firstOrFail();
+
+        // Simpan raw_score jika belum ada
+        $rawScore = $result->raw_score ?? $result->total_score;
+
+        $result->update([
+            'raw_score'              => $rawScore,
+            'total_score'            => 0,
+            'is_disqualified'        => true,
+            'disqualification_reason'=> $request->input('reason'),
+            'pass_status'            => 'fail',
+        ]);
+
+        \App\Models\ActivityLog::log(
+            'student_disqualified',
+            "Guru mendiskualifikasi siswa {$student->name} pada ujian {$exam->title}. Alasan: {$request->input('reason')}",
+            $exam
+        );
+
+        \App\Models\Notification::send(
+            $studentId,
+            'Status Ujian: Didiskualifikasi',
+            "Anda didiskualifikasi dari ujian {$exam->title} dengan alasan: {$request->input('reason')}.",
+            'exam',
+            $exam
+        );
+
+        return back()->with('success', "Siswa {$student->name} berhasil didiskualifikasi. Nilai diubah menjadi 0.");
+    }
+
+    // Penyesuaian Penalti / Potongan Nilai Siswa oleh Guru
+    public function adjustPenaltyScore(Request $request, Exam $exam, $studentId)
+    {
+        $this->authorizeExam($exam);
+
+        $request->validate([
+            'penalty_score' => 'required|numeric|min:0|max:100',
+            'action_type'   => 'nullable|string|in:apply,cancel_disqualification',
+        ]);
+
+        $student = \App\Models\User::findOrFail($studentId);
+        $result = ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->firstOrFail();
+
+        $actionType = $request->input('action_type', 'apply');
+        $rawScore = $result->raw_score ?? $result->total_score;
+        $penalty = (float)$request->input('penalty_score');
+
+        if ($actionType === 'cancel_disqualification') {
+            $newTotal = max(0, round($rawScore - $penalty, 2));
+            $passStatus = $newTotal >= $exam->passing_grade ? 'pass' : 'fail';
+
+            $result->update([
+                'raw_score'              => $rawScore,
+                'penalty_score'          => $penalty,
+                'total_score'            => $newTotal,
+                'is_disqualified'        => false,
+                'disqualification_reason'=> null,
+                'pass_status'            => $passStatus,
+            ]);
+
+            \App\Models\ActivityLog::log(
+                'penalty_adjusted',
+                "Guru membatalkan diskualifikasi siswa {$student->name} pada ujian {$exam->title}. Nilai baru: {$newTotal}",
+                $exam
+            );
+
+            return back()->with('success', "Status diskualifikasi dibatalkan. Nilai akhir siswa {$student->name} kini menjadi {$newTotal}.");
+        }
+
+        $newTotal = max(0, round($rawScore - $penalty, 2));
+        $passStatus = $newTotal >= $exam->passing_grade ? 'pass' : 'fail';
+
+        $result->update([
+            'raw_score'     => $rawScore,
+            'penalty_score' => $penalty,
+            'total_score'   => $newTotal,
+            'pass_status'   => $passStatus,
+        ]);
+
+        \App\Models\ActivityLog::log(
+            'penalty_adjusted',
+            "Guru menyesuaikan penalti nilai siswa {$student->name} pada ujian {$exam->title} menjadi -{$penalty} poin (Nilai akhir: {$newTotal})",
+            $exam
+        );
+
+        return back()->with('success', "Penalti nilai sebesar {$penalty} poin berhasil diterapkan. Nilai akhir {$student->name} menjadi {$newTotal}.");
     }
 
     // Analitik ujian

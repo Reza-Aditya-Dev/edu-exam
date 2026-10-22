@@ -180,12 +180,12 @@
         <div class="text-center z-10 px-4 mb-1">
             <div class="flex items-center justify-center gap-2 mb-1">
                 {{-- Logo Shield Icon matching reference --}}
-                <div class="w-10 h-10 rounded-xl bg-white border border-slate-200/80 p-1 flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden">
+                <div class="h-10 w-auto flex items-center justify-center">
                     @if(!empty($schoolLogo))
-                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-9 w-auto max-w-[42px] object-contain">
                     @else
-                        <div class="w-full h-full rounded-lg bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
-                            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">local_library</span>
+                        <div class="w-9 h-9 flex items-center justify-center text-blue-600">
+                            <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">local_library</span>
                         </div>
                     @endif
                 </div>
@@ -378,12 +378,12 @@
                 {{-- ===== TOP BAR ===== --}}
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-1 flex items-center justify-center shadow-md overflow-hidden">
+                        <div class="h-11 w-auto flex items-center justify-center">
                             @if(!empty($schoolLogo))
-                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-10 w-auto max-w-[48px] object-contain">
                             @else
-                                <div class="w-full h-full rounded-lg bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
-                                    <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings: 'FILL' 1;">school</span>
+                                <div class="w-10 h-10 flex items-center justify-center text-blue-300">
+                                    <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">school</span>
                                 </div>
                             @endif
                         </div>
@@ -471,12 +471,12 @@
 
                     {{-- Branding --}}
                     <div class="text-center mb-4">
-                        <div class="w-16 h-16 rounded-2xl bg-white border border-slate-200/80 p-1.5 flex items-center justify-center shadow-md shadow-blue-500/15 mx-auto mb-3 overflow-hidden">
+                        <div class="h-16 w-auto flex items-center justify-center mx-auto mb-2">
                             @if(!empty($schoolLogo))
-                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                                <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-14 w-auto max-w-[64px] object-contain">
                             @else
-                                <div class="w-full h-full rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white">
-                                    <span class="material-symbols-outlined text-white text-[28px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                                <div class="w-14 h-14 flex items-center justify-center text-blue-600">
+                                    <span class="material-symbols-outlined text-[42px]" style="font-variation-settings: 'FILL' 1;">school</span>
                                 </div>
                             @endif
                         </div>

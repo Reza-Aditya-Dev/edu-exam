@@ -31,9 +31,13 @@
                     <span class="material-symbols-outlined text-[19px] text-secondary">file_upload</span>
                     <span>Impor Data (.csv/.xlsx)</span>
                 </button>
-                <a href="{{ route('admin.students.export', request()->query()) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline">
-                    <span class="material-symbols-outlined text-[19px] text-outline">file_download</span>
-                    <span>Ekspor Data</span>
+                <a href="{{ route('admin.students.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline" title="Unduh rekap data siswa format Excel (.xlsx/.xls) dengan kop sekolah resmi & styling warna">
+                    <span class="material-symbols-outlined text-[19px] text-emerald-700">grid_on</span>
+                    <span>Ekspor Excel (.xlsx)</span>
+                </a>
+                <a href="{{ route('admin.students.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline" title="Unduh dokumen rekap data siswa siap cetak (A4 Portrait)">
+                    <span class="material-symbols-outlined text-[19px] text-rose-600">picture_as_pdf</span>
+                    <span>Ekspor PDF</span>
                 </a>
                 <a href="{{ route('admin.students.print-cards', request()->query()) }}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline">
                     <span class="material-symbols-outlined text-[19px] text-primary">print</span>
@@ -146,7 +150,6 @@
                     <select name="status" onchange="this.form.submit()" class="bg-transparent border-none outline-none font-label-md text-label-md text-on-surface pr-6 appearance-none cursor-pointer">
                         <option value="">Semua Status Akun</option>
                         <option value="active" {{ request('status') === 'active' || request('status') === '1' ? 'selected' : '' }}>Aktif</option>
-                        <option value="remedial" {{ request('status') === 'remedial' ? 'selected' : '' }}>Perlu Remedial</option>
                         <option value="suspended" {{ request('status') === 'suspended' || request('status') === '0' ? 'selected' : '' }}>Ditangguhkan (Nonaktif)</option>
                     </select>
                     <span class="material-symbols-outlined text-outline text-[16px] absolute right-2.5 pointer-events-none">expand_more</span>
@@ -248,15 +251,11 @@
                             $examCount = $student->examParticipants->count();
                             $hasFailedExam = $student->examResults->contains('pass_status', 'fail');
 
-                            // Status style logic
+                            // Status style logic (Hanya 2 status: Aktif dan Ditangguhkan)
                             if (!$student->is_active) {
                                 $statusBadgeClass = 'bg-error-container text-on-error-container';
                                 $statusDotClass = 'bg-error';
                                 $statusText = 'Ditangguhkan';
-                            } elseif ($hasFailedExam) {
-                                $statusBadgeClass = 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
-                                $statusDotClass = 'bg-tertiary-container';
-                                $statusText = 'Perlu Remedial';
                             } else {
                                 $statusBadgeClass = 'bg-secondary-container/50 text-on-secondary-container';
                                 $statusDotClass = 'bg-secondary';

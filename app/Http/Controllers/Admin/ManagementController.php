@@ -243,11 +243,6 @@ class ManagementController extends Controller
             // Target 150 questions per subject
             $target = max(1, $subjectCount * 150);
             $pct = $subjectCount > 0 ? min(100, (int) round(($questionCount / $target) * 100)) : 0;
-            // If newly initialized or 0 questions yet, show benchmark %
-            if ($pct === 0 && $subjectCount > 0) {
-                $benchmarks = ['MIPA' => 92, 'Wajib Umum' => 100, 'IPS' => 74, 'Bahasa & Seni' => 80, 'Muatan Lokal' => 60];
-                $pct = $benchmarks[$catName] ?? 70;
-            }
 
             $categoryReadiness[$catName] = [
                 'name'           => $catName,
@@ -835,66 +830,319 @@ class ManagementController extends Controller
 
     public function exportExams(Request $request)
     {
-        $exams = Exam::with(['subject', 'classroom', 'teacher'])->latest('exam_date')->get();
-        $filename = 'rekap_semua_ujian_' . date('Ymd_His') . '.csv';
+        $search      = $request->input('search');
+        $status      = $request->input('status');
+        $teacherId   = $request->input('teacher_id');
+        $subjectId   = $request->input('subject_id');
+        $classroomId = $request->input('classroom_id');
+        $date        = $request->input('date');
+
+        $query = Exam::with(['subject', 'classroom', 'teacher']);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('token', 'like', "%{$search}%")
+                  ->orWhere('session_name', 'like', "%{$search}%")
+                  ->orWhereHas('teacher', function ($tq) use ($search) {
+                      $tq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('subject', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('classroom', function ($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if (!empty($status) && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if (!empty($teacherId)) {
+            $query->where('teacher_id', $teacherId);
+        }
+
+        if (!empty($subjectId)) {
+            $query->where('subject_id', $subjectId);
+        }
+
+        if (!empty($classroomId)) {
+            $query->where('classroom_id', $classroomId);
+        }
+
+        if (!empty($date)) {
+            $query->whereDate('exam_date', $date);
+        }
+
+        $exams = $query->orderByRaw("FIELD(status, 'active', 'scheduled', 'completed', 'draft', 'archived')")
+                       ->orderByDesc('exam_date')
+                       ->orderByDesc('id')
+                       ->get();
+
+        $format = strtolower($request->input('format', 'excel'));
+        $timestamp = date('Ymd_His');
+
+        $schoolName    = SchoolSetting::get('school_name', 'SMA Nusantara');
+        $schoolNpsn    = SchoolSetting::get('school_npsn', '');
+        $schoolAddress = SchoolSetting::get('school_address', '');
+
+        if ($format === 'pdf') {
+            $printDate = date('d-m-Y H:i');
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.exam.export_pdf', compact(
+                'exams',
+                'schoolName',
+                'schoolNpsn',
+                'schoolAddress',
+                'printDate'
+            ))->setPaper('a4', 'landscape');
+
+            return $pdf->download("laporan_data_ujian_{$timestamp}.pdf");
+        }
+
+        if ($format === 'csv') {
+            $filename = "laporan_data_ujian_{$timestamp}.csv";
+            $headers = [
+                "Content-type"        => "text/csv; charset=UTF-8",
+                "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+
+            return response()->stream(function () use ($exams) {
+                $handle = fopen('php://output', 'w');
+                fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+                fputcsv($handle, [
+                    'No',
+                    'ID Sistem',
+                    'Judul Ujian',
+                    'Sesi',
+                    'Jenis',
+                    'Mata Pelajaran',
+                    'Target Kelas',
+                    'Guru Pengampu',
+                    'NIP Guru',
+                    'Tanggal Pelaksanaan',
+                    'Jam Mulai',
+                    'Jam Selesai',
+                    'Durasi (Menit)',
+                    'Jumlah Soal',
+                    'KKM',
+                    'Token CBT',
+                    'Status Ujian'
+                ]);
+
+                $no = 1;
+                foreach ($exams as $exam) {
+                    $startTime = $exam->start_time ? substr($exam->start_time, 0, 5) : '-';
+                    $endTime   = $exam->end_time ? substr($exam->end_time, 0, 5) : '-';
+                    $examDate  = $exam->exam_date ? $exam->exam_date->format('d-m-Y') : '-';
+                    $nip       = $exam->teacher?->nip ? (string) $exam->teacher->nip : '-';
+
+                    fputcsv($handle, [
+                        $no++,
+                        'CBT-' . $exam->id,
+                        $exam->title,
+                        $exam->session_name ?? 'Sesi 1',
+                        $exam->exam_type,
+                        $exam->subject->name ?? '-',
+                        $exam->classroom->name ?? '-',
+                        $exam->teacher->name ?? '-',
+                        $nip,
+                        $examDate,
+                        $startTime,
+                        $endTime,
+                        $exam->duration_minutes,
+                        $exam->total_questions,
+                        $exam->passing_grade,
+                        $exam->token,
+                        $exam->status_label ?? $exam->status,
+                    ]);
+                }
+                fclose($handle);
+            }, 200, $headers);
+        }
+
+        // Default: Export Excel format SpreadsheetML (.xls/.xlsx yang didukung langsung Microsoft Excel & LibreOffice)
+        return $this->exportExamsExcel($exams, $schoolName, $schoolNpsn, $schoolAddress, $timestamp);
+    }
+
+    protected function exportExamsExcel($exams, $schoolName, $schoolNpsn, $schoolAddress, $timestamp)
+    {
+        $filename = "laporan_data_ujian_{$timestamp}.xls";
+
+        $schoolNameEsc    = htmlspecialchars($schoolName, ENT_QUOTES, 'UTF-8');
+        $schoolNpsnEsc    = htmlspecialchars($schoolNpsn, ENT_QUOTES, 'UTF-8');
+        $schoolAddressEsc = htmlspecialchars($schoolAddress, ENT_QUOTES, 'UTF-8');
+        $printDate        = date('d-m-Y H:i');
 
         $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename={$filename}",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
         ];
 
-        $callback = function () use ($exams) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, [
-                'No',
-                'ID Sistem',
-                'Judul Ujian',
-                'Sesi',
-                'Jenis',
-                'Mata Pelajaran',
-                'Target Kelas',
-                'Guru Pengampu',
-                'NIP Guru',
-                'Tanggal Pelaksanaan',
-                'Jam Mulai',
-                'Jam Selesai',
-                'Durasi (Menit)',
-                'Jumlah Soal',
-                'KKM',
-                'Token CBT',
-                'Status Ujian'
-            ]);
+        return response()->stream(function() use ($exams, $schoolNameEsc, $schoolNpsnEsc, $schoolAddressEsc, $printDate) {
+            echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+            echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+            echo ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+            echo ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+
+            // Styles
+            echo '<Styles>' . "\n";
+            echo ' <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/></Style>' . "\n";
+            echo ' <Style ss:ID="HeaderTitle"><Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#1E3A8A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="HeaderSub"><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="MetaLabel"><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#334155"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="MetaVal"><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+
+            // Table Header Style
+            echo ' <Style ss:ID="ThCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E3A8A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E3A8A"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E3A8A" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="ThLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E3A8A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E3A8A"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E3A8A" ss:Pattern="Solid"/></Style>' . "\n";
+
+            // Table Body Styles
+            echo ' <Style ss:ID="TdCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdTitle"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdCode"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Consolas" ss:Size="10" ss:Bold="1" ss:Color="#1E293B"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdText"><NumberFormat ss:Format="@"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Consolas" ss:Size="9" ss:Color="#475569"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdNumber"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#0F172A"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdBoldNumber"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/></Style>' . "\n";
+
+            // Status Styles
+            echo ' <Style ss:ID="TdStatusActive"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#065F46"/><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusScheduled"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#1E40AF"/><Interior ss:Color="#DBEAFE" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusCompleted"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#334155"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusDraft"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#92400E"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusArchived"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#4B5563"/><Interior ss:Color="#F3F4F6" ss:Pattern="Solid"/></Style>' . "\n";
+            echo '</Styles>' . "\n";
+
+            // Worksheet & Layout
+            echo '<Worksheet ss:Name="Data Ujian">' . "\n";
+            echo ' <Table x:FullColumns="1" x:FullRows="1" ss:DefaultRowHeight="20">' . "\n";
+
+            // 17 Columns with tailored widths
+            echo '  <Column ss:Width="36"/>' . "\n";  // 1. No
+            echo '  <Column ss:Width="70"/>' . "\n";  // 2. ID Sistem
+            echo '  <Column ss:Width="210"/>' . "\n"; // 3. Judul Ujian
+            echo '  <Column ss:Width="85"/>' . "\n";  // 4. Sesi
+            echo '  <Column ss:Width="50"/>' . "\n";  // 5. Jenis
+            echo '  <Column ss:Width="140"/>' . "\n"; // 6. Mata Pelajaran
+            echo '  <Column ss:Width="90"/>' . "\n";  // 7. Target Kelas
+            echo '  <Column ss:Width="160"/>' . "\n"; // 8. Guru Pengampu
+            echo '  <Column ss:Width="130"/>' . "\n"; // 9. NIP Guru
+            echo '  <Column ss:Width="95"/>' . "\n";  // 10. Tanggal Pelaksanaan
+            echo '  <Column ss:Width="65"/>' . "\n";  // 11. Jam Mulai
+            echo '  <Column ss:Width="65"/>' . "\n";  // 12. Jam Selesai
+            echo '  <Column ss:Width="65"/>' . "\n";  // 13. Durasi
+            echo '  <Column ss:Width="60"/>' . "\n";  // 14. Jumlah Soal
+            echo '  <Column ss:Width="50"/>' . "\n";  // 15. KKM
+            echo '  <Column ss:Width="80"/>' . "\n";  // 16. Token CBT
+            echo '  <Column ss:Width="85"/>' . "\n";  // 17. Status Ujian
+
+            // Header Kop Sekolah
+            echo '  <Row ss:Height="24"><Cell ss:StyleID="HeaderTitle" ss:MergeAcross="16"><Data ss:Type="String">LAPORAN DATA UJIAN SISWA — ' . strtoupper($schoolNameEsc) . '</Data></Cell></Row>' . "\n";
+            if (!empty($schoolAddressEsc) || !empty($schoolNpsnEsc)) {
+                $subText = (!empty($schoolNpsnEsc) ? "NPSN: {$schoolNpsnEsc} • " : '') . $schoolAddressEsc;
+                echo '  <Row ss:Height="18"><Cell ss:StyleID="HeaderSub" ss:MergeAcross="16"><Data ss:Type="String">' . $subText . '</Data></Cell></Row>' . "\n";
+            }
+            echo '  <Row ss:Height="18"><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Tanggal Ekspor</Data></Cell><Cell ss:StyleID="MetaVal" ss:MergeAcross="15"><Data ss:Type="String">: ' . $printDate . ' WIB | Total Data: ' . count($exams) . ' Sesi Ujian</Data></Cell></Row>' . "\n";
+            echo '  <Row ss:Height="10"></Row>' . "\n";
+
+            // Table Header (Row 5)
+            echo '  <Row ss:Height="25">' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">No</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">ID Sistem</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThLeft"><Data ss:Type="String">Judul Ujian</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Sesi</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jenis</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThLeft"><Data ss:Type="String">Mata Pelajaran</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Target Kelas</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThLeft"><Data ss:Type="String">Guru Pengampu</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">NIP Guru</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Tanggal Pelaksanaan</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jam Mulai</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jam Selesai</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Durasi (Menit)</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jumlah Soal</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">KKM</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Token CBT</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Status Ujian</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
 
             $no = 1;
             foreach ($exams as $exam) {
-                fputcsv($handle, [
-                    $no++,
-                    'CBT-' . $exam->id,
-                    $exam->title,
-                    $exam->session_name ?? 'Sesi 1',
-                    $exam->exam_type,
-                    $exam->subject->name ?? '-',
-                    $exam->classroom->name ?? '-',
-                    $exam->teacher->name ?? '-',
-                    $exam->teacher->nip ?? '-',
-                    $exam->exam_date ? $exam->exam_date->format('Y-m-d') : '-',
-                    $exam->start_time,
-                    $exam->end_time,
-                    $exam->duration_minutes,
-                    $exam->total_questions,
-                    $exam->passing_grade,
-                    $exam->token,
-                    $exam->status_label ?? $exam->status,
-                ]);
-            }
-            fclose($handle);
-        };
+                $systemId   = 'CBT-' . $exam->id;
+                $title      = htmlspecialchars($exam->title, ENT_QUOTES, 'UTF-8');
+                $session    = htmlspecialchars($exam->session_name ?? 'Sesi 1', ENT_QUOTES, 'UTF-8');
+                $type       = htmlspecialchars($exam->exam_type ?? '-', ENT_QUOTES, 'UTF-8');
+                $subject    = htmlspecialchars($exam->subject->name ?? '-', ENT_QUOTES, 'UTF-8');
+                $classroom  = htmlspecialchars($exam->classroom->name ?? '-', ENT_QUOTES, 'UTF-8');
+                $teacher    = htmlspecialchars($exam->teacher->name ?? '-', ENT_QUOTES, 'UTF-8');
+                $nip        = htmlspecialchars($exam->teacher?->nip ?? '-', ENT_QUOTES, 'UTF-8');
+                $examDate   = $exam->exam_date ? $exam->exam_date->format('d-m-Y') : '-';
+                $startTime  = $exam->start_time ? substr($exam->start_time, 0, 5) : '-';
+                $endTime    = $exam->end_time ? substr($exam->end_time, 0, 5) : '-';
+                $duration   = (int) $exam->duration_minutes;
+                $questions  = (int) $exam->total_questions;
+                $kkm        = (float) $exam->passing_grade;
+                $token      = htmlspecialchars($exam->token, ENT_QUOTES, 'UTF-8');
+                $status     = $exam->status;
+                $statusLabel= htmlspecialchars($exam->status_label ?? ucfirst($status), ENT_QUOTES, 'UTF-8');
 
-        return response()->stream($callback, 200, $headers);
+                $statusStyle = match($status) {
+                    'active'    => 'TdStatusActive',
+                    'scheduled' => 'TdStatusScheduled',
+                    'completed' => 'TdStatusCompleted',
+                    'draft'     => 'TdStatusDraft',
+                    'archived'  => 'TdStatusArchived',
+                    default     => 'TdStatusCompleted',
+                };
+
+                echo '  <Row ss:Height="22">' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="Number">' . $no++ . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCode"><Data ss:Type="String">' . $systemId . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdTitle"><Data ss:Type="String">' . $title . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $session . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $type . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $subject . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $classroom . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $teacher . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $nip . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $examDate . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $startTime . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $endTime . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdNumber"><Data ss:Type="Number">' . $duration . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdNumber"><Data ss:Type="Number">' . $questions . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdBoldNumber"><Data ss:Type="Number">' . $kkm . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCode"><Data ss:Type="String">' . $token . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="' . $statusStyle . '"><Data ss:Type="String">' . $statusLabel . '</Data></Cell>' . "\n";
+                echo '  </Row>' . "\n";
+            }
+
+            echo ' </Table>' . "\n";
+
+            // Worksheet Options: Freeze Panes & AutoFilter
+            $headerRowIdx = empty($schoolAddressEsc) && empty($schoolNpsnEsc) ? 4 : 5;
+            echo ' <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
+            echo '  <FreezePanes/>' . "\n";
+            echo '  <FrozenNoSplit/>' . "\n";
+            echo '  <SplitPane>' . "\n";
+            echo '   <Number>' . $headerRowIdx . '</Number>' . "\n";
+            echo '  </SplitPane>' . "\n";
+            echo '  <ActivePane>2</ActivePane>' . "\n";
+            echo ' </WorksheetOptions>' . "\n";
+            echo ' <AutoFilter x:Range="R' . $headerRowIdx . 'C1:R' . ($headerRowIdx + count($exams)) . 'C17" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
+            echo '</Worksheet>' . "\n";
+            echo '</Workbook>' . "\n";
+        }, 200, $headers);
     }
 
     public function printBeritaAcara(Exam $exam)

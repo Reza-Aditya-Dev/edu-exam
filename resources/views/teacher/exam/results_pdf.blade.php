@@ -35,6 +35,11 @@
             vertical-align: middle;
             padding: 0;
         }
+        .logo-img {
+            max-height: 48px;
+            max-width: 48px;
+            object-fit: contain;
+        }
         .badge {
             display: inline-block;
             padding: 2px 7px;
@@ -270,11 +275,29 @@
 
     <!-- Header Rekap Sesuai Halaman Hasil -->
     <div class="header-container">
+        @php
+            $resolvedLogoBase64 = $schoolLogoBase64 ?? null;
+            if (empty($resolvedLogoBase64)) {
+                $candidateLogo = $schoolLogo ?? \App\Models\SchoolSetting::get('school_logo', '');
+                if (!empty($candidateLogo)) {
+                    if (str_starts_with($candidateLogo, 'data:image/')) {
+                        $resolvedLogoBase64 = $candidateLogo;
+                    } else {
+                        $logoRel = ltrim($candidateLogo, '/\\');
+                        $logoFullPath = public_path($logoRel);
+                        if (file_exists($logoFullPath) && is_file($logoFullPath)) {
+                            $mime = mime_content_type($logoFullPath) ?: 'image/png';
+                            $resolvedLogoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoFullPath));
+                        }
+                    }
+                }
+            }
+        @endphp
         <table class="header-table">
             <tr>
-                @if(!empty($schoolLogo))
-                    <td style="width: 55px; vertical-align: top; padding-right: 10px;">
-                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" style="max-height: 48px; max-width: 55px; object-fit: contain;">
+                @if(!empty($resolvedLogoBase64))
+                    <td style="width: 55px; padding-right: 10px; text-align: center;">
+                        <img src="{{ $resolvedLogoBase64 }}" class="logo-img" alt="Logo">
                     </td>
                 @endif
                 <td>
@@ -352,7 +375,7 @@
                 <td class="col-nis font-mono">{{ $result->student->nis ?? '-' }}</td>
                 <td class="col-waktu">
                     <div class="waktu-main">{{ $result->time_spent_minutes }} Menit</div>
-                    <div class="waktu-sub">Dikumpulkan: {{ $result->created_at ? $result->created_at->format('H:i') . ' WIB' : '-' }}</div>
+                    <div class="waktu-sub">Dikumpulkan: {{ $result->formatted_submitted_time }}</div>
                 </td>
                 <td class="col-bsk font-mono">
                     <span style="color: #059669; font-weight: bold;">{{ $result->correct_answers }} B</span>
@@ -362,12 +385,19 @@
                     <span style="color: #64748b;">{{ $result->unanswered }} K</span>
                 </td>
                 <td class="col-nilai">
-                    <span class="score {{ $result->pass_status === 'pass' ? 'score-pass' : 'score-fail' }}">
+                    <span class="score {{ $result->is_disqualified ? 'score-fail' : ($result->pass_status === 'pass' ? 'score-pass' : 'score-fail') }}">
                         {{ round($result->total_score) }}
                     </span>
+                    @if($result->is_disqualified)
+                        <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">(Diskualifikasi)</div>
+                    @elseif(($result->penalty_score ?? 0) > 0)
+                        <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">(-{{ round($result->penalty_score) }} penalti)</div>
+                    @endif
                 </td>
                 <td class="col-status">
-                    @if($result->is_pending_review)
+                    @if($result->is_disqualified)
+                        <span class="status-badge status-tidak-lulus" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;">Diskualifikasi</span>
+                    @elseif($result->is_pending_review)
                         <span class="status-badge status-menunggu">Menunggu Koreksi</span>
                     @else
                         <span class="status-badge {{ $result->pass_status === 'pass' ? 'status-lulus' : 'status-tidak-lulus' }}">

@@ -41,11 +41,19 @@
             </div>
             <!-- Action Toolbar -->
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <button onclick="window.print()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-lg text-label-lg transition-all shadow-sm active:scale-95" type="button">
-                    <span class="material-symbols-outlined text-[19px] text-secondary">print</span>
-                    <span>Cetak Data Guru</span>
-                </button>
-                <a href="{{ route('admin.teachers.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg shadow-sm hover:shadow-md transition-all active:scale-95">
+                <a href="{{ route('admin.teachers.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline" title="Unduh rekap data guru format CSV (bisa dibuka di Excel)">
+                    <span class="material-symbols-outlined text-[19px] text-emerald-700">file_download</span>
+                    <span>Export CSV</span>
+                </a>
+                <a href="{{ route('admin.teachers.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline" title="Unduh rekap data guru format Excel (.xlsx/.xls) dengan kop sekolah resmi, filter & styling warna">
+                    <span class="material-symbols-outlined text-[19px] text-emerald-700">grid_on</span>
+                    <span>Ekspor Excel (.xlsx)</span>
+                </a>
+                <a href="{{ route('admin.teachers.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] border border-slate-200/60 no-underline" title="Unduh dokumen rekap data guru format PDF siap cetak">
+                    <span class="material-symbols-outlined text-[19px] text-rose-600">picture_as_pdf</span>
+                    <span>Cetak PDF</span>
+                </a>
+                <a href="{{ route('admin.teachers.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg shadow-sm hover:shadow-md transition-all active:scale-95 no-underline">
                     <span class="material-symbols-outlined text-[20px]">person_add</span>
                     <span>+ Tambah Guru Baru</span>
                 </a>
@@ -204,7 +212,8 @@
                         <th class="py-3.5 px-3 min-w-[180px]">NIP / NUPTK</th>
                         <th class="py-3.5 px-3 min-w-[210px]">Email Resmi</th>
                         <th class="py-3.5 px-3 min-w-[200px]">Mata Pelajaran Diampu</th>
-                        <th class="py-3.5 px-3 min-w-[180px]">Penugasan Kelas</th>
+                        <th class="py-3.5 px-3 min-w-[170px]">Wali Kelas</th>
+                        <th class="py-3.5 px-3 min-w-[130px] text-center">Ujian Dibuat</th>
                         <th class="py-3.5 px-3 min-w-[120px] text-center">Status Akun</th>
                         <th class="py-3.5 pr-space-md pl-3 text-right min-w-[170px]">Aksi</th>
                     </tr>
@@ -270,20 +279,34 @@
                                     @endforelse
                                 </div>
                             </td>
+                            <!-- Kolom Wali Kelas -->
                             <td class="py-3.5 px-3">
                                 <div class="flex flex-wrap items-center gap-1">
                                     @if($teacher->homeroomClassrooms && $teacher->homeroomClassrooms->count() > 0)
                                         @foreach($teacher->homeroomClassrooms as $hrClass)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shadow-xs">
+                                                <span class="material-symbols-outlined text-[13px] mr-1 text-secondary">meeting_room</span>
                                                 {{ $hrClass->name }} (Wali)
                                             </span>
                                         @endforeach
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
-                                            {{ $teacher->created_exams_count }} Ujian Dibuat
-                                        </span>
+                                        <span class="text-outline text-sm font-semibold select-none" title="Bukan Wali Kelas">—</span>
                                     @endif
                                 </div>
+                            </td>
+
+                            <!-- Kolom Ujian Dibuat -->
+                            <td class="py-3.5 px-3 text-center">
+                                @if($teacher->created_exams_count > 0)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold shadow-xs">
+                                        <span class="material-symbols-outlined text-[13px]">assignment</span>
+                                        {{ $teacher->created_exams_count }} Ujian
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-medium">
+                                        0 Ujian
+                                    </span>
+                                @endif
                             </td>
                             <td class="py-3.5 px-3 text-center">
                                 @if($teacher->is_active)
@@ -333,7 +356,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-12 text-on-surface-variant">
+                            <td colspan="10" class="text-center py-12 text-on-surface-variant">
                                 <span class="material-symbols-outlined text-[36px] text-outline mb-2 block">person_off</span>
                                 <span class="font-headline-sm text-sm font-bold text-on-surface block">Data Guru Tidak Ditemukan</span>
                                 <span class="text-xs text-outline mt-0.5 block">Silakan sesuaikan kata kunci pencarian atau reset filter.</span>

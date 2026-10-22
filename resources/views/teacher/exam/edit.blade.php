@@ -450,6 +450,41 @@
                         </div>
                     </label>
                 </div>
+
+                <h4 class="font-headline font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-rose-600 text-[18px]">security</span>
+                    <span>Proteksi Anti-Curang & Integritas Ujian</span>
+                </h4>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-8 flex flex-col gap-4">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="enable_anti_cheat" value="1" {{ optional($exam->settings)->enable_anti_cheat ?? true ? 'checked' : '' }} class="mt-0.5 w-4 h-4 rounded text-rose-600 accent-rose-600">
+                        <div>
+                            <div class="font-bold text-xs text-slate-900">Aktifkan Proteksi Layar Penuh & Deteksi Pindah Tab</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">Mendeteksi dan mencatat ketika siswa membuka tab browser lain, aplikasi eksternal, atau keluar fullscreen.</div>
+                        </div>
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200/80">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Batas Maksimal Pelanggaran (Auto-Submit):</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="max_violations" min="1" max="20" value="{{ optional($exam->settings)->max_violations ?? 3 }}" class="w-24 px-3 py-1.5 text-xs font-bold font-mono border rounded-lg bg-white text-slate-800">
+                                <span class="text-xs text-slate-500">kali kesempatan</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Ujian otomatis dikumpulkan jika siswa keluar melebihi batas ini.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Otomatis Potong Nilai per Pelanggaran:</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="violation_penalty_points" min="0" max="50" step="1" value="{{ round(optional($exam->settings)->violation_penalty_points ?? 0) }}" class="w-24 px-3 py-1.5 text-xs font-bold font-mono border rounded-lg bg-white text-slate-800">
+                                <span class="text-xs text-slate-500">poin per pelanggaran</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Isi 0 jika hanya ingin mencatat ke laporan guru tanpa auto-potong.</p>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="flex justify-between items-center pt-6 border-t border-slate-100 flex-wrap gap-3">
                     <button type="button" class="btn btn-secondary text-xs px-4 py-2.5 flex items-center gap-1" onclick="prevStep(3)">

@@ -52,6 +52,9 @@
     </script>
     <style>
         /* Smooth scrolling & mobile safety */
+        html {
+            scroll-padding-top: 5.5rem;
+        }
         html, body {
             overflow-x: hidden;
             width: 100%;
@@ -109,37 +112,44 @@
 
     
 
-    <!-- NAVBAR -->
-    <header class="w-full bg-white/95 dark:bg-[#0b172a]/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-200">
+    <!-- NAVBAR (Fixed di atas saat di-scroll) -->
+    <header class="fixed top-0 left-0 right-0 w-full bg-white/90 dark:bg-[#0b172a]/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 z-50 shadow-xs transition-colors duration-200">
         <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-16 sm:h-20 flex justify-between items-center">
             
             <!-- Logo -->
-            <a href="{{ url('/') }}" class="flex items-center gap-2 sm:gap-2.5 no-underline group flex-shrink-0">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 p-1 flex items-center justify-center text-white shadow-md shadow-blue-500/10 overflow-hidden">
-                    @if(!empty($schoolLogo))
-                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
-                    @else
-                        <div class="w-full h-full rounded-lg bg-[#2563eb] flex items-center justify-center text-white group-hover:bg-blue-700 transition">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current" viewBox="0 0 24 24">
-                                <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 3.27L18.84 9 12 12.73 5.16 9 12 6.27zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
-                            </svg>
-                        </div>
-                    @endif
-                </div>
+            <a href="{{ url('/') }}" class="flex items-center gap-2.5 no-underline group flex-shrink-0">
+                @if(!empty($schoolLogo))
+                    <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105">
+                @else
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-[#2563eb] group-hover:scale-105 transition-transform">
+                        <svg class="w-8 h-8 sm:w-9 sm:h-9 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 3.27L18.84 9 12 12.73 5.16 9 12 6.27zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
+                        </svg>
+                    </div>
+                @endif
                 <div class="font-extrabold text-xl sm:text-2xl text-[#0b1c30] dark:text-white tracking-tight transition-colors">
                     Edu<span class="text-[#2563eb]">Exam</span>
                 </div>
             </a>
             
             <!-- Desktop Navigation Links -->
-            <nav class="hidden md:flex items-center gap-7 lg:gap-9">
-                <div class="relative py-2">
-                    <a href="{{ url('/') }}" class="text-sm font-bold text-[#0b1c30] dark:text-white transition">Beranda</a>
-                    <span class="block w-6 h-[3px] bg-[#2563eb] rounded-full mx-auto mt-1"></span>
-                </div>
-                <a href="#tentang" class="text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Tentang</a>
-                <a href="#fitur" class="text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Fitur</a>
-                <a href="#panduan" class="text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Panduan</a>
+            <nav id="desktopNav" class="hidden md:flex items-center gap-7 lg:gap-9">
+                <a href="#beranda" class="nav-item relative py-2 text-sm font-bold text-[#0b1c30] dark:text-white transition group flex flex-col items-center">
+                    <span>Beranda</span>
+                    <span class="nav-indicator block w-5 h-[3px] bg-[#2563eb] rounded-full mt-1 transition-all duration-200"></span>
+                </a>
+                <a href="#tentang" class="nav-item relative py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition group flex flex-col items-center">
+                    <span>Tentang</span>
+                    <span class="nav-indicator block w-5 h-[3px] bg-transparent rounded-full mt-1 transition-all duration-200"></span>
+                </a>
+                <a href="#fitur" class="nav-item relative py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition group flex flex-col items-center">
+                    <span>Fitur</span>
+                    <span class="nav-indicator block w-5 h-[3px] bg-transparent rounded-full mt-1 transition-all duration-200"></span>
+                </a>
+                <a href="#panduan" class="nav-item relative py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition group flex flex-col items-center">
+                    <span>Panduan</span>
+                    <span class="nav-indicator block w-5 h-[3px] bg-transparent rounded-full mt-1 transition-all duration-200"></span>
+                </a>
             </nav>
 
             <!-- Right Controls: CTA, Dark/Light Mode Toggle & Mobile Hamburger -->
@@ -195,20 +205,23 @@
         </div>
 
         <!-- Mobile Drawer / Dropdown Menu -->
-        <div id="mobileMenu" class="md:hidden hidden border-t border-slate-100 dark:border-slate-800 bg-white/98 dark:bg-[#0b172a]/98 backdrop-blur-lg px-4 pt-3 pb-6 shadow-xl transition-all duration-300">
-            <nav class="flex flex-col space-y-1">
-                <a href="{{ url('/') }}" class="mobile-nav-link flex items-center justify-between px-4 py-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/50 text-[#2563eb] dark:text-blue-400 font-bold text-sm">
+        <div id="mobileMenu" class="md:hidden hidden border-t border-slate-100 dark:border-slate-800 bg-white/98 dark:bg-[#0b172a]/98 backdrop-blur-lg px-4 pt-3 pb-6 shadow-xl transition-all duration-300 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <nav id="mobileNav" class="flex flex-col space-y-1">
+                <a href="#beranda" class="mobile-nav-item flex items-center justify-between px-4 py-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/50 text-[#2563eb] dark:text-blue-400 font-bold text-sm">
                     <span>Beranda</span>
-                    <span class="w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400"></span>
+                    <span class="mobile-nav-dot w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400"></span>
                 </a>
-                <a href="#tentang" class="mobile-nav-link flex items-center px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                <a href="#tentang" class="mobile-nav-item flex items-center justify-between px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
                     <span>Tentang Platform</span>
+                    <span class="mobile-nav-dot w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400 hidden"></span>
                 </a>
-                <a href="#fitur" class="mobile-nav-link flex items-center px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                <a href="#fitur" class="mobile-nav-item flex items-center justify-between px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
                     <span>Fitur Unggulan</span>
+                    <span class="mobile-nav-dot w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400 hidden"></span>
                 </a>
-                <a href="#panduan" class="mobile-nav-link flex items-center px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                <a href="#panduan" class="mobile-nav-item flex items-center justify-between px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm transition">
                     <span>Panduan Pelaksanaan</span>
+                    <span class="mobile-nav-dot w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400 hidden"></span>
                 </a>
                 
                 <!-- Quick Mobile Theme Switcher Item -->
@@ -242,9 +255,12 @@
             </div>
         </div>
     </header>
+    <br>
+    <br>
+    <br>
 
     <!-- HERO SECTION (BAGIAN ATAS SESUAI GAMBAR) -->
-    <section class="relative pt-0 pb-10 sm:pb-14 lg:pb-20 overflow-hidden bg-white dark:bg-[#070f1e] transition-colors duration-200">
+    <section id="beranda" class="relative pt-20 sm:pt-24 pb-10 sm:pb-14 lg:pb-20 overflow-hidden bg-white dark:bg-[#070f1e] transition-colors duration-200">
         <!-- Far-left soft organic background curves as in screenshot -->
         <div class="absolute left-0 top-[45%] -translate-y-1/2 w-6 sm:w-16 h-32 sm:h-56 bg-[#e1edff] dark:bg-blue-950/40 rounded-r-full pointer-events-none opacity-80"></div>
         <div class="absolute -left-12 top-1/3 -translate-y-1/2 w-48 h-72 bg-blue-50/60 dark:bg-blue-900/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -793,69 +809,6 @@
         </div>
     </section>
 
-    <!-- SECTION PORTAL AKSES PENGGUNA (PILIH PERAN MASUK ANDA) -->
-    <section id="akses" class="py-16 sm:py-24 px-4 sm:px-6 bg-white dark:bg-[#070f1e] border-t border-slate-100 dark:border-slate-800 transition-colors duration-200">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-12 sm:mb-16">
-                <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2 block">Portal Akses Pengguna</span>
-                <h2 class="font-extrabold text-2xl sm:text-3xl md:text-4xl text-[#0b1c30] dark:text-white tracking-tight">Pilih Peran Masuk Anda</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-2 max-w-xl mx-auto">Pilih akses sesuai peran Anda di sekolah untuk membuka lembar kerja dan fitur yang relevan.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-                <!-- Student Portal -->
-                <a href="{{ route('login') }}?role=student" class="group p-6 sm:p-8 rounded-3xl bg-[#f8faff] dark:bg-[#0e1726] border border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
-                    <div>
-                        <div class="w-16 h-16 rounded-2xl bg-blue-100/70 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-5 sm:mb-6 group-hover:bg-blue-600 group-hover:text-white transition shadow-sm">
-                            <span class="material-symbols-outlined text-3xl">school</span>
-                        </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-xl mb-2">Portal Siswa</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
-                            Ikuti ujian secara realtime, pantau durasi waktu, simpan jawaban otomatis, dan tinjau hasil nilai serta pembahasan.
-                        </p>
-                    </div>
-                    <div class="font-bold text-xs text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
-                        <span>Masuk sebagai Siswa</span>
-                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </div>
-                </a>
-                
-                <!-- Teacher Portal -->
-                <a href="{{ route('login') }}?role=teacher" class="group p-8 rounded-3xl bg-[#f8faff] dark:bg-[#0e1726] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
-                    <div>
-                        <div class="w-16 h-16 rounded-2xl bg-emerald-100/70 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-5 sm:mb-6 group-hover:bg-emerald-600 group-hover:text-white transition shadow-sm">
-                            <span class="material-symbols-outlined text-3xl">person_apron</span>
-                        </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-xl mb-2">Portal Guru</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
-                            Susun bank soal dengan cepat, jadwalkan ujian kelas, acak urutan soal, dan pantau daya serap butir soal secara mendalam.
-                        </p>
-                    </div>
-                    <div class="font-bold text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
-                        <span>Masuk sebagai Guru</span>
-                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </div>
-                </a>
-                
-                <!-- Admin Portal -->
-                <a href="{{ route('login') }}?role=admin" class="group p-8 rounded-3xl bg-[#f8faff] dark:bg-[#0e1726] border border-slate-200/80 dark:border-slate-800 hover:border-slate-800 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1.5 transition-all text-center no-underline flex flex-col justify-between">
-                    <div>
-                        <div class="w-16 h-16 rounded-2xl bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center mx-auto mb-5 sm:mb-6 group-hover:bg-[#0b1c30] dark:group-hover:bg-slate-700 group-hover:text-white transition shadow-sm">
-                            <span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
-                        </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-xl mb-2">Administrator</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
-                            Kelola data induk sekolah (siswa, guru, rombel kelas, mapel), cetak kartu ujian, serta audit log sistem.
-                        </p>
-                    </div>
-                    <div class="font-bold text-xs text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1 group-hover:gap-2 transition-all">
-                        <span>Masuk sebagai Admin</span>
-                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </section>
 
 
 
@@ -926,19 +879,28 @@
                 <div>
                     <h5 class="text-xs font-bold uppercase tracking-wider text-white mb-4">Kontak & Bantuan</h5>
                     <ul class="space-y-3 text-xs">
+                        @php
+                            $emailContact = $schoolEmail ?? 'admin@eduexam.id';
+                            $phoneContact = $schoolPhone ?? '0812-3456-7890';
+                            // Format nomor WA agar bisa diklik (ubah awalan 0 menjadi 62 dan buang strip/spasi)
+                            $cleanPhone = preg_replace('/[^0-9]/', '', $phoneContact);
+                            if (str_starts_with($cleanPhone, '0')) {
+                                $cleanPhone = '62' . substr($cleanPhone, 1);
+                            }
+                        @endphp
                         <li>
-                            <a href="mailto:admin@eduexam.id" class="group flex items-center gap-2.5 text-slate-400 hover:text-white transition">
+                            <a href="mailto:{{ $emailContact }}" class="group flex items-center gap-2.5 text-slate-400 hover:text-white transition">
                                 <div class="w-7 h-7 rounded-lg bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition">
                                     <span class="material-symbols-outlined text-sm">mail</span>
                                 </div>
                                 <div class="truncate">
                                     <span class="block text-[10px] text-slate-500 uppercase font-semibold leading-none mb-1">Email Layanan</span>
-                                    <span class="text-slate-300 group-hover:text-blue-400 transition font-medium">admin@eduexam.id</span>
+                                    <span class="text-slate-300 group-hover:text-blue-400 transition font-medium">{{ $emailContact }}</span>
                                 </div>
                             </a>
                         </li>
                         <li>
-                            <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-2.5 text-slate-400 hover:text-white transition">
+                            <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-2.5 text-slate-400 hover:text-white transition">
                                 <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition">
                                     <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                                         <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
@@ -946,7 +908,7 @@
                                 </div>
                                 <div>
                                     <span class="block text-[10px] text-slate-500 uppercase font-semibold leading-none mb-1">WhatsApp Bantuan</span>
-                                    <span class="text-slate-300 group-hover:text-emerald-400 transition font-medium">0812-3456-7890</span>
+                                    <span class="text-slate-300 group-hover:text-emerald-400 transition font-medium">{{ $phoneContact }}</span>
                                 </div>
                             </a>
                         </li>
@@ -1128,7 +1090,7 @@
             const mobileMenu = document.getElementById('mobileMenu');
             const openIcon = document.getElementById('menuOpenIcon');
             const closeIcon = document.getElementById('menuCloseIcon');
-            const navLinks = document.querySelectorAll('.mobile-nav-link');
+            const navLinks = document.querySelectorAll('.mobile-nav-item');
 
             if (toggleBtn && mobileMenu) {
                 toggleBtn.addEventListener('click', function () {
@@ -1143,6 +1105,68 @@
                     link.addEventListener('click', closeMobileNav);
                 });
             }
+
+            // 1.b Navbar Scrollspy (Otomatis menyesuaikan indikator menu aktif sesuai posisi scroll halaman)
+            const sections = document.querySelectorAll('section[id]');
+            const desktopNavItems = document.querySelectorAll('#desktopNav .nav-item');
+            const mobileNavItems = document.querySelectorAll('#mobileNav .mobile-nav-item');
+
+            function updateActiveNav() {
+                let currentSectionId = '';
+                const scrollPosition = window.scrollY + 180; // Offset navbar height
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        currentSectionId = section.getAttribute('id');
+                    }
+                });
+
+                // Fallback ke beranda jika di posisi paling atas
+                if (!currentSectionId && window.scrollY < 300) {
+                    currentSectionId = 'beranda';
+                }
+
+                // Update desktop nav
+                desktopNavItems.forEach(item => {
+                    const href = item.getAttribute('href');
+                    const indicator = item.querySelector('.nav-indicator');
+                    if (href === '#' + currentSectionId) {
+                        item.classList.remove('font-semibold', 'text-slate-500', 'dark:text-slate-300');
+                        item.classList.add('font-bold', 'text-[#0b1c30]', 'dark:text-white');
+                        if (indicator) {
+                            indicator.classList.remove('bg-transparent');
+                            indicator.classList.add('bg-[#2563eb]');
+                        }
+                    } else {
+                        item.classList.remove('font-bold', 'text-[#0b1c30]', 'dark:text-white');
+                        item.classList.add('font-semibold', 'text-slate-500', 'dark:text-slate-300');
+                        if (indicator) {
+                            indicator.classList.remove('bg-[#2563eb]');
+                            indicator.classList.add('bg-transparent');
+                        }
+                    }
+                });
+
+                // Update mobile nav
+                mobileNavItems.forEach(item => {
+                    const href = item.getAttribute('href');
+                    const dot = item.querySelector('.mobile-nav-dot');
+                    if (href === '#' + currentSectionId) {
+                        item.classList.remove('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-50', 'dark:hover:bg-slate-800', 'font-semibold');
+                        item.classList.add('bg-blue-50/70', 'dark:bg-blue-950/50', 'text-[#2563eb]', 'dark:text-blue-400', 'font-bold');
+                        if (dot) dot.classList.remove('hidden');
+                    } else {
+                        item.classList.remove('bg-blue-50/70', 'dark:bg-blue-950/50', 'text-[#2563eb]', 'dark:text-blue-400', 'font-bold');
+                        item.classList.add('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-50', 'dark:hover:bg-slate-800', 'font-semibold');
+                        if (dot) dot.classList.add('hidden');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveNav, { passive: true });
+            updateActiveNav(); // Panggil saat awal render
 
             // 2. Top notification bar dismiss
             const closeTopBar = document.getElementById('closeTopNotification');

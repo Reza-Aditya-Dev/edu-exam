@@ -78,8 +78,17 @@
                     </div>
                 </div>
 
-                <!-- Status Badge "LULUS" or "REMEDIAL" or "MENUNGGU KOREKSI" -->
-                @if($result->is_pending_review)
+                <!-- Status Badge "LULUS" or "REMEDIAL" or "MENUNGGU KOREKSI" or "DIDISKUALIFIKASI" -->
+                @if($result->is_disqualified)
+                    <div class="mt-1 mb-3 inline-flex items-center gap-1.5 px-4 md:px-5 py-1.5 md:py-2 rounded-full shadow-sm text-white bg-rose-700">
+                        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                            block
+                        </span>
+                        <span class="font-label-lg text-xs md:text-sm font-bold tracking-wide">
+                            DIDISKUALIFIKASI
+                        </span>
+                    </div>
+                @elseif($result->is_pending_review)
                     <div class="mt-1 mb-3 inline-flex items-center gap-1.5 px-4 md:px-5 py-1.5 md:py-2 rounded-full shadow-sm text-amber-900 bg-amber-100 border border-amber-300">
                         <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
                             pending_actions
@@ -205,7 +214,7 @@
                     </div>
                     <div class="py-2.5 flex justify-between items-center">
                         <span class="text-on-surface-variant">Waktu Pengumpulan</span>
-                        <span class="font-semibold text-on-surface">{{ $result->created_at->format('d/m/Y H:i') }} WIB</span>
+                        <span class="font-semibold text-on-surface">{{ ($result->effective_submitted_at ?? $result->created_at)->copy()->setTimezone($exam->timezone ?? 'Asia/Jakarta')->format('d/m/Y H:i') }} {{ $exam->timezone_code ?? 'WIB' }}</span>
                     </div>
                 </div>
             </div>

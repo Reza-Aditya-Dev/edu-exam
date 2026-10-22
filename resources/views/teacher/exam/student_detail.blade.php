@@ -43,12 +43,12 @@
     <!-- Hero Identity & Score Summary Bento -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-xl">
         <!-- Student Profile Card (7 cols) -->
-        <div class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden border border-slate-100">
+        <div class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-4 sm:p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden border border-slate-100">
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-surface-container rounded-full opacity-60 pointer-events-none"></div>
             
-            <div class="flex items-start gap-space-md relative z-10">
+            <div class="flex items-start gap-3 sm:gap-space-md relative z-10">
                 <div class="relative shrink-0">
-                    <img alt="{{ $student->name }}" class="w-20 h-20 rounded-xl object-cover shadow-sm ring-4 ring-surface-container-low" src="{{ $student->avatar_url }}"/>
+                    <img alt="{{ $student->name }}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shadow-sm ring-4 ring-surface-container-low" src="{{ $student->avatar_url }}"/>
                     <span class="absolute -bottom-1 -right-1 p-1 bg-secondary rounded-full text-on-secondary flex items-center justify-center shadow-sm">
                         <span class="material-symbols-outlined text-[14px]">check</span>
                     </span>
@@ -56,10 +56,10 @@
                 <div class="flex flex-col min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">Siswa Terverifikasi</span>
-                        <span class="text-on-surface-variant font-label-sm text-label-sm">• ID #EXAM-{{ $participant->id }}</span>
+                        <span class="text-on-surface-variant font-label-sm text-label-sm text-xs">• ID #EXAM-{{ $participant->id }}</span>
                     </div>
-                    <h2 class="font-headline-sm text-headline-sm text-on-surface mt-1 truncate font-bold">{{ $student->name }}</h2>
-                    <div class="flex items-center gap-2 mt-0.5 text-on-surface-variant font-body-sm text-body-sm flex-wrap">
+                    <h2 class="font-headline-sm text-base sm:text-headline-sm text-on-surface mt-1 truncate font-bold">{{ $student->name }}</h2>
+                    <div class="flex items-center gap-2 mt-0.5 text-on-surface-variant font-body-sm text-body-sm flex-wrap text-xs">
                         <span class="font-semibold text-on-surface">NIS: {{ $student->nis ?? '-' }}</span>
                         <span>|</span>
                         <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm font-medium">
@@ -69,39 +69,39 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm pt-space-lg mt-space-md bg-surface-container-low/60 rounded-lg p-space-md relative z-10 border border-slate-200/60">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-space-sm pt-3 sm:pt-space-lg mt-3 sm:mt-space-md bg-surface-container-low/60 rounded-lg p-3 sm:p-space-md relative z-10 border border-slate-200/60">
                 <div class="flex flex-col">
-                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Mata Ujian</span>
-                    <span class="font-label-lg text-label-lg text-on-surface mt-0.5 truncate font-bold">{{ $exam->subject->name ?? 'Mata Pelajaran' }}</span>
-                    <span class="font-body-sm text-body-sm text-on-surface-variant text-xs">{{ $exam->formatted_date }}</span>
+                    <span class="font-label-sm text-[11px] sm:text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Mata Ujian</span>
+                    <span class="font-label-lg text-xs sm:text-label-lg text-on-surface mt-0.5 truncate font-bold">{{ $exam->subject->name ?? 'Mata Pelajaran' }}</span>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant text-[11px] sm:text-xs">{{ $exam->formatted_date }}</span>
                 </div>
-                <div class="flex flex-col">
-                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Durasi Selesai</span>
-                    <span class="font-label-lg text-label-lg text-on-surface mt-0.5 font-bold">{{ $participant->time_spent_minutes }} dari {{ $exam->duration_minutes }} Menit</span>
+                <div class="flex flex-col border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/40">
+                    <span class="font-label-sm text-[11px] sm:text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Durasi Selesai</span>
+                    <span class="font-label-lg text-xs sm:text-label-lg text-on-surface mt-0.5 font-bold">{{ $participant->time_spent_minutes }} dari {{ $exam->duration_minutes }} Menit</span>
                     @php
                         $durationDiff = $exam->duration_minutes - $participant->time_spent_minutes;
                     @endphp
                     @if($durationDiff > 0)
-                        <span class="font-body-sm text-body-sm text-secondary font-medium text-xs">{{ $durationDiff }} Menit Lebih Cepat</span>
+                        <span class="font-body-sm text-body-sm text-secondary font-medium text-[11px] sm:text-xs">{{ $durationDiff }} Menit Lebih Cepat</span>
                     @else
-                        <span class="font-body-sm text-body-sm text-on-surface-variant font-medium text-xs">Sesuai Alokasi Waktu</span>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant font-medium text-[11px] sm:text-xs">Sesuai Alokasi Waktu</span>
                     @endif
                 </div>
-                <div class="flex flex-col">
-                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Waktu Submit</span>
-                    <span class="font-label-lg text-label-lg text-on-surface mt-0.5 font-bold">{{ $participant->submitted_at ? $participant->submitted_at->format('H:i:s') . ' WIB' : '-' }}</span>
-                    <span class="font-body-sm text-body-sm text-on-surface-variant text-xs">{{ $participant->is_late_submission ? 'Terlambat Submit' : 'Tepat Waktu' }}</span>
+                <div class="flex flex-col border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/40">
+                    <span class="font-label-sm text-[11px] sm:text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Waktu Submit</span>
+                    <span class="font-label-lg text-xs sm:text-label-lg text-on-surface mt-0.5 font-bold">{{ $participant->submitted_at ? $participant->submitted_at->copy()->setTimezone($exam->timezone)->format('H:i:s') . ' ' . $exam->timezone_code : '-' }}</span>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant text-[11px] sm:text-xs">{{ $participant->is_late_submission ? 'Terlambat Submit' : 'Tepat Waktu' }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Score Summary Card (5 cols) -->
-        <div class="lg:col-span-5 bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden border border-slate-100">
-            <div class="flex items-start justify-between">
+        <div class="lg:col-span-5 bg-surface-container-lowest rounded-xl p-4 sm:p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden border border-slate-100">
+            <div class="flex items-start justify-between flex-wrap gap-2">
                 <div class="flex flex-col">
                     <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Pencapaian Siswa</span>
                     <div class="flex items-baseline gap-2 mt-1">
-                        <span class="font-headline-lg text-headline-lg text-on-surface font-extrabold tracking-tight">
+                        <span class="font-headline-lg text-3xl sm:text-headline-lg text-on-surface font-extrabold tracking-tight">
                             {{ round($result->total_score) }}
                         </span>
                         <span class="text-on-surface-variant font-label-lg text-label-lg">/ 100</span>
@@ -109,14 +109,17 @@
                 </div>
 
                 <div class="flex items-center gap-2 flex-wrap">
-                    @if($result->is_pending_review)
+                    @if($result->is_disqualified)
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-label-sm text-label-sm font-bold shadow-sm">
+                            <span class="material-symbols-outlined text-[16px]">block</span>
+                            <span>DIDISKUALIFIKASI</span>
+                        </div>
+                    @elseif($result->is_pending_review)
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-label-sm text-label-sm font-bold shadow-sm">
                             <span class="material-symbols-outlined text-[16px]">pending_actions</span>
                             <span>MENUNGGU KOREKSI ESAI</span>
                         </div>
-                    @endif
-
-                    @if($result->pass_status === 'pass')
+                    @elseif($result->pass_status === 'pass')
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shadow-sm">
                             <span class="material-symbols-outlined text-[16px]">verified</span>
                             <span>LULUS KKM (Target {{ round($exam->passing_grade) }})</span>
@@ -177,6 +180,203 @@
             </div>
         </div>
     </div>
+
+    <!-- Panel Integritas & Tindakan Guru (Anti-Cheat & Penalti) -->
+    <div class="bg-surface-container-lowest rounded-xl p-4 sm:p-space-lg shadow-sm border {{ $result->is_disqualified ? 'border-rose-300 bg-rose-50/20' : (($result->violation_count ?? 0) > 0 ? 'border-amber-300 bg-amber-50/20' : 'border-slate-100') }} mb-space-lg">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div class="flex items-start sm:items-center gap-3">
+                <div class="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center {{ $result->is_disqualified ? 'bg-rose-100 text-rose-700' : (($result->violation_count ?? 0) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
+                    <span class="material-symbols-outlined text-[24px]">
+                        {{ $result->is_disqualified ? 'gavel' : (($result->violation_count ?? 0) > 0 ? 'warning' : 'verified_user') }}
+                    </span>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="font-headline-sm text-sm sm:text-base font-bold text-on-surface flex items-center gap-2 flex-wrap">
+                        <span>Laporan Integritas &amp; Rekam Jejak Pelanggaran</span>
+                        @if($result->is_disqualified)
+                            <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-300">
+                                DIDISKUALIFIKASI
+                            </span>
+                        @elseif(($result->violation_count ?? 0) > 0)
+                            <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-300">
+                                {{ $result->violation_count }}x Pelanggaran Terdeteksi
+                            </span>
+                        @else
+                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
+                                Ujian Tertib (0 Pelanggaran)
+                            </span>
+                        @endif
+                    </h3>
+                    <p class="font-body-sm text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                        Pencatatan otomatis aktivitas meninggalkan layar ujian, perpindahan tab browser, atau aplikasi eksternal.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Ringkasan Angka Penalti -->
+            <div class="grid grid-cols-3 gap-2 w-full lg:w-auto">
+                <div class="bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200/60 text-center sm:text-right">
+                    <span class="text-[10px] uppercase text-on-surface-variant font-semibold block">Nilai Murni</span>
+                    <span class="font-bold font-mono text-xs sm:text-sm text-on-surface">{{ round($result->raw_score ?? $result->total_score) }}</span>
+                </div>
+                <div class="bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200/60 text-center sm:text-right">
+                    <span class="text-[10px] uppercase text-rose-600 font-semibold block">Penalti</span>
+                    <span class="font-bold font-mono text-xs sm:text-sm text-rose-600">-{{ round($result->penalty_score ?? 0) }}</span>
+                </div>
+                <div class="bg-surface-container px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-200 text-center sm:text-right">
+                    <span class="text-[10px] uppercase text-on-surface font-semibold block">Nilai Akhir</span>
+                    <span class="font-bold font-mono text-sm sm:text-base {{ $result->is_disqualified ? 'text-rose-700' : 'text-primary' }}">{{ round($result->total_score) }}</span>
+                </div>
+            </div>
+        </div>
+
+        @if($result->is_disqualified)
+            <div class="mt-4 p-3.5 rounded-xl bg-rose-100/70 border border-rose-300 text-rose-900 text-xs flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-rose-600 shrink-0 text-[18px]">info</span>
+                <div class="min-w-0">
+                    <span class="font-bold">Alasan Diskualifikasi:</span> {{ $result->disqualification_reason }}
+                </div>
+            </div>
+        @endif
+
+        <!-- Daftar Log Riwayat Pelanggaran -->
+        <div class="mt-4">
+            <h4 class="font-label-lg text-xs font-bold text-on-surface mb-2 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px] text-slate-500">list_alt</span>
+                <span>Riwayat Log Aktivitas Pelanggaran ({{ count($violations) }} Kejadian)</span>
+            </h4>
+
+            @if(count($violations) > 0)
+                <div class="overflow-x-auto rounded-xl border border-slate-200/70 -mx-1 sm:mx-0">
+                    <table class="w-full text-left text-xs min-w-[500px]">
+                        <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5 pl-3">No</th>
+                                <th class="p-2.5">Jenis Kejadian</th>
+                                <th class="p-2.5">Waktu ({{ $exam->timezone_code }})</th>
+                                <th class="p-2.5">Lama Keluar</th>
+                                <th class="p-2.5">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach($violations as $vIndex => $violation)
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-2.5 pl-3 font-mono text-slate-400">{{ $vIndex + 1 }}</td>
+                                    <td class="p-2.5">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-800 border border-amber-200 text-[11px]">
+                                            <span class="material-symbols-outlined text-[13px]">warning</span>
+                                            <span>{{ $violation->type_label }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="p-2.5 font-mono text-slate-700">
+                                        {{ $violation->occurred_at ? $violation->occurred_at->copy()->setTimezone($exam->timezone)->format('H:i:s') : '-' }}
+                                    </td>
+                                    <td class="p-2.5 font-mono text-slate-600">
+                                        {{ $violation->duration_seconds > 0 ? $violation->duration_seconds . ' detik' : '< 1 detik' }}
+                                    </td>
+                                    <td class="p-2.5 text-slate-500">
+                                        {{ $violation->details ?: 'Terdeteksi beralih dari jendela ujian' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
+                    <span>Tidak ditemukan catatan pelanggaran. Siswa mengerjakan ujian secara tertib di layar penuh.</span>
+                </div>
+            @endif
+        </div>
+
+        <!-- Tombol Tindakan Guru (Opsi A & Opsi B) -->
+        <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span class="font-label-sm text-xs text-slate-500 font-semibold">Tindakan Khusus Guru untuk Siswa Ini:</span>
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Form Sesuaikan Penalti Nilai -->
+                <form action="{{ route('teacher.exams.adjust_penalty', ['exam' => $exam->id, 'studentId' => $student->id]) }}" method="POST" class="inline-flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    @csrf
+                    <input type="hidden" name="action_type" value="apply">
+                    <div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded-lg border border-slate-200">
+                        <span class="text-xs text-slate-500 font-medium">Potong Nilai:</span>
+                        <input type="number" name="penalty_score" min="0" max="100" step="1" value="{{ round($result->penalty_score ?? 0) }}" class="w-12 sm:w-14 px-1 py-0.5 text-xs text-center font-bold font-mono border rounded bg-white text-slate-800" required>
+                        <span class="text-xs text-slate-500">poin</span>
+                    </div>
+                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer">
+                        Terapkan
+                    </button>
+                </form>
+
+                <!-- Tombol Diskualifikasi / Batalkan Diskualifikasi -->
+                @if($result->is_disqualified)
+                    <form action="{{ route('teacher.exams.adjust_penalty', ['exam' => $exam->id, 'studentId' => $student->id]) }}" method="POST" onsubmit="return confirm('Batalkan status diskualifikasi untuk siswa {{ $student->name }}? Nilai murni akan dikembalikan.');">
+                        @csrf
+                        <input type="hidden" name="action_type" value="cancel_disqualification">
+                        <input type="hidden" name="penalty_score" value="{{ round($result->penalty_score ?? 0) }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                            <span>Batalkan Diskualifikasi</span>
+                        </button>
+                    </form>
+                @else
+                    <button type="button" onclick="openDisqualifyModal()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">gavel</span>
+                        <span>Diskualifikasi Siswa</span>
+                    </button>
+                @endif
+
+                <!-- Reset & Izinkan Ujian Kembali -->
+                <form action="{{ route('teacher.exams.destroy_result', ['exam' => $exam->id, 'studentId' => $student->id]) }}" method="POST" onsubmit="return confirm('Hapus hasil pengerjaan siswa {{ $student->name }}?\n\nNilai, jawaban, dan rekaman sesi ujian siswa ini akan dihapus bersih sehingga siswa dapat langsung masuk dan mengikuti ujian kembali.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer flex items-center gap-1" title="Hapus nilai & izinkan ujian ulang">
+                        <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                        <span>Reset &amp; Izinkan Ujian Kembali</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Diskualifikasi Siswa -->
+    <div id="disqualify-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-slate-100 flex flex-col">
+            <div class="flex items-center gap-3 text-rose-600 mb-3">
+                <span class="material-symbols-outlined text-[28px]">gavel</span>
+                <h3 class="font-headline font-bold text-base text-slate-900">Diskualifikasi Siswa</h3>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Tindakan ini akan menetapkan nilai siswa <strong>{{ $student->name }}</strong> menjadi <strong>0 (NOL)</strong> dan mencatat alasan kecurangan ke dalam arsip rapor.
+            </p>
+            <form action="{{ route('teacher.exams.disqualify_student', ['exam' => $exam->id, 'studentId' => $student->id]) }}" method="POST" class="mt-4 flex flex-col gap-3">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Alasan Diskualifikasi:</label>
+                    <textarea name="reason" rows="3" required class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500" placeholder="Contoh: Terbukti berulang kali membuka tab baru dan mencari kunci jawaban saat ujian."></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeDisqualifyModal()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow transition active:scale-95">
+                        Konfirmasi Diskualifikasi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openDisqualifyModal() {
+            const m = document.getElementById('disqualify-modal');
+            if (m) m.classList.remove('hidden'), m.classList.add('flex');
+        }
+        function closeDisqualifyModal() {
+            const m = document.getElementById('disqualify-modal');
+            if (m) m.classList.add('hidden'), m.classList.remove('flex');
+        }
+    </script>
 
     <!-- Main Content Layout: Question Detail Feed + Fast Navigator Palette -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
@@ -557,7 +757,7 @@
         </div>
 
         <!-- Fast Matrix Navigator & Metadata Sidebar (4 cols) -->
-        <aside class="lg:col-span-4 flex flex-col gap-space-lg sticky top-24">
+        <aside class="lg:col-span-4 flex flex-col gap-space-lg static lg:sticky lg:top-24">
 
             <!-- Nomor Soal Palette (Nomor Soal Matrix) -->
             <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-slate-100 flex flex-col">
@@ -648,11 +848,11 @@
                     </li>
                     <li class="flex items-center justify-between py-1.5 bg-surface-container-low px-2.5 rounded-lg border border-slate-200/50">
                         <span>Waktu Mulai:</span>
-                        <span class="text-on-surface font-semibold font-mono">{{ $participant->started_at ? $participant->started_at->format('H:i:s') . ' WIB' : '-' }}</span>
+                        <span class="text-on-surface font-semibold font-mono">{{ $participant->started_at ? $participant->started_at->copy()->setTimezone($exam->timezone)->format('H:i:s') . ' ' . $exam->timezone_code : '-' }}</span>
                     </li>
                     <li class="flex items-center justify-between py-1.5 bg-surface-container-low px-2.5 rounded-lg border border-slate-200/50">
                         <span>Waktu Submit:</span>
-                        <span class="text-on-surface font-semibold font-mono">{{ $participant->submitted_at ? $participant->submitted_at->format('H:i:s') . ' WIB' : '-' }}</span>
+                        <span class="text-on-surface font-semibold font-mono">{{ $participant->submitted_at ? $participant->submitted_at->copy()->setTimezone($exam->timezone)->format('H:i:s') . ' ' . $exam->timezone_code : '-' }}</span>
                     </li>
                     <li class="flex items-center justify-between py-1.5 bg-surface-container-low px-2.5 rounded-lg border border-slate-200/50">
                         <span>Ketepatan Waktu:</span>

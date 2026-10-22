@@ -222,7 +222,15 @@
                 </span>
             </label>
 
-            @if($exam->is_expired || $exam->status === 'completed')
+            @if($participant && in_array($participant->status, ['submitted', 'timed_out']))
+                <div class="flex items-center gap-2 text-primary font-semibold text-xs md:text-sm bg-primary-fixed/30 px-3 py-2 rounded-xl border border-primary/20">
+                    <span class="material-symbols-outlined text-[18px] text-primary">check_circle</span>
+                    <span>Anda telah menyelesaikan ujian ini.</span>
+                    <a href="{{ route('student.exam.result', $exam->id) }}" class="ml-2 underline font-bold text-primary hover:opacity-80">
+                        Lihat Hasil Ujian
+                    </a>
+                </div>
+            @elseif($exam->is_expired || $exam->status === 'completed')
                 <div class="flex items-center gap-2 text-error font-semibold text-xs md:text-sm bg-error-container/40 px-3 py-2 rounded-xl border border-error/20">
                     <span class="material-symbols-outlined text-[18px]">timer_off</span>
                     <span>Waktu pelaksanaan ujian telah berakhir. Anda tidak dapat memulai ujian ini.</span>

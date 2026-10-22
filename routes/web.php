@@ -56,6 +56,7 @@ Route::middleware(['auth', 'role:student'])->prefix('siswa')->name('student.')->
         Route::post('/{exam}/mulai',   [Student\ExamController::class, 'start'])->name('start');
         Route::get('/{exam}/kerjakan', [Student\ExamController::class, 'take'])->name('take');
         Route::post('/{exam}/jawab',   [Student\ExamController::class, 'saveAnswer'])->name('answer');
+        Route::post('/{exam}/pelanggaran', [Student\ExamController::class, 'logViolation'])->name('violation');
         Route::post('/{exam}/kumpul',  [Student\ExamController::class, 'submit'])->name('submit');
         Route::get('/{exam}/status',   [Student\ExamController::class, 'checkStatus'])->name('status');
         Route::get('/{exam}/hasil',    [Student\ExamController::class, 'result'])->name('result');
@@ -96,12 +97,16 @@ Route::middleware(['auth', 'role:teacher'])->prefix('guru')->name('teacher.')->g
         Route::post('/{exam}/terbitkan', [Teacher\ExamController::class, 'publish'])->name('publish');
         Route::post('/{exam}/aktifkan',  [Teacher\ExamController::class, 'activate'])->name('activate');
         Route::post('/{exam}/selesai',   [Teacher\ExamController::class, 'complete'])->name('complete');
+        Route::post('/{exam}/perpanjang-waktu', [Teacher\ExamController::class, 'extendTime'])->name('extend_time');
+        Route::post('/{exam}/buka-kembali',     [Teacher\ExamController::class, 'reopen'])->name('reopen');
         Route::get('/{exam}/hasil',      [Teacher\ExamController::class, 'results'])->name('results');
         Route::get('/{exam}/hasil/export', [Teacher\ExamController::class, 'exportResults'])->name('export_results');
         Route::delete('/{exam}/hasil/semua', [Teacher\ExamController::class, 'clearResults'])->name('clear_results');
         Route::delete('/{exam}/hasil/siswa/{studentId}', [Teacher\ExamController::class, 'destroyResult'])->name('destroy_result');
         Route::get('/{exam}/siswa/{studentId}', [Teacher\ExamController::class, 'studentAnswerDetail'])->name('student_detail');
         Route::post('/{exam}/siswa/{studentId}/nilai-esai', [Teacher\ExamController::class, 'gradeEssayAnswer'])->name('grade_essay');
+        Route::post('/{exam}/siswa/{studentId}/diskualifikasi', [Teacher\ExamController::class, 'disqualifyStudent'])->name('disqualify_student');
+        Route::post('/{exam}/siswa/{studentId}/sesuaikan-penalti', [Teacher\ExamController::class, 'adjustPenaltyScore'])->name('adjust_penalty');
         Route::get('/{exam}/analitik',   [Teacher\ExamController::class, 'analytics'])->name('analytics');
     });
 
@@ -142,6 +147,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Manajemen Guru
     Route::get('/guru',                     [Admin\UserController::class, 'teachers'])->name('teachers');
+    Route::get('/guru/export',              [Admin\UserController::class, 'exportTeachers'])->name('teachers.export');
     Route::get('/guru/tambah',              [Admin\UserController::class, 'createTeacher'])->name('teachers.create');
     Route::post('/guru',                    [Admin\UserController::class, 'storeTeacher'])->name('teachers.store');
     Route::get('/guru/{teacher}/edit',      [Admin\UserController::class, 'editTeacher'])->name('teachers.edit');

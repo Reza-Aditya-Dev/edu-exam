@@ -3,24 +3,104 @@
 @section('title', 'Hasil Ujian: ' . $exam->title)
 @section('page_title', 'Hasil Ujian')
 
+@push('styles')
+<style>
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 12mm 15mm 12mm 15mm;
+        }
+        /* Sembunyikan sidebar, topbar, dan seluruh elemen aksi interaktif */
+        #sidebar,
+        #mainWrapper > header,
+        .btn,
+        #dropdownRekapContainer,
+        .header-actions-area,
+        form[action*="clear_results"],
+        form[action*="destroy"],
+        td:last-child,
+        th:last-child {
+            display: none !important;
+        }
+        #mainWrapper {
+            padding-left: 0 !important;
+            margin: 0 !important;
+        }
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 10pt !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        /* Kop Cetak Sekolah */
+        .print-school-header {
+            display: block !important;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #4f46e5;
+        }
+    }
+    .print-school-header {
+        display: none;
+    }
+</style>
+@endpush
+
 @section('teacher-content')
+
+<!-- Kop Sekolah Khusus Cetak Browser -->
+<div class="print-school-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            @if(!empty($schoolLogoUrl))
+                <img src="{{ $schoolLogoUrl }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" style="height: 48px; width: auto; max-width: 60px; object-fit: contain;">
+            @endif
+            <div>
+                <div style="font-size: 14pt; font-weight: 800; color: #1e1b4b; text-transform: uppercase; letter-spacing: 0.5px;">{{ $schoolName ?? 'EduExam CBT' }}</div>
+                <div style="font-size: 9pt; color: #475569; font-weight: 500;">
+                    Daftar Rekap Nilai Siswa • {{ $exam->subject->name ?? '-' }} ({{ $exam->classroom->name ?? '-' }})
+                </div>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 8.5pt; font-weight: bold; color: #4338ca;">EduExam CBT Platform</div>
+            <div style="font-size: 8pt; color: #64748b;">Dokumen Resmi Hasil Asesmen</div>
+        </div>
+    </div>
+</div>
 
 <!-- Header Info & Actions -->
 <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-        <div class="flex items-center gap-2 mb-1">
-            <span class="badge badge-primary text-xs font-semibold px-2.5 py-0.5">{{ $exam->subject->name }}</span>
-            <span class="badge badge-gray text-xs font-semibold px-2.5 py-0.5">{{ $exam->classroom->name }}</span>
-        </div>
-        <h2 class="font-headline font-bold text-slate-900 text-xl md:text-2xl">{{ $exam->title }}</h2>
-        <div class="text-xs text-slate-500 mt-1 flex items-center gap-3">
-            <span>Pelaksanaan: {{ $exam->exam_date->format('d M Y') }}</span>
-            <span>•</span>
-            <span>KKM: <strong class="text-slate-700">{{ $exam->passing_grade }}</strong></span>
+    <div class="flex items-start gap-4">
+        @if(!empty($schoolLogoUrl))
+            <div class="hidden sm:flex shrink-0 w-14 h-14 rounded-xl bg-white border border-slate-200/80 p-1.5 items-center justify-center shadow-xs">
+                <img src="{{ $schoolLogoUrl }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="max-h-full max-w-full object-contain">
+            </div>
+        @endif
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="badge badge-primary text-xs font-semibold px-2.5 py-0.5">{{ $exam->subject->name }}</span>
+                <span class="badge badge-gray text-xs font-semibold px-2.5 py-0.5">{{ $exam->classroom->name }}</span>
+            </div>
+            <h2 class="font-headline font-bold text-slate-900 text-xl md:text-2xl">{{ $exam->title }}</h2>
+            <div class="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                <span>Pelaksanaan: {{ $exam->exam_date->format('d M Y') }}</span>
+                <span>•</span>
+                <span>KKM: <strong class="text-slate-700">{{ $exam->passing_grade }}</strong></span>
+            </div>
         </div>
     </div>
     
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 header-actions-area">
         <!-- Dropdown Cetak Rekap Nilai -->
         <div class="relative inline-block text-left" id="dropdownRekapContainer">
             <button type="button" onclick="toggleDropdownRekap(event)" id="btnDropdownRekap" class="btn btn-secondary text-xs font-semibold px-3 py-2 flex items-center gap-1.5 cursor-pointer hover:bg-slate-100 transition-colors">
@@ -128,6 +208,7 @@
                     <th>NIS</th>
                     <th>Waktu Pengerjaan</th>
                     <th>Benar / Salah / Kosong</th>
+                    <th>Integritas & Pelanggaran</th>
                     <th>Nilai Akhir</th>
                     <th>Status</th>
                     <th style="text-align: right; width: 140px;">Aksi</th>
@@ -135,10 +216,15 @@
             </thead>
             <tbody>
                 @forelse($results as $index => $result)
-                <tr class="hover:bg-slate-50/70 transition">
+                <tr class="hover:bg-slate-50/70 transition {{ $result->is_disqualified ? 'bg-rose-50/40' : '' }}">
                     <td class="text-slate-400 font-mono text-xs">{{ $index + 1 }}</td>
                     <td>
-                        <div class="font-bold text-slate-900 text-sm">{{ $result->student->name }}</div>
+                        <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                            <span>{{ $result->student->name }}</span>
+                            @if($result->is_disqualified)
+                                <span class="material-symbols-outlined text-rose-600 text-[16px]" title="Didiskualifikasi">gavel</span>
+                            @endif
+                        </div>
                     </td>
                     <td class="font-mono text-xs text-slate-600 font-medium">{{ $result->student->nis }}</td>
                     <td>
@@ -147,7 +233,7 @@
                             {{ $result->time_spent_minutes }} Menit
                         </div>
                         <div class="text-[11px] text-slate-400 mt-0.5">
-                            Dikumpulkan: {{ $result->created_at->format('H:i') }} WIB
+                            Dikumpulkan: {{ $result->formatted_submitted_time }}
                         </div>
                     </td>
                     <td>
@@ -160,13 +246,54 @@
                         </div>
                     </td>
                     <td>
-                        <div class="font-headline font-extrabold text-base {{ $result->pass_status === 'pass' ? 'text-emerald-600' : 'text-rose-600' }}">
-                            {{ round($result->total_score) }}
+                        @if($result->is_disqualified)
+                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[11px] font-bold inline-flex items-center gap-1 px-2 py-0.5" title="{{ $result->disqualification_reason }}">
+                                <span class="material-symbols-outlined text-[13px]">block</span>
+                                <span>Didiskualifikasi</span>
+                            </span>
+                            @if($result->disqualification_reason)
+                                <div class="text-[10px] text-rose-600 truncate max-w-[150px] mt-0.5" title="{{ $result->disqualification_reason }}">
+                                    {{ $result->disqualification_reason }}
+                                </div>
+                            @endif
+                        @elseif(($result->violation_count ?? 0) > 0)
+                            <div class="flex flex-col gap-0.5">
+                                <span class="badge bg-amber-50 text-amber-800 border border-amber-300 text-[11px] font-semibold inline-flex items-center gap-1 px-2 py-0.5 w-fit">
+                                    <span class="material-symbols-outlined text-amber-600 text-[13px]">warning</span>
+                                    <span>{{ $result->violation_count }}x Pindah Tab/Layar</span>
+                                </span>
+                                @if(($result->penalty_score ?? 0) > 0)
+                                    <span class="text-[10px] text-rose-600 font-semibold">
+                                        Penalti Nilai: -{{ $result->penalty_score }} poin
+                                    </span>
+                                @endif
+                            </div>
+                        @else
+                            <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium inline-flex items-center gap-1 px-2 py-0.5">
+                                <span class="material-symbols-outlined text-emerald-600 text-[13px]">verified_user</span>
+                                <span>Tertib (0 Pelanggaran)</span>
+                            </span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="flex flex-col">
+                            <div class="font-headline font-extrabold text-base {{ $result->is_disqualified ? 'text-slate-400 line-through' : ($result->pass_status === 'pass' ? 'text-emerald-600' : 'text-rose-600') }}">
+                                {{ round($result->total_score) }}
+                            </div>
+                            @if(($result->penalty_score ?? 0) > 0 && !$result->is_disqualified)
+                                <div class="text-[10px] text-slate-400">
+                                    (Asli: {{ round($result->raw_score ?? $result->total_score) }})
+                                </div>
+                            @endif
                         </div>
                     </td>
                     <td>
                         <div class="flex flex-col gap-1">
-                            @if($result->is_pending_review)
+                            @if($result->is_disqualified)
+                                <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+                                    Diskualifikasi
+                                </span>
+                            @elseif($result->is_pending_review)
                                 <span class="badge bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold inline-flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span>Menunggu Koreksi</span>
@@ -180,14 +307,14 @@
                     </td>
                     <td style="text-align: right;">
                         <div class="flex items-center justify-end gap-1.5">
-                            <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm text-xs font-medium px-2.5 py-1.5 flex items-center gap-1" title="Periksa Lembar Jawaban">
-                                <span>Jawaban</span>
+                            <a href="{{ route('teacher.exams.student_detail', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" class="btn btn-secondary btn-sm text-xs font-medium px-2.5 py-1.5 flex items-center gap-1" title="Periksa Lembar Jawaban & Pelanggaran">
+                                <span>Detail</span>
                                 <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
                             </a>
-                            <form action="{{ route('teacher.exams.destroy_result', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" method="POST" class="inline" onsubmit="return confirm('Hapus hasil pengerjaan siswa {{ $result->student->name }}?\n\nNilai dan jawaban siswa ini akan dihapus.');">
+                            <form action="{{ route('teacher.exams.destroy_result', ['exam' => $exam->id, 'studentId' => $result->student_id]) }}" method="POST" class="inline" onsubmit="return confirm('Hapus hasil pengerjaan siswa {{ $result->student->name }}?\n\nNilai, jawaban, dan rekaman sesi ujian siswa ini akan dihapus bersih sehingga siswa dapat mengikuti ujian kembali jika sesi masih aktif.');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors" title="Hapus Hasil Siswa Ini">
+                                <button type="submit" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors" title="Hapus Hasil & Izinkan Siswa Ikuti Ujian Kembali">
                                     <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
                                 </button>
                             </form>
@@ -196,7 +323,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center text-slate-400 py-12 text-sm">
+                    <td colspan="9" class="text-center text-slate-400 py-12 text-sm">
                         <span class="material-symbols-outlined text-slate-300 block text-4xl mb-2">hourglass_disabled</span>
                         Belum ada siswa yang mengumpulkan ujian ini.
                     </td>

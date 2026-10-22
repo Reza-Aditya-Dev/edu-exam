@@ -309,70 +309,341 @@ class UserController extends Controller
 
     public function exportStudents(Request $request)
     {
-        $query = User::students()->with(['classrooms.academicYear']);
+        $query = User::students()->with(['classrooms.academicYear', 'examResults']);
+
+        $filterLabels = [];
 
         if ($request->filled('search')) {
             $search = $request->search;
+            $filterLabels[] = "Pencarian: \"{$search}\"";
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
                   ->orWhere('nis', 'like', '%'.$search.'%')
+                  ->orWhere('nisn', 'like', '%'.$search.'%')
                   ->orWhere('email', 'like', '%'.$search.'%')
                   ->orWhere('username', 'like', '%'.$search.'%');
             });
         }
 
         if ($request->filled('classroom_id') && $request->classroom_id !== 'all') {
+            $cls = Classroom::find($request->classroom_id);
+            if ($cls) {
+                $filterLabels[] = "Kelas: {$cls->name}";
+            }
             $query->whereHas('classrooms', fn($q) => $q->where('classrooms.id', $request->classroom_id));
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
             if ($request->status === 'active' || $request->status === '1') {
+                $filterLabels[] = "Status: Aktif";
                 $query->where('is_active', true);
             } elseif ($request->status === 'suspended' || $request->status === '0') {
+                $filterLabels[] = "Status: Ditangguhkan (Nonaktif)";
                 $query->where('is_active', false);
             } elseif ($request->status === 'remedial') {
+                $filterLabels[] = "Status: Perlu Remedial";
                 $query->whereHas('examResults', fn($q) => $q->where('pass_status', 'fail'));
             }
         }
 
         if ($request->filled('academic_year_id') && $request->academic_year_id !== 'all') {
+            $ay = AcademicYear::find($request->academic_year_id);
+            if ($ay) {
+                $filterLabels[] = "Tahun Ajaran: {$ay->name}";
+            }
             $query->whereHas('classrooms', fn($q) => $q->where('academic_year_id', $request->academic_year_id));
         }
 
         $students = $query->orderBy('name')->get();
-        $filename = 'data_siswa_cbt_' . date('Y-m-d_His') . '.csv';
+        $format = strtolower($request->query('format', 'csv'));
+        $dateStr = date('Y-m-d');
+        $timestamp = date('Ymd_His');
+
+        $schoolName    = SchoolSetting::get('school_name', 'SMA Nusantara');
+        $schoolNpsn    = SchoolSetting::get('school_npsn', '');
+        $schoolAddress = SchoolSetting::get('school_address', '');
+
+        // ════════════ FORMAT PDF ════════════
+        if ($format === 'pdf') {
+            $printDate = date('d-m-Y H:i');
+
+            // Encode logo to base64 if present and exists on disk for reliable DomPDF embedding
+            $schoolLogoBase64 = null;
+            $logoSetting = SchoolSetting::get('school_logo', '');
+            if (!empty($logoSetting)) {
+                $logoRel = ltrim($logoSetting, '/\\');
+                $logoFullPath = public_path($logoRel);
+                if (file_exists($logoFullPath) && is_file($logoFullPath)) {
+                    $mime = mime_content_type($logoFullPath) ?: 'image/png';
+                    $schoolLogoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoFullPath));
+                }
+            }
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.student.export_pdf', compact(
+                'students',
+                'schoolName',
+                'schoolNpsn',
+                'schoolAddress',
+                'schoolLogoBase64',
+                'printDate',
+                'filterLabels'
+            ))->setPaper('a4', 'portrait');
+
+            $pdfFilename = "data-siswa-eduexam-{$dateStr}.pdf";
+            return $pdf->download($pdfFilename);
+        }
+
+        // ════════════ FORMAT EXCEL / XLSX ════════════
+        if ($format === 'excel' || $format === 'xlsx') {
+            return $this->exportStudentsExcel($students, $schoolName, $schoolNpsn, $schoolAddress, $timestamp, $dateStr, $filterLabels);
+        }
+
+        // ════════════ FORMAT CSV (DEFAULT) ════════════
+        $filename = "data-siswa-eduexam-{$dateStr}.csv";
 
         $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
         ];
 
         $callback = function() use ($students) {
             $file = fopen('php://output', 'w');
+            // UTF-8 BOM untuk Microsoft Excel agar terbaca dalam kolom terpisah dan karakter aksen aman
             fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['No', 'NIS', 'Nama Siswa', 'Email', 'Username', 'Jenis Kelamin', 'Kelas Rombel', 'Status Akun', 'No Telepon', 'Alamat']);
+            // Directive petunjuk delimiter untuk Microsoft Excel agar otomatis memisahkan kolom terlepas dari regional setting Windows (koma vs titik-koma)
+            fputs($file, "sep=,\n");
+            fputcsv($file, [
+                'No',
+                'NIS',
+                'NISN',
+                'Nama Siswa',
+                'Email',
+                'Username',
+                'Jenis Kelamin',
+                'Kelas Rombel',
+                'Status Akun',
+                'No Telepon',
+                'Alamat'
+            ], ',', '"', "\\");
 
             foreach ($students as $idx => $s) {
+                if (!$s->is_active) {
+                    $status = 'Ditangguhkan (Nonaktif)';
+                } else {
+                    $status = 'Aktif';
+                }
+
+                // Simpan NIS dan NISN secara aman agar tidak terpotong nol awal di spreadsheet
+                $nisVal  = $s->nis ? (string) $s->nis : '-';
+                $nisnVal = $s->nisn ? (string) $s->nisn : '-';
+
                 fputcsv($file, [
                     $idx + 1,
-                    $s->nis,
+                    $nisVal,
+                    $nisnVal,
                     $s->name,
                     $s->email,
                     $s->username,
-                    $s->gender === 'L' ? 'Laki-laki' : 'Perempuan',
+                    $s->gender === 'L' ? 'Laki-laki' : ($s->gender === 'P' ? 'Perempuan' : '-'),
                     $s->classrooms->pluck('name')->join(', ') ?: 'Tanpa Kelas',
-                    $s->is_active ? 'Aktif' : 'Nonaktif',
+                    $status,
                     $s->phone ?? '-',
                     $s->address ?? '-',
-                ]);
+                ], ',', '"', "\\");
             }
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    protected function exportStudentsExcel($students, $schoolName, $schoolNpsn, $schoolAddress, $timestamp, $dateStr, $filterLabels)
+    {
+        $filename = "data-siswa-eduexam-{$dateStr}.xls";
+
+        $schoolNameEsc    = htmlspecialchars($schoolName, ENT_QUOTES, 'UTF-8');
+        $schoolNpsnEsc    = htmlspecialchars($schoolNpsn, ENT_QUOTES, 'UTF-8');
+        $schoolAddressEsc = htmlspecialchars($schoolAddress, ENT_QUOTES, 'UTF-8');
+        $printDate        = date('d-m-Y H:i');
+        $totalStudents    = count($students);
+
+        $headers = [
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
+        ];
+
+        return response()->stream(function() use ($students, $schoolNameEsc, $schoolNpsnEsc, $schoolAddressEsc, $printDate, $totalStudents, $filterLabels) {
+            echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+            echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+            echo ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+            echo ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+
+            // Styles
+            echo '<Styles>' . "\n";
+            echo ' <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/></Style>' . "\n";
+            
+            // Header Kop Sekolah
+            echo ' <Style ss:ID="SchoolName"><Font ss:FontName="Calibri" ss:Size="15" ss:Bold="1" ss:Color="#1E3A8A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="SchoolSub"><Font ss:FontName="Calibri" ss:Size="9" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="BadgeCBT"><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#1D4ED8"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/></Borders></Style>' . "\n";
+            echo ' <Style ss:ID="DividerBlue"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1E3A8A"/></Borders></Style>' . "\n";
+
+            // Judul & Info Laporan
+            echo ' <Style ss:ID="DocTitle"><Font ss:FontName="Calibri" ss:Size="13" ss:Bold="1" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocDesc"><Font ss:FontName="Calibri" ss:Size="9" ss:Italic="1" ss:Color="#64748B"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocFilter"><Font ss:FontName="Calibri" ss:Size="8" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocMetaRight"><Font ss:FontName="Calibri" ss:Size="9" ss:Color="#334155"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/></Style>' . "\n";
+
+            // Table Header Style: Biru Tua (#1E3A8A), Teks Putih, Tebal, Rata Tengah, Border Rapi
+            echo ' <Style ss:ID="ThCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F172A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F172A"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E3A8A" ss:Pattern="Solid"/></Style>' . "\n";
+
+            // Table Body Styles
+            echo ' <Style ss:ID="TdCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdText"><NumberFormat ss:Format="@"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Consolas" ss:Size="9.5" ss:Color="#1E293B"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdName"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+
+            // Status Styles
+            echo ' <Style ss:ID="TdStatusActive"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#065F46"/><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusRemedial"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#92400E"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusSuspended"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#991B1B"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>' . "\n";
+
+            echo '</Styles>' . "\n";
+
+            // Worksheet & Layout
+            echo '<Worksheet ss:Name="Data Siswa">' . "\n";
+            echo ' <Table x:FullColumns="1" x:FullRows="1" ss:DefaultRowHeight="20">' . "\n";
+
+            // 11 Kolom spesifik (lebar proporsional)
+            echo '  <Column ss:Width="36"/>' . "\n";  // 1. No
+            echo '  <Column ss:Width="85"/>' . "\n";  // 2. NIS
+            echo '  <Column ss:Width="85"/>' . "\n";  // 3. NISN
+            echo '  <Column ss:Width="190"/>' . "\n"; // 4. Nama Siswa
+            echo '  <Column ss:Width="180"/>' . "\n"; // 5. Email
+            echo '  <Column ss:Width="110"/>' . "\n"; // 6. Username
+            echo '  <Column ss:Width="85"/>' . "\n";  // 7. Jenis Kelamin
+            echo '  <Column ss:Width="110"/>' . "\n"; // 8. Kelas Rombel
+            echo '  <Column ss:Width="130"/>' . "\n"; // 9. Status Akun
+            echo '  <Column ss:Width="105"/>' . "\n"; // 10. No Telepon
+            echo '  <Column ss:Width="160"/>' . "\n"; // 11. Alamat
+
+            // Row 1: Nama Sekolah & Badge CBT
+            echo '  <Row ss:Height="24">' . "\n";
+            echo '   <Cell ss:StyleID="SchoolName" ss:MergeAcross="7"><Data ss:Type="String">' . strtoupper($schoolNameEsc) . '</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="BadgeCBT" ss:MergeAcross="2"><Data ss:Type="String">DATABASE SISWA CBT</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 2: NPSN & Alamat Sekolah
+            $schoolMeta = (!empty($schoolNpsnEsc) ? "NPSN: {$schoolNpsnEsc} • " : '') . $schoolAddressEsc;
+            echo '  <Row ss:Height="18">' . "\n";
+            echo '   <Cell ss:StyleID="SchoolSub" ss:MergeAcross="10"><Data ss:Type="String">' . $schoolMeta . '</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 3: Garis Horizontal Biru
+            echo '  <Row ss:Height="4">' . "\n";
+            for ($c = 0; $c < 11; $c++) {
+                echo '   <Cell ss:StyleID="DividerBlue"/>' . "\n";
+            }
+            echo '  </Row>' . "\n";
+
+            // Row 4: Judul Laporan & Waktu Cetak
+            echo '  <Row ss:Height="22">' . "\n";
+            echo '   <Cell ss:StyleID="DocTitle" ss:MergeAcross="6"><Data ss:Type="String">LAPORAN DATA SISWA</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="DocMetaRight" ss:MergeAcross="3"><Data ss:Type="String">Waktu Cetak: ' . $printDate . ' WIB</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 5: Deskripsi Laporan & Total Siswa
+            echo '  <Row ss:Height="18">' . "\n";
+            echo '   <Cell ss:StyleID="DocDesc" ss:MergeAcross="6"><Data ss:Type="String">Daftar induk identitas peserta didik, penempatan kelas rombel, dan status akun</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="DocMetaRight" ss:MergeAcross="3"><Data ss:Type="String">Total Siswa: ' . $totalStudents . ' Peserta Didik</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 6: Filter aktif (jika ada)
+            if (!empty($filterLabels)) {
+                echo '  <Row ss:Height="16">' . "\n";
+                echo '   <Cell ss:StyleID="DocFilter" ss:MergeAcross="10"><Data ss:Type="String">Filter Aktif: ' . implode(' | ', $filterLabels) . '</Data></Cell>' . "\n";
+                echo '  </Row>' . "\n";
+            }
+
+            // Spasi sebelum tabel
+            echo '  <Row ss:Height="8"></Row>' . "\n";
+
+            // Table Header Row: 11 Kolom yang sudah benar
+            $headerRowNumber = !empty($filterLabels) ? 8 : 7;
+            echo '  <Row ss:Height="25">' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">No</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">NIS</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">NISN</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Nama Siswa</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Email</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Username</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jenis Kelamin</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Kelas Rombel</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Status Akun</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">No Telepon</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Alamat</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Table Data Rows
+            $no = 1;
+            foreach ($students as $s) {
+                if (!$s->is_active) {
+                    $status = 'Ditangguhkan (Nonaktif)';
+                    $statusStyle = 'TdStatusSuspended';
+                } else {
+                    $status = 'Aktif';
+                    $statusStyle = 'TdStatusActive';
+                }
+
+                $nisVal  = htmlspecialchars($s->nis ? (string) $s->nis : '-', ENT_QUOTES, 'UTF-8');
+                $nisnVal = htmlspecialchars($s->nisn ? (string) $s->nisn : '-', ENT_QUOTES, 'UTF-8');
+                $nameVal = htmlspecialchars($s->name, ENT_QUOTES, 'UTF-8');
+                $emailVal= htmlspecialchars($s->email, ENT_QUOTES, 'UTF-8');
+                $userVal = htmlspecialchars($s->username ?: '-', ENT_QUOTES, 'UTF-8');
+                $genderVal = $s->gender === 'L' ? 'Laki-laki' : ($s->gender === 'P' ? 'Perempuan' : '-');
+                $classVal = htmlspecialchars($s->classrooms->pluck('name')->join(', ') ?: 'Tanpa Kelas', ENT_QUOTES, 'UTF-8');
+                $phoneVal = htmlspecialchars($s->phone ?? '-', ENT_QUOTES, 'UTF-8');
+                $addrVal  = htmlspecialchars($s->address ?? '-', ENT_QUOTES, 'UTF-8');
+
+                echo '  <Row ss:Height="22">' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="Number">' . $no++ . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $nisVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $nisnVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdName"><Data ss:Type="String">' . $nameVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $emailVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $userVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $genderVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $classVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="' . $statusStyle . '"><Data ss:Type="String">' . $status . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $phoneVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $addrVal . '</Data></Cell>' . "\n";
+                echo '  </Row>' . "\n";
+            }
+
+            echo ' </Table>' . "\n";
+
+            // Freeze Panes & AutoFilter
+            echo ' <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
+            echo '  <FreezePanes/>' . "\n";
+            echo '  <FrozenNoSplit/>' . "\n";
+            echo '  <SplitPane>' . "\n";
+            echo '   <Number>' . $headerRowNumber . '</Number>' . "\n";
+            echo '  </SplitPane>' . "\n";
+            echo '  <ActivePane>2</ActivePane>' . "\n";
+            echo ' </WorksheetOptions>' . "\n";
+            echo ' <AutoFilter x:Range="R' . $headerRowNumber . 'C1:R' . ($headerRowNumber + count($students)) . 'C11" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
+            echo '</Worksheet>' . "\n";
+            echo '</Workbook>' . "\n";
+        }, 200, $headers);
     }
 
     public function downloadImportTemplate()
@@ -574,6 +845,386 @@ class UserController extends Controller
             'teachers', 'totalTeachers', 'activeTeachers', 'inactiveTeachers',
             'teachersWithNip', 'activeRatio', 'totalSubjects', 'totalQuestions', 'allSubjects'
         ));
+    }
+
+    public function exportTeachers(Request $request)
+    {
+        $query = User::teachers()
+            ->with(['subjects', 'homeroomClassrooms'])
+            ->withCount(['questions', 'createdExams']);
+
+        $filterLabels = [];
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $filterLabels[] = "Pencarian: \"{$search}\"";
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                  ->orWhere('nip', 'like', '%'.$search.'%')
+                  ->orWhere('email', 'like', '%'.$search.'%')
+                  ->orWhere('username', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($request->filled('subject_id') && $request->subject_id !== 'all') {
+            $subject = \App\Models\Subject::find($request->subject_id);
+            if ($subject) {
+                $filterLabels[] = "Mapel: {$subject->name}";
+            }
+            $query->whereHas('subjects', function($q) use ($request) {
+                $q->where('subjects.id', $request->subject_id);
+            });
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $isActive = ($request->status === '1' || $request->status === 'active');
+            $filterLabels[] = "Status: " . ($isActive ? 'Aktif' : 'Nonaktif');
+            $query->where('is_active', $isActive);
+        }
+
+        $teachers = $query->orderBy('name')->get();
+        $format = strtolower($request->query('format', 'csv'));
+        $dateStr = date('Y-m-d');
+
+        $schoolName    = SchoolSetting::get('school_name', 'SMA Nusantara');
+        $schoolNpsn    = SchoolSetting::get('school_npsn', '');
+        $schoolAddress = SchoolSetting::get('school_address', '');
+
+        // ════════════ FORMAT PDF ════════════
+        if ($format === 'pdf') {
+            $printDate = date('d-m-Y H:i');
+
+            // Encode logo to base64 for reliable DomPDF embedding
+            $schoolLogoBase64 = null;
+            $logoSetting = SchoolSetting::get('school_logo', '');
+            if (!empty($logoSetting)) {
+                if (str_starts_with($logoSetting, 'data:image/')) {
+                    $schoolLogoBase64 = $logoSetting;
+                } else {
+                    $logoRel = ltrim($logoSetting, '/\\');
+                    $logoFullPath = public_path($logoRel);
+                    if (file_exists($logoFullPath) && is_file($logoFullPath)) {
+                        $mime = mime_content_type($logoFullPath) ?: 'image/png';
+                        $schoolLogoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoFullPath));
+                    } elseif (filter_var($logoSetting, FILTER_VALIDATE_URL)) {
+                        $schoolLogoBase64 = $logoSetting;
+                    }
+                }
+            }
+
+            // Fallback default logo if empty
+            if (empty($schoolLogoBase64)) {
+                $defaultLogo = public_path('images/logo_shield_crop.png');
+                if (file_exists($defaultLogo) && is_file($defaultLogo)) {
+                    $schoolLogoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($defaultLogo));
+                }
+            }
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.teacher.export_pdf', compact(
+                'teachers',
+                'schoolName',
+                'schoolNpsn',
+                'schoolAddress',
+                'schoolLogoBase64',
+                'printDate',
+                'filterLabels'
+            ))->setPaper('a4', 'landscape');
+
+            $pdfFilename = "laporan-data-guru-eduexam-{$dateStr}.pdf";
+            return $pdf->download($pdfFilename);
+        }
+
+        // ════════════ FORMAT EXCEL / XLSX ════════════
+        if ($format === 'excel' || $format === 'xlsx') {
+            return $this->exportTeachersExcel($teachers, $schoolName, $schoolNpsn, $schoolAddress, $dateStr, $filterLabels);
+        }
+
+        // ════════════ FORMAT CSV (DEFAULT) ════════════
+        $filename = "laporan_data_guru_{$dateStr}.csv";
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $callback = function() use ($teachers, $schoolName, $dateStr) {
+            $file = fopen('php://output', 'w');
+            // UTF-8 BOM untuk Microsoft Excel
+            fputs($file, "\xEF\xBB\xBF");
+            // Directive petunjuk delimiter untuk Microsoft Excel
+            fputs($file, "sep=,\n");
+
+            // Header Judul & Metadata Laporan
+            fputcsv($file, ['LAPORAN DATA GURU'], ',', '"', "\\");
+            fputcsv($file, ['Sekolah', $schoolName], ',', '"', "\\");
+            fputcsv($file, ['Tanggal Ekspor', date('d-m-Y H:i', strtotime($dateStr)) . ' WIB'], ',', '"', "\\");
+            fputcsv($file, ['Total Guru', count($teachers) . ' Tenaga Pendidik'], ',', '"', "\\");
+            fputcsv($file, [], ',', '"', "\\"); // baris kosong pemisah
+
+            // Kolom Header Tabel (Konsisten dengan tabel web & PDF)
+            fputcsv($file, [
+                'No',
+                'NIP/NUPTK',
+                'Nama Guru',
+                'Jenis Kelamin',
+                'Mata Pelajaran Diampu',
+                'Wali Kelas',
+                'Ujian Dibuat',
+                'Email',
+                'Username',
+                'Status Akun',
+                'No Telepon',
+                'Alamat',
+            ], ',', '"', "\\");
+
+            foreach ($teachers as $idx => $t) {
+                $status = $t->is_active ? 'Aktif' : 'Nonaktif';
+                $gender = match($t->gender) {
+                    'L', 'laki-laki' => 'Laki-laki',
+                    'P', 'perempuan' => 'Perempuan',
+                    default => '-'
+                };
+                $nipVal = $t->nip ? (string) $t->nip : '-';
+                $subjectsVal = $t->subjects->pluck('name')->join(', ') ?: 'Belum ditentukan';
+                
+                // Wali Kelas & Ujian Dibuat
+                $waliKelasVal = ($t->homeroomClassrooms && $t->homeroomClassrooms->count() > 0)
+                    ? $t->homeroomClassrooms->pluck('name')->map(fn($n) => "{$n} (Wali)")->join(', ')
+                    : '—';
+                $ujianDibuatVal = ($t->created_exams_count ?? 0) . ' Ujian';
+
+                fputcsv($file, [
+                    $idx + 1,
+                    $nipVal,
+                    $t->name,
+                    $gender,
+                    $subjectsVal,
+                    $waliKelasVal,
+                    $ujianDibuatVal,
+                    $t->email,
+                    $t->username ?: '-',
+                    $status,
+                    $t->phone ?: '-',
+                    $t->address ?: '-',
+                ], ',', '"', "\\");
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    protected function exportTeachersExcel($teachers, $schoolName, $schoolNpsn, $schoolAddress, $dateStr, $filterLabels)
+    {
+        $filename = "laporan_data_guru_{$dateStr}.xls";
+
+        $schoolNameEsc    = htmlspecialchars($schoolName, ENT_QUOTES, 'UTF-8');
+        $schoolNpsnEsc    = htmlspecialchars($schoolNpsn, ENT_QUOTES, 'UTF-8');
+        $schoolAddressEsc = htmlspecialchars($schoolAddress, ENT_QUOTES, 'UTF-8');
+        $printDate        = date('d-m-Y H:i');
+        $totalTeachers    = count($teachers);
+
+        $headers = [
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
+        ];
+
+        return response()->stream(function() use ($teachers, $schoolNameEsc, $schoolNpsnEsc, $schoolAddressEsc, $printDate, $totalTeachers, $filterLabels) {
+            echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+            echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+            echo ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+            echo ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+            echo ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+
+            // Styles
+            echo '<Styles>' . "\n";
+            echo ' <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/></Style>' . "\n";
+            
+            // Header Kop Sekolah
+            echo ' <Style ss:ID="SchoolName"><Font ss:FontName="Calibri" ss:Size="15" ss:Bold="1" ss:Color="#1E3A8A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="SchoolSub"><Font ss:FontName="Calibri" ss:Size="9" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="BadgeCBT"><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#1D4ED8"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFDBFE"/></Borders></Style>' . "\n";
+            echo ' <Style ss:ID="DividerBlue"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1E3A8A"/></Borders></Style>' . "\n";
+
+            // Judul & Info Laporan
+            echo ' <Style ss:ID="DocTitle"><Font ss:FontName="Calibri" ss:Size="13" ss:Bold="1" ss:Color="#0F172A"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocDesc"><Font ss:FontName="Calibri" ss:Size="9" ss:Italic="1" ss:Color="#64748B"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocFilter"><Font ss:FontName="Calibri" ss:Size="8" ss:Color="#475569"/><Alignment ss:Vertical="Center"/></Style>' . "\n";
+            echo ' <Style ss:ID="DocMetaRight"><Font ss:FontName="Calibri" ss:Size="9" ss:Color="#334155"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/></Style>' . "\n";
+
+            // Table Header Style: Biru Tua (#1E3A8A), Teks Putih, Tebal, Rata Tengah, Border Rapi
+            echo ' <Style ss:ID="ThCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F172A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F172A"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E3A8A" ss:Pattern="Solid"/></Style>' . "\n";
+
+            // Table Body Styles
+            echo ' <Style ss:ID="TdCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdText"><NumberFormat ss:Format="@"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Consolas" ss:Size="9.5" ss:Color="#1E293B"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdName"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="10" ss:Color="#334155"/></Style>' . "\n";
+
+            // Status Styles & Badges
+            echo ' <Style ss:ID="TdStatusActive"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#065F46"/><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdStatusSuspended"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9" ss:Bold="1" ss:Color="#991B1B"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdWali"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9.5" ss:Bold="1" ss:Color="#065F46"/></Style>' . "\n";
+            echo ' <Style ss:ID="TdExam"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Calibri" ss:Size="9.5" ss:Bold="1" ss:Color="#1D4ED8"/></Style>' . "\n";
+
+            echo '</Styles>' . "\n";
+
+            // Worksheet & Layout
+            echo '<Worksheet ss:Name="Data Guru">' . "\n";
+            echo ' <Table x:FullColumns="1" x:FullRows="1" ss:DefaultRowHeight="20">' . "\n";
+
+            // 12 Kolom proporsional
+            echo '  <Column ss:Width="36"/>' . "\n";  // 1. No
+            echo '  <Column ss:Width="110"/>' . "\n"; // 2. NIP/NUPTK
+            echo '  <Column ss:Width="190"/>' . "\n"; // 3. Nama Guru
+            echo '  <Column ss:Width="85"/>' . "\n";  // 4. Jenis Kelamin
+            echo '  <Column ss:Width="170"/>' . "\n"; // 5. Mata Pelajaran Diampu
+            echo '  <Column ss:Width="120"/>' . "\n"; // 6. Wali Kelas
+            echo '  <Column ss:Width="90"/>' . "\n";  // 7. Ujian Dibuat
+            echo '  <Column ss:Width="170"/>' . "\n"; // 8. Email
+            echo '  <Column ss:Width="110"/>' . "\n"; // 9. Username
+            echo '  <Column ss:Width="95"/>' . "\n";  // 10. Status Akun
+            echo '  <Column ss:Width="105"/>' . "\n"; // 11. No Telepon
+            echo '  <Column ss:Width="160"/>' . "\n"; // 12. Alamat
+
+            // Row 1: Nama Sekolah & Badge CBT
+            echo '  <Row ss:Height="24">' . "\n";
+            echo '   <Cell ss:StyleID="SchoolName" ss:MergeAcross="8"><Data ss:Type="String">' . strtoupper($schoolNameEsc) . '</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="BadgeCBT" ss:MergeAcross="2"><Data ss:Type="String">DATABASE GURU CBT</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 2: NPSN & Alamat Sekolah
+            $schoolMeta = (!empty($schoolNpsnEsc) ? "NPSN: {$schoolNpsnEsc} • " : '') . $schoolAddressEsc;
+            echo '  <Row ss:Height="18">' . "\n";
+            echo '   <Cell ss:StyleID="SchoolSub" ss:MergeAcross="11"><Data ss:Type="String">' . $schoolMeta . '</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 3: Garis Horizontal Biru
+            echo '  <Row ss:Height="4">' . "\n";
+            for ($c = 0; $c < 12; $c++) {
+                echo '   <Cell ss:StyleID="DividerBlue"/>' . "\n";
+            }
+            echo '  </Row>' . "\n";
+
+            // Row 4: Judul Laporan & Waktu Cetak
+            echo '  <Row ss:Height="22">' . "\n";
+            echo '   <Cell ss:StyleID="DocTitle" ss:MergeAcross="7"><Data ss:Type="String">LAPORAN DATA GURU</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="DocMetaRight" ss:MergeAcross="3"><Data ss:Type="String">Waktu Cetak: ' . $printDate . ' WIB</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 5: Deskripsi Laporan & Total Guru
+            echo '  <Row ss:Height="18">' . "\n";
+            echo '   <Cell ss:StyleID="DocDesc" ss:MergeAcross="7"><Data ss:Type="String">Daftar profil tenaga pendidik, penugasan mata pelajaran, wali kelas, dan statistik ujian CBT</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="DocMetaRight" ss:MergeAcross="3"><Data ss:Type="String">Total Guru: ' . $totalTeachers . ' Tenaga Pendidik</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Row 6: Filter aktif (jika ada)
+            if (!empty($filterLabels)) {
+                echo '  <Row ss:Height="16">' . "\n";
+                echo '   <Cell ss:StyleID="DocFilter" ss:MergeAcross="11"><Data ss:Type="String">Filter Aktif: ' . implode(' | ', $filterLabels) . '</Data></Cell>' . "\n";
+                echo '  </Row>' . "\n";
+            }
+
+            // Spasi sebelum tabel
+            echo '  <Row ss:Height="8"></Row>' . "\n";
+
+            // Table Header Row: 12 Kolom
+            $headerRowNumber = !empty($filterLabels) ? 8 : 7;
+            echo '  <Row ss:Height="25">' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">No</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">NIP/NUPTK</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Nama Guru</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Jenis Kelamin</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Mata Pelajaran Diampu</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Wali Kelas</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Ujian Dibuat</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Email</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Username</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Status Akun</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">No Telepon</Data></Cell>' . "\n";
+            echo '   <Cell ss:StyleID="ThCenter"><Data ss:Type="String">Alamat</Data></Cell>' . "\n";
+            echo '  </Row>' . "\n";
+
+            // Table Data Rows
+            $no = 1;
+            foreach ($teachers as $t) {
+                $status = $t->is_active ? 'Aktif' : 'Nonaktif';
+                $statusStyle = $t->is_active ? 'TdStatusActive' : 'TdStatusSuspended';
+
+                $gender = match($t->gender) {
+                    'L', 'laki-laki' => 'Laki-laki',
+                    'P', 'perempuan' => 'Perempuan',
+                    default => '-'
+                };
+
+                $nipVal = htmlspecialchars($t->nip ? (string) $t->nip : '-', ENT_QUOTES, 'UTF-8');
+                $nameVal = htmlspecialchars($t->name, ENT_QUOTES, 'UTF-8');
+                $subjectsVal = htmlspecialchars($t->subjects->pluck('name')->join(', ') ?: 'Belum ditentukan', ENT_QUOTES, 'UTF-8');
+                
+                $waliKelasVal = ($t->homeroomClassrooms && $t->homeroomClassrooms->count() > 0)
+                    ? htmlspecialchars($t->homeroomClassrooms->pluck('name')->map(fn($n) => "{$n} (Wali)")->join(', '), ENT_QUOTES, 'UTF-8')
+                    : '—';
+                $waliStyle = ($waliKelasVal !== '—') ? 'TdWali' : 'TdCenter';
+
+                $examCount = $t->created_exams_count ?? 0;
+                $ujianDibuatVal = $examCount . ' Ujian';
+                $examStyle = ($examCount > 0) ? 'TdExam' : 'TdCenter';
+
+                $emailVal = htmlspecialchars($t->email, ENT_QUOTES, 'UTF-8');
+                $userVal  = htmlspecialchars($t->username ?: '-', ENT_QUOTES, 'UTF-8');
+                $phoneVal = htmlspecialchars($t->phone ?: '-', ENT_QUOTES, 'UTF-8');
+                $addrVal  = htmlspecialchars($t->address ?: '-', ENT_QUOTES, 'UTF-8');
+
+                echo '  <Row ss:Height="22">' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="Number">' . $no++ . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $nipVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdName"><Data ss:Type="String">' . $nameVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdCenter"><Data ss:Type="String">' . $gender . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $subjectsVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="' . $waliStyle . '"><Data ss:Type="String">' . $waliKelasVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="' . $examStyle . '"><Data ss:Type="String">' . $ujianDibuatVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $emailVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $userVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="' . $statusStyle . '"><Data ss:Type="String">' . $status . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdText"><Data ss:Type="String">' . $phoneVal . '</Data></Cell>' . "\n";
+                echo '   <Cell ss:StyleID="TdLeft"><Data ss:Type="String">' . $addrVal . '</Data></Cell>' . "\n";
+                echo '  </Row>' . "\n";
+            }
+
+            echo ' </Table>' . "\n";
+
+            // Freeze Panes, AutoFilter, dan Konfigurasi Cetak A4 Landscape Fit Page Width
+            echo ' <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
+            echo '  <PageSetup>' . "\n";
+            echo '   <Layout x:Orientation="Landscape"/>' . "\n";
+            echo '   <PageMargins x:Bottom="0.5" x:Left="0.5" x:Right="0.5" x:Top="0.5"/>' . "\n";
+            echo '  </PageSetup>' . "\n";
+            echo '  <FitToPage/>' . "\n";
+            echo '  <Print>' . "\n";
+            echo '   <FitWidth>1</FitWidth>' . "\n";
+            echo '   <FitHeight>0</FitHeight>' . "\n";
+            echo '   <ValidPrinterInfo/>' . "\n";
+            echo '   <PaperSizeIndex>9</PaperSizeIndex>' . "\n"; // A4
+            echo '  </Print>' . "\n";
+            echo '  <FreezePanes/>' . "\n";
+            echo '  <FrozenNoSplit/>' . "\n";
+            echo '  <SplitPane>' . "\n";
+            echo '   <Number>' . $headerRowNumber . '</Number>' . "\n";
+            echo '  </SplitPane>' . "\n";
+            echo '  <ActivePane>2</ActivePane>' . "\n";
+            echo ' </WorksheetOptions>' . "\n";
+            echo ' <AutoFilter x:Range="R' . $headerRowNumber . 'C1:R' . ($headerRowNumber + count($teachers)) . 'C12" xmlns="urn:schemas-microsoft-com:office:excel"/>' . "\n";
+            echo '</Worksheet>' . "\n";
+            echo '</Workbook>' . "\n";
+        }, 200, $headers);
     }
 
     public function createTeacher()

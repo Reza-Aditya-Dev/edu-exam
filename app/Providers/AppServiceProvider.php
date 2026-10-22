@@ -21,19 +21,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Bagikan identitas sekolah (nama & logo) ke seluruh view secara global
+        // Bagikan identitas sekolah (nama, logo, kontak) ke seluruh view secara global
         View::composer('*', function ($view) {
             try {
-                $schoolName = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
-                $schoolLogo = \App\Models\SchoolSetting::get('school_logo', null);
+                $schoolName  = \App\Models\SchoolSetting::get('school_name', 'SMA Nusantara');
+                $schoolLogo  = \App\Models\SchoolSetting::get('school_logo', null);
+                $schoolEmail = \App\Models\SchoolSetting::get('school_email', 'admin@eduexam.id');
+                $schoolPhone = \App\Models\SchoolSetting::get('school_phone', '0812-3456-7890');
                 $view->with([
-                    'schoolName' => $schoolName,
-                    'schoolLogo' => $schoolLogo,
+                    'schoolName'  => $schoolName,
+                    'schoolLogo'  => $schoolLogo,
+                    'schoolEmail' => $schoolEmail,
+                    'schoolPhone' => $schoolPhone,
                 ]);
             } catch (\Throwable $e) {
                 $view->with([
-                    'schoolName' => 'SMA Nusantara',
-                    'schoolLogo' => null,
+                    'schoolName'  => 'SMA Nusantara',
+                    'schoolLogo'  => null,
+                    'schoolEmail' => 'admin@eduexam.id',
+                    'schoolPhone' => '0812-3456-7890',
                 ]);
             }
         });

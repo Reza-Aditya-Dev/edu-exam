@@ -335,17 +335,36 @@
                         </div>
                     </label>
 
-                    <!-- Option 5: CBT Guard Proctoring -->
-                    <label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-primary-fixed/40 hover:bg-primary-fixed/60 cursor-pointer transition-colors border border-primary-200">
-                        <input name="allow_review" value="1" checked class="mt-1 w-4 h-4 rounded text-primary-container focus:ring-0 focus:outline-none accent-primary" type="checkbox"/>
-                        <div class="flex flex-col">
-                            <span class="font-label-lg text-label-lg text-on-surface font-semibold flex items-center gap-1">
-                                <span>Kunci browser &amp; Proctoring</span>
-                                <span class="px-1.5 py-0.2 rounded bg-primary-container text-on-primary font-label-sm text-[10px]">CBT Guard</span>
-                            </span>
-                            <span class="font-body-sm text-body-sm text-on-surface-variant">Peringatan otomatis saat siswa beralih tab</span>
+                    <!-- Option 5: CBT Guard Anti-Cheat Proctoring -->
+                    <div class="p-space-sm rounded-lg bg-primary-fixed/40 transition-colors border border-primary-200 flex flex-col gap-3">
+                        <label class="flex items-start gap-space-sm cursor-pointer">
+                            <input name="enable_anti_cheat" value="1" checked class="mt-1 w-4 h-4 rounded text-primary-container focus:ring-0 focus:outline-none accent-primary" type="checkbox"/>
+                            <div class="flex flex-col">
+                                <span class="font-label-lg text-label-lg text-on-surface font-semibold flex items-center gap-1">
+                                    <span>Kunci Layar Penuh &amp; Proctoring Anti-Curang</span>
+                                    <span class="px-1.5 py-0.2 rounded bg-primary-container text-on-primary font-label-sm text-[10px]">CBT Guard</span>
+                                </span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">Deteksi otomatis saat siswa beralih tab, buka aplikasi luar, atau keluar layar penuh.</span>
+                            </div>
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-primary-200/60">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Batas Maksimal Pelanggaran:</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" name="max_violations" min="1" max="20" value="3" class="w-20 px-2 py-1 text-xs font-bold font-mono border rounded-lg bg-white text-slate-800">
+                                    <span class="text-xs text-slate-500">kali (Auto-Submit)</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Potong Nilai per Pelanggaran:</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" name="violation_penalty_points" min="0" max="50" step="1" value="0" class="w-20 px-2 py-1 text-xs font-bold font-mono border rounded-lg bg-white text-slate-800">
+                                    <span class="text-xs text-slate-500">poin (0 = hanya dicatat)</span>
+                                </div>
+                            </div>
                         </div>
-                    </label>
+                    </div>
 
                     <!-- Option 6: Rilis skor otomatis -->
                     <label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">

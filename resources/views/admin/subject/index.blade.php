@@ -339,10 +339,13 @@
                 <!-- Compact SVG/HTML Bar Chart -->
                 <div class="w-full h-40 flex items-end gap-4 md:gap-6 pt-6 pb-2 px-2 border-b border-slate-100">
                     @foreach($categoryReadiness as $catKey => $readiness)
-                        <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                            <div class="text-[11px] font-bold text-on-surface-variant">{{ $readiness['percentage'] }}%</div>
-                            <div class="w-full max-w-[48px] {{ $readiness['class'] }} rounded-t-lg transition-all hover:opacity-90 shadow-xs" style="height: {{ max(10, $readiness['percentage']) }}%;"></div>
-                            <span class="font-label-sm text-label-sm text-on-surface-variant text-center truncate max-w-full font-medium" title="{{ $catKey }}">
+                        <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                            <div class="text-[11px] font-bold text-on-surface-variant transition-transform group-hover:scale-110">{{ $readiness['percentage'] }}%</div>
+                            <div class="w-full max-w-[48px] {{ $readiness['percentage'] > 0 ? $readiness['class'] : 'bg-slate-200 dark:bg-slate-700' }} rounded-t-lg transition-all hover:opacity-90 shadow-xs" 
+                                 style="height: {{ $readiness['percentage'] > 0 ? max(8, $readiness['percentage']) : 4 }}%;" 
+                                 title="{{ $catKey }}: {{ $readiness['question_count'] }} soal terdata (Target: {{ $readiness['subject_count'] * 150 }} soal)">
+                            </div>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant text-center truncate max-w-full font-medium" title="{{ $catKey }} ({{ $readiness['question_count'] }} soal)">
                                 {{ $catKey }}
                             </span>
                         </div>

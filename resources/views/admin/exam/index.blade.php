@@ -87,10 +87,42 @@
 
         <!-- Actions -->
         <div class="flex items-center gap-space-sm flex-wrap shrink-0">
-            <a href="{{ route('admin.exams.export', request()->query()) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm font-label-lg text-label-lg transition-all active:scale-[0.98] border border-slate-200/80 no-underline">
-                <span class="material-symbols-outlined text-secondary text-[20px]">file_download</span>
-                <span>Ekspor Rekap Ujian (.csv)</span>
-            </a>
+            <!-- Dropdown Ekspor Rekap Ujian -->
+            <div class="relative inline-block text-left" id="dropdownExportExamsContainer">
+                <button type="button" onclick="toggleExportExamsDropdown(event)" id="btnDropdownExportExams" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm font-label-lg text-label-lg transition-all active:scale-[0.98] border border-slate-200/80 cursor-pointer">
+                    <span class="material-symbols-outlined text-secondary text-[20px]">file_download</span>
+                    <span>Ekspor Rekap Ujian</span>
+                    <span class="material-symbols-outlined text-outline text-[18px]">expand_more</span>
+                </button>
+                <div id="dropdownExportExamsMenu" class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-surface-container-lowest shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in duration-150">
+                    <div class="px-3 py-1.5 border-b border-slate-100 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
+                        Pilih Format Dokumen
+                    </div>
+                    <a href="{{ route('admin.exams.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="flex items-center gap-2.5 px-3.5 py-2.5 text-body-sm font-semibold text-on-surface hover:bg-emerald-50 hover:text-emerald-700 transition-colors no-underline">
+                        <span class="material-symbols-outlined text-emerald-600 text-[20px]">table_view</span>
+                        <div class="flex flex-col">
+                            <span class="font-semibold">Microsoft Excel (.xls / .xlsx)</span>
+                            <span class="text-[11px] text-on-surface-variant font-normal">Header rapi, filter otomatis & wrap text</span>
+                        </div>
+                    </a>
+                    <a href="{{ route('admin.exams.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="flex items-center gap-2.5 px-3.5 py-2.5 text-body-sm font-semibold text-on-surface hover:bg-rose-50 hover:text-rose-700 transition-colors no-underline">
+                        <span class="material-symbols-outlined text-rose-600 text-[20px]">picture_as_pdf</span>
+                        <div class="flex flex-col">
+                            <span class="font-semibold">Dokumen PDF (A4 Landscape)</span>
+                            <span class="text-[11px] text-on-surface-variant font-normal">Kop sekolah resmi, siap cetak administrasi</span>
+                        </div>
+                    </a>
+                    <div class="my-1 border-t border-slate-100"></div>
+                    <a href="{{ route('admin.exams.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-body-sm font-semibold text-on-surface hover:bg-slate-100 text-on-surface-variant transition-colors no-underline">
+                        <span class="material-symbols-outlined text-slate-500 text-[18px]">format_align_left</span>
+                        <div class="flex flex-col">
+                            <span class="text-[12px] font-medium text-slate-700">Data Mentah (.csv)</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Format teks murni pemisah koma</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
             <button onclick="openCreateExamModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary shadow-md font-label-lg text-label-lg transition-all active:scale-[0.98] cursor-pointer" type="button">
                 <span class="material-symbols-outlined text-[20px]">add_circle</span>
                 <span>Jadwalkan Ujian Baru</span>
@@ -1196,9 +1228,28 @@
         updateCounter();
     })();
 
+    // Dropdown Export Rekap Ujian
+    window.toggleExportExamsDropdown = function(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('dropdownExportExamsMenu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    };
+
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('dropdownExportExamsContainer');
+        const menu = document.getElementById('dropdownExportExamsMenu');
+        if (container && menu && !container.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
     // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            const menu = document.getElementById('dropdownExportExamsMenu');
+            if (menu) menu.classList.add('hidden');
             closeCreateExamModal();
             closeEditExamModal();
             closeLiveMonitorModal();

@@ -114,12 +114,12 @@
             <!-- Full Brand Header (Expanded) -->
             <div class="sidebar-brand-full h-20 px-space-lg flex items-center justify-between bg-surface-container-low/50">
                 <a href="{{ route('teacher.dashboard') }}" class="flex items-center gap-space-sm no-underline min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                    <div class="h-10 w-auto flex items-center justify-center flex-shrink-0">
                         @if(!empty($schoolLogo))
-                            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                            <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-9 w-auto max-w-[42px] object-contain">
                         @else
-                            <div class="w-full h-full rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
-                                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                            <div class="w-9 h-9 flex items-center justify-center text-primary">
+                                <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">school</span>
                             </div>
                         @endif
                     </div>
@@ -135,12 +135,12 @@
 
             <!-- Mini Brand Header (Collapsed) -->
             <div class="sidebar-brand-mini hidden h-20 w-full items-center justify-center bg-surface-container-low/50">
-                <button type="button" onclick="toggleSidebarCollapse()" class="w-10 h-10 rounded-xl bg-surface-container-lowest border border-slate-200/60 p-1 flex items-center justify-center shadow-sm hover:scale-105 transition-transform cursor-pointer overflow-hidden" title="Buka Sidebar">
+                <button type="button" onclick="toggleSidebarCollapse()" class="h-10 w-auto flex items-center justify-center hover:scale-105 transition-transform cursor-pointer" title="Buka Sidebar">
                     @if(!empty($schoolLogo))
-                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="w-full h-full object-contain">
+                        <img src="{{ $schoolLogo }}" alt="Logo {{ $schoolName ?? 'Sekolah' }}" class="h-9 w-auto max-w-[42px] object-contain">
                     @else
-                        <div class="w-full h-full rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
-                            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">school</span>
+                        <div class="w-9 h-9 flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">school</span>
                         </div>
                     @endif
                 </button>

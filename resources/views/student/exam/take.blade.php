@@ -14,6 +14,12 @@
             'is_marked' => $ans ? (bool)$ans->is_marked : false,
         ];
     });
+
+    // Pengaturan Anti-Cheat
+    $settings = $exam->settings;
+    $antiCheatEnabled = $settings ? ($settings->enable_anti_cheat ?? true) : true;
+    $maxViolations = $settings ? ($settings->max_violations ?? 3) : 3;
+    $currentViolationsCount = \App\Models\ExamViolation::where('exam_participant_id', $participant->id)->count();
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -365,7 +371,7 @@
                         No. {{ $currentIndex }}
                     </span>
                     <span class="bg-surface-container text-on-surface-variant text-[11px] md:text-xs font-medium px-2.5 py-1 md:py-1.5 rounded-full">
-                        Bobot: {{ $currentExamQuestion->score_weight ?? 2.5 }} Poin
+                        Bobot: {{ (float)($currentExamQuestion->question->score ?? 1) }} Poin
                     </span>
                 </div>
 
@@ -716,6 +722,67 @@
                     </a>
                     <button type="button" onclick="closeImageModal()" class="px-4 py-2 rounded-xl bg-primary text-on-primary font-bold shadow-sm hover:bg-primary-container transition-all">
                         Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════ ANTI-CHEAT WARNING & FULLSCREEN MODAL ════════════ -->
+        <!-- Overlay Peringatan Pelanggaran (Pindah Tab / Keluar Layar) -->
+        <div id="violation-modal" class="fixed inset-0 z-[100] bg-inverse-surface/80 backdrop-blur-md hidden items-center justify-center p-4">
+            <div class="w-full max-w-[420px] bg-surface-container-lowest rounded-3xl shadow-2xl flex flex-col p-6 md:p-8 items-center text-center border-2 border-rose-500 animate-[scaleIn_0.2s_ease-out]">
+                <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-sm animate-pulse">
+                    <span class="material-symbols-outlined text-[36px] md:text-[44px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-bold tracking-wide uppercase mb-2">
+                    Pelanggaran Ujian Terdeteksi
+                </span>
+                <h3 id="violation-modal-title" class="font-headline-sm text-lg md:text-xl font-bold text-slate-900">
+                    Peringatan Ujian!
+                </h3>
+                <p id="violation-modal-desc" class="font-body-sm text-xs md:text-sm text-slate-600 mt-2 leading-relaxed">
+                    Anda terdeteksi meninggalkan halaman ujian atau membuka jendela/tab lain. Seluruh aktivitas Anda terekam oleh sistem.
+                </p>
+
+                <!-- Box Status Pelanggaran -->
+                <div class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 my-4 flex flex-col gap-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Status Pelanggaran:</span>
+                        <span id="violation-badge" class="font-bold text-rose-600 font-mono text-sm">
+                            <span id="violation-current-count">{{ $currentViolationsCount }}</span> / {{ $maxViolations }} Kali
+                        </span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="violation-progress" class="bg-rose-500 h-full transition-all duration-300" style="width: {{ min(100, ($currentViolationsCount / max(1, $maxViolations)) * 100) }}%"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 text-left mt-0.5">
+                        *Jika mencapai {{ $maxViolations }}x pelanggaran, ujian Anda akan otomatis dikumpulkan dan nilai dapat dipotong/didiskualifikasi.
+                    </p>
+                </div>
+
+                <button type="button" id="btn-return-exam" onclick="resumeExamFromViolation()" class="w-full h-11 md:h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-label-lg text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">fullscreen</span>
+                    <span>Kembali & Lanjutkan Ujian (Layar Penuh)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Prompt Meminta Mode Fullscreen Saat Pertama Masuk / Jika Keluar Fullscreen -->
+        <div id="fullscreen-prompt-modal" class="fixed inset-0 z-[90] bg-inverse-surface/85 backdrop-blur-md hidden items-center justify-center p-4">
+            <div class="w-full max-w-[400px] bg-surface-container-lowest rounded-3xl shadow-2xl flex flex-col p-6 md:p-8 items-center text-center border border-indigo-200 animate-[scaleIn_0.2s_ease-out]">
+                <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 mb-4 shadow-sm">
+                    <span class="material-symbols-outlined text-[36px] md:text-[44px]">fullscreen</span>
+                </div>
+                <h3 class="font-headline-sm text-lg md:text-xl font-bold text-slate-900">
+                    Mode Layar Penuh Wajib
+                </h3>
+                <p class="font-body-sm text-xs md:text-sm text-slate-600 mt-2 leading-relaxed">
+                    Untuk menjaga integritas dan ketertiban ujian, Anda diwajibkan mengaktifkan mode layar penuh (Fullscreen) selama ujian berlangsung.
+                </p>
+                <div class="mt-5 w-full">
+                    <button type="button" onclick="requestFullScreenMode()" class="w-full h-11 md:h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-label-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">fullscreen</span>
+                        <span>Aktifkan Layar Penuh</span>
                     </button>
                 </div>
             </div>
@@ -1468,7 +1535,210 @@
         updateExamThemeUI(document.documentElement.classList.contains('dark'));
         initExamMusic();
 
-        // ════════════ ANTI-CHEAT / ANTI-COPY ENFORCEMENT ════════════
+        // ════════════ ANTI-CHEAT / FULLSCREEN / TAB DETECTOR ENFORCEMENT ════════════
+        const antiCheatEnabled = {{ $antiCheatEnabled ? 'true' : 'false' }};
+        const maxViolations = {{ $maxViolations }};
+        let currentViolations = {{ $currentViolationsCount }};
+        let violationLeaveTimestamp = null;
+        let isReportingViolation = false;
+        let hasTriggeredForceSubmit = false;
+
+        function isFullscreenActive() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        }
+
+        function requestFullScreenMode() {
+            const docEl = document.documentElement;
+            const requestMethod = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+            if (requestMethod) {
+                requestMethod.call(docEl).then(() => {
+                    hideFullscreenPrompt();
+                }).catch(() => {
+                    hideFullscreenPrompt();
+                });
+            } else {
+                hideFullscreenPrompt();
+            }
+        }
+
+        function showFullscreenPrompt() {
+            if (isExamClosedLocally || hasTriggeredForceSubmit) return;
+            const p = document.getElementById('fullscreen-prompt-modal');
+            if (p) p.classList.remove('hidden'), p.classList.add('flex');
+        }
+
+        function hideFullscreenPrompt() {
+            const p = document.getElementById('fullscreen-prompt-modal');
+            if (p) p.classList.add('hidden'), p.classList.remove('flex');
+        }
+
+        function showViolationModal(message, count, max) {
+            const modal = document.getElementById('violation-modal');
+            const desc = document.getElementById('violation-modal-desc');
+            const countEl = document.getElementById('violation-current-count');
+            const progressEl = document.getElementById('violation-progress');
+            
+            if (desc && message) desc.textContent = message;
+            if (countEl) countEl.textContent = count;
+            if (progressEl) {
+                const pct = Math.min(100, Math.round((count / Math.max(1, max)) * 100));
+                progressEl.style.width = pct + '%';
+            }
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function resumeExamFromViolation() {
+            const modal = document.getElementById('violation-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            // Minta kembali masuk fullscreen jika keluar
+            if (!isFullscreenActive()) {
+                requestFullScreenMode();
+            }
+        }
+
+        function forceSubmitByViolation(message) {
+            if (hasTriggeredForceSubmit) return;
+            hasTriggeredForceSubmit = true;
+            isExamClosedLocally = true;
+
+            const modal = document.getElementById('violation-modal');
+            if (modal) modal.classList.add('hidden');
+
+            const noticeModal = document.getElementById('notice-modal');
+            const titleEl = document.getElementById('notice-modal-title');
+            const descEl = document.getElementById('notice-modal-desc');
+            const iconWrap = document.getElementById('notice-modal-icon-wrap');
+            const iconEl = document.getElementById('notice-modal-icon');
+
+            if (titleEl) titleEl.textContent = 'Ujian Ditutup: Batas Pelanggaran Tercapai';
+            if (descEl) descEl.textContent = message || 'Anda telah mencapai batas maksimal keluar dari halaman ujian. Seluruh jawaban dikumpulkan otomatis oleh sistem.';
+            if (iconWrap) {
+                iconWrap.className = 'w-16 h-16 md:w-20 md:h-20 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-sm';
+            }
+            if (iconEl) iconEl.textContent = 'gavel';
+
+            if (noticeModal) {
+                noticeModal.classList.remove('hidden');
+                noticeModal.classList.add('flex');
+            }
+
+            // Kirim submit form otomatis ke server
+            setTimeout(() => {
+                const form = document.getElementById('submitExamFinalForm');
+                const isTimeoutInput = document.getElementById('isTimeoutInput');
+                if (isTimeoutInput) isTimeoutInput.value = '1';
+                if (form) form.submit();
+            }, 2500);
+        }
+
+        function reportViolationToServer(type, details) {
+            if (!antiCheatEnabled || isExamClosedLocally || hasTriggeredForceSubmit) return;
+            if (isReportingViolation) return;
+            isReportingViolation = true;
+
+            let duration = 0;
+            if (violationLeaveTimestamp) {
+                duration = Math.max(0, Math.round((Date.now() - violationLeaveTimestamp) / 1000));
+                violationLeaveTimestamp = null;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            fetch(`{{ route('student.exam.violation', $exam->id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    violation_type: type,
+                    duration_seconds: duration,
+                    details: details,
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                isReportingViolation = false;
+                if (data.success) {
+                    currentViolations = data.violation_number;
+                    if (data.is_exceeded) {
+                        forceSubmitByViolation(data.message);
+                    } else {
+                        showViolationModal(data.message, currentViolations, data.max_violations);
+                    }
+                }
+            })
+            .catch(err => {
+                isReportingViolation = false;
+                console.warn('Gagal mencatat pelanggaran:', err);
+            });
+        }
+
+        if (antiCheatEnabled) {
+            // 1. Tampilkan prompt fullscreen setelah 1 detik halaman dibuka jika belum fullscreen
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    if (!isFullscreenActive()) {
+                        showFullscreenPrompt();
+                    }
+                }, 800);
+            });
+
+            // 2. Deteksi keluar dari Fullscreen (Esc / F11 / window resize)
+            document.addEventListener('fullscreenchange', () => {
+                if (!isFullscreenActive() && !isExamClosedLocally && !hasTriggeredForceSubmit) {
+                    reportViolationToServer('exit_fullscreen', 'Siswa keluar dari mode layar penuh (Fullscreen)');
+                    showFullscreenPrompt();
+                }
+            });
+
+            // 3. Deteksi Pindah Tab (Page Visibility API)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    violationLeaveTimestamp = Date.now();
+                } else {
+                    if (violationLeaveTimestamp && !isExamClosedLocally && !hasTriggeredForceSubmit) {
+                        reportViolationToServer('tab_switch', 'Siswa terdeteksi berpindah tab atau meminimalkan browser');
+                    }
+                }
+            });
+
+            // 4. Deteksi Window Blur (Klik ke aplikasi luar seperti WA, Notepad, kalkulator, Alt+Tab)
+            window.addEventListener('blur', () => {
+                if (!violationLeaveTimestamp) {
+                    violationLeaveTimestamp = Date.now();
+                }
+            });
+
+            window.addEventListener('focus', () => {
+                if (violationLeaveTimestamp && !isExamClosedLocally && !hasTriggeredForceSubmit) {
+                    // Beri jeda kecil agar visibilitychange tidak double trigger
+                    setTimeout(() => {
+                        if (violationLeaveTimestamp) {
+                            reportViolationToServer('window_blur', 'Siswa beralih fokus ke jendela/aplikasi lain (Alt+Tab/Aplikasi luar)');
+                        }
+                    }, 300);
+                }
+            });
+
+            // 5. Peringatan sebelum menutup / merefresh tab browser (beforeunload)
+            window.addEventListener('beforeunload', (e) => {
+                if (!isExamClosedLocally && !hasTriggeredForceSubmit) {
+                    e.preventDefault();
+                    e.returnValue = 'Ujian sedang berlangsung! Jika Anda meninggalkan halaman ini, jawaban Anda dapat dikumpulkan otomatis.';
+                    return e.returnValue;
+                }
+            });
+        }
+
+        // ════════════ ANTI-COPY / CLIPBOARD / SHORTCUT RESTRICTIONS ════════════
         (function() {
             // Blokir klik kanan (context menu) di seluruh halaman ujian
             document.addEventListener('contextmenu', function(e) {
@@ -1498,30 +1768,26 @@
 
             // Blokir shortcut keyboard untuk copy, select all, print, save, inspect
             document.addEventListener('keydown', function(e) {
-                // Izinkan navigasi dan pengetikan biasa pada textarea jawaban esai (Ctrl+V paste jika dibutuhkan siswa / backspace dll)
                 const isEssayInput = e.target && e.target.id === 'answer-text-input';
 
                 // Cegah kombinasi Ctrl/Cmd
                 if (e.ctrlKey || e.metaKey) {
                     const key = e.key.toLowerCase();
-                    // Cegah Ctrl+C (Copy), Ctrl+X (Cut) di luar maupun di dalam soal
                     if (key === 'c' || key === 'x') {
                         e.preventDefault();
                         return false;
                     }
-                    // Cegah Ctrl+A (Select All) jika di luar textarea jawaban
                     if (key === 'a' && !isEssayInput) {
                         e.preventDefault();
                         return false;
                     }
-                    // Cegah Ctrl+P (Print), Ctrl+S (Save), Ctrl+U (View Source)
                     if (key === 'p' || key === 's' || key === 'u') {
                         e.preventDefault();
                         return false;
                     }
-                    // Cegah Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
                     if (e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) {
                         e.preventDefault();
+                        if (antiCheatEnabled) reportViolationToServer('devtools', 'Mencoba membuka inspect element / developer tools');
                         return false;
                     }
                 }
@@ -1529,6 +1795,7 @@
                 // Cegah tombol F12 (Inspect Element)
                 if (e.key === 'F12') {
                     e.preventDefault();
+                    if (antiCheatEnabled) reportViolationToServer('devtools', 'Menekan tombol F12 (Inspect Element)');
                     return false;
                 }
             }, false);

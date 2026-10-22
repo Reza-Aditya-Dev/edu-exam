@@ -8,6 +8,7 @@ use App\Models\ExamParticipant;
 use App\Models\ExamQuestion;
 use App\Models\ExamResult;
 use App\Models\StudentAnswer;
+use App\Models\ExamViolation;
 use App\Models\ActivityLog;
 use App\Models\Notification;
 use Illuminate\Http\Request;
@@ -234,6 +235,65 @@ class ExamController extends Controller
         ]);
     }
 
+    // Catat Pelanggaran Anti-Cheat (AJAX)
+    public function logViolation(Request $request, Exam $exam)
+    {
+        $student = Auth::user();
+        $this->authorizeExam($exam, $student);
+
+        $participant = ExamParticipant::where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->where('status', 'in_progress')
+            ->first();
+
+        if (!$participant) {
+            return response()->json(['success' => false, 'message' => 'Sesi ujian tidak aktif'], 400);
+        }
+
+        $request->validate([
+            'violation_type'   => 'required|string|max:50',
+            'duration_seconds' => 'nullable|integer|min:0',
+            'details'          => 'nullable|string|max:500',
+        ]);
+
+        $settings = $exam->settings;
+        $maxViolations = $settings ? ($settings->max_violations ?? 3) : 3;
+
+        // Hitung nomor pelanggaran berikutnya
+        $currentCount = ExamViolation::where('exam_participant_id', $participant->id)->count();
+        $violationNumber = $currentCount + 1;
+
+        $violation = ExamViolation::create([
+            'exam_id'             => $exam->id,
+            'student_id'          => $student->id,
+            'exam_participant_id' => $participant->id,
+            'violation_type'      => $request->input('violation_type', 'tab_switch'),
+            'duration_seconds'    => (int)$request->input('duration_seconds', 0),
+            'violation_number'    => $violationNumber,
+            'details'             => $request->input('details'),
+            'occurred_at'         => now(),
+        ]);
+
+        ActivityLog::log(
+            'exam_violation',
+            "Siswa {$student->name} terdeteksi melanggar ({$violation->type_label}, ke-{$violationNumber}) pada ujian: {$exam->title}",
+            $exam
+        );
+
+        $isExceeded = $violationNumber >= $maxViolations;
+
+        return response()->json([
+            'success'          => true,
+            'violation_number' => $violationNumber,
+            'max_violations'   => $maxViolations,
+            'is_exceeded'      => $isExceeded,
+            'type_label'       => $violation->type_label,
+            'message'          => $isExceeded
+                ? "Batas maksimal pelanggaran ({$maxViolations}x) telah tercapai. Ujian Anda otomatis dikumpulkan."
+                : "Peringatan ke-{$violationNumber} dari batas {$maxViolations}x: Terdeteksi meninggalkan halaman ujian!",
+        ]);
+    }
+
     // Submit / Tutup Ujian oleh Siswa
     public function submit(Request $request, Exam $exam)
     {
@@ -383,16 +443,39 @@ class ExamController extends Controller
                 }
             }
 
-            $passStatus = $totalScore >= $exam->passing_grade ? 'pass' : 'fail';
+            // Kalkulasi skor murni (raw score) dan penalti pelanggaran
+            $rawScore = $totalScore;
+            $violationCount = ExamViolation::where('exam_participant_id', $participant->id)->count();
+
+            // Hitung penalti otomatis berdasarkan pengaturan ujian
+            $settings = $exam->settings;
+            $penaltyPerViolation = (float)($settings?->violation_penalty_points ?? 0);
+            $penaltyScore = round($violationCount * $penaltyPerViolation, 2);
+
+            // Cek apakah sebelumnya sudah ada status diskualifikasi manual dari guru
+            $existingResult = ExamResult::where('exam_id', $exam->id)
+                ->where('student_id', $participant->student_id)
+                ->first();
+            $isDisqualified = $existingResult?->is_disqualified ?? false;
+            $disqualificationReason = $existingResult?->disqualification_reason;
+
+            // Jika didiskualifikasi, total skor adalah 0
+            if ($isDisqualified) {
+                $finalScore = 0;
+            } else {
+                $finalScore = max(0, round($rawScore - $penaltyScore, 2));
+            }
+
+            $passStatus = $finalScore >= $exam->passing_grade ? 'pass' : 'fail';
             $gradingStatus = $hasPendingEssay ? 'pending_review' : 'graded';
 
             // Tetapkan waktu pengumpulan satu kali secara konsisten
-            $submittedAt = now();
-
-            // Hitung durasi pengerjaan (dalam menit) berdasarkan waktu mulai riil dan waktu pengumpulan
-            $timeSpent = 0;
-            if ($participant->started_at) {
-                $timeSpent = (int) $participant->started_at->diffInMinutes($submittedAt);
+            // Jika status timeout atau ujian ditutup karena lewat batas jadwal, batasi ke batas waktu yang berlaku
+            $nowMoment = now();
+            if ($isTimeout && $exam->end_carbon && $nowMoment->greaterThan($exam->end_carbon)) {
+                $submittedAt = $exam->end_carbon;
+            } else {
+                $submittedAt = $nowMoment;
             }
 
             $participant->update([
@@ -401,17 +484,25 @@ class ExamController extends Controller
                 'is_late_submission' => $isTimeout,
             ]);
 
+            // Hitung durasi pengerjaan (dalam menit) setelah submitted_at tersimpan
+            $timeSpent = $participant->calculateTimeSpentMinutes($submittedAt);
+
             ExamResult::updateOrCreate(
                 ['exam_id' => $exam->id, 'student_id' => $participant->student_id],
                 [
-                    'exam_participant_id' => $participant->id,
-                    'total_score'         => $totalScore,
-                    'correct_answers'     => $correctCount,
-                    'wrong_answers'       => $wrongCount,
-                    'unanswered'          => $unansweredCount,
-                    'time_spent_minutes'  => $timeSpent,
-                    'pass_status'         => $passStatus,
-                    'grading_status'      => $gradingStatus,
+                    'exam_participant_id'    => $participant->id,
+                    'total_score'            => $finalScore,
+                    'raw_score'              => $rawScore,
+                    'penalty_score'          => $penaltyScore,
+                    'violation_count'        => $violationCount,
+                    'is_disqualified'        => $isDisqualified,
+                    'disqualification_reason'=> $disqualificationReason,
+                    'correct_answers'        => $correctCount,
+                    'wrong_answers'          => $wrongCount,
+                    'unanswered'             => $unansweredCount,
+                    'time_spent_minutes'     => $timeSpent,
+                    'pass_status'            => $passStatus,
+                    'grading_status'         => $gradingStatus,
                 ]
             );
 

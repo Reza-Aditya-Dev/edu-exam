@@ -264,6 +264,10 @@
                                     <span class="material-symbols-outlined text-[18px] text-primary">assessment</span>
                                     <span>Lihat Hasil</span>
                                 </a>
+                                <button type="button" onclick="openExtendTimeModal({{ $exam->id }}, '{{ addslashes($exam->title) }}', {{ $exam->duration_minutes }}, '{{ \Carbon\Carbon::parse($exam->end_time)->format('H:i') }}', '{{ $exam->timezone_code }}')" class="inline-flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-sm hover:opacity-95 transition-all font-semibold" title="Perpanjang Waktu Ujian">
+                                    <span class="material-symbols-outlined text-[18px]">more_time</span>
+                                    <span>+ Perpanjang Waktu</span>
+                                </button>
                                 <form action="{{ route('teacher.exams.complete', $exam) }}" method="POST" class="inline" onsubmit="return confirm('Tutup sesi ujian ini sekarang?');">
                                     @csrf
                                     <button type="submit" class="p-2 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container transition-colors border border-slate-200" title="Tutup Sesi Ujian">
@@ -437,6 +441,10 @@
                                 <span>Semua koreksi otomatis dan esai telah dinilai sepenuhnya.</span>
                             </div>
                             <div class="flex items-center gap-space-xs self-end sm:self-auto">
+                                <button type="button" onclick="openReopenModal({{ $exam->id }}, '{{ addslashes($exam->title) }}', {{ $exam->duration_minutes }}, '{{ $exam->timezone_code }}')" class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-label-md text-label-md shadow-sm transition-all font-semibold" title="Buka Kembali Ujian yang Sudah Berakhir">
+                                    <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                                    <span>Buka Kembali</span>
+                                </button>
                                 <a href="{{ route('teacher.exams.results', $exam) }}" class="inline-flex items-center gap-1 px-space-md py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md shadow-sm hover:bg-surface-container transition-colors border border-slate-200">
                                     <span class="material-symbols-outlined text-[16px] text-primary">download</span>
                                     <span>Rekap Nilai</span>
@@ -550,5 +558,210 @@
             </div>
         </div>
     @endif
+    <!-- ══ MODAL PERPANJANG WAKTU UJIAN ══ -->
+    <div id="extend-time-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-slate-100 flex flex-col">
+            <div class="flex items-center gap-3 text-primary mb-3">
+                <div class="w-10 h-10 rounded-xl bg-primary-fixed/40 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-[24px]">more_time</span>
+                </div>
+                <div>
+                    <h3 class="font-headline font-bold text-base text-slate-900">Perpanjang Waktu Ujian</h3>
+                    <p class="text-xs text-slate-500" id="extend-modal-subtitle">Tambah durasi sesi yang sedang aktif</p>
+                </div>
+            </div>
+
+            <form id="extendTimeForm" method="POST" action="">
+                @csrf
+                <div class="space-y-4 my-2">
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex flex-col gap-1">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Judul Ujian:</span>
+                            <strong class="text-slate-800 truncate max-w-[220px]" id="extend-exam-title">-</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Durasi Saat Ini:</span>
+                            <span class="font-bold text-slate-700" id="extend-exam-duration">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Batas Waktu Sebelumnya:</span>
+                            <span class="font-bold text-slate-700" id="extend-exam-endtime">-</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Pilih Tambahan Waktu (Menit):
+                        </label>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <button type="button" onclick="setQuickExtend(10)" class="quick-extend-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition">
+                                +10 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickExtend(15)" class="quick-extend-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition">
+                                +15 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickExtend(30)" class="quick-extend-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition">
+                                +30 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickExtend(60)" class="quick-extend-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition">
+                                +60 Mnt
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="added_minutes" id="added_minutes_input" min="1" max="240" value="15" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-500 transition">
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">Menit Tambahan</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">
+                            Siswa yang sedang aktif mengerjakan akan langsung mendapatkan tambahan waktu pengerjaan ini.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeExtendTimeModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold shadow-md transition cursor-pointer flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                        <span>Simpan Perpanjangan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ══ MODAL BUKA KEMBALI UJIAN ══ -->
+    <div id="reopen-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-slate-100 flex flex-col">
+            <div class="flex items-center gap-3 text-emerald-600 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <span class="material-symbols-outlined text-[24px]">lock_open</span>
+                </div>
+                <div>
+                    <h3 class="font-headline font-bold text-base text-slate-900">Buka Kembali Ujian</h3>
+                    <p class="text-xs text-slate-500">Aktifkan kembali sesi ujian yang telah berakhir</p>
+                </div>
+            </div>
+
+            <form id="reopenExamForm" method="POST" action="">
+                @csrf
+                <div class="space-y-4 my-2">
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                        <div class="font-bold mb-1 flex items-center gap-1 text-amber-800">
+                            <span class="material-symbols-outlined text-[16px]">info</span>
+                            <span>Ketentuan Pembukaan Ujian:</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-0.5 text-amber-800">
+                            <li>Sesi ujian akan kembali berstatus <strong>Sedang Berlangsung (Aktif)</strong>.</li>
+                            <li>Siswa yang sudah mengumpulkan ujian <strong>tetap selesai</strong> dan tidak bisa mengerjakan ulang.</li>
+                            <li>Siswa yang direset/dihapus nilainya oleh guru dapat <strong>masuk kembali</strong> untuk mengerjakan.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex flex-col gap-1">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Judul Ujian:</span>
+                            <strong class="text-slate-800 truncate max-w-[220px]" id="reopen-exam-title">-</strong>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Alokasi Waktu Sesi Baru (Menit Mulai Sekarang):
+                        </label>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <button type="button" onclick="setQuickReopen(30)" class="quick-reopen-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition">
+                                30 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickReopen(60)" class="quick-reopen-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition">
+                                60 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickReopen(90)" class="quick-reopen-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition">
+                                90 Mnt
+                            </button>
+                            <button type="button" onclick="setQuickReopen(120)" class="quick-reopen-btn py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition">
+                                120 Mnt
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="duration_minutes" id="reopen_duration_input" min="5" max="360" value="60" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 transition">
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">Menit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeReopenModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-md transition cursor-pointer flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                        <span>Buka Ujian Sekarang</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+@push('scripts')
+<script>
+    function openExtendTimeModal(examId, title, duration, endTime, tzCode) {
+        document.getElementById('extend-exam-title').textContent = title;
+        document.getElementById('extend-exam-duration').textContent = duration + ' Menit';
+        document.getElementById('extend-exam-endtime').textContent = endTime + ' ' + tzCode;
+        document.getElementById('extendTimeForm').action = '/guru/ujian/' + examId + '/perpanjang-waktu';
+        
+        const modal = document.getElementById('extend-time-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeExtendTimeModal() {
+        const modal = document.getElementById('extend-time-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function setQuickExtend(minutes) {
+        document.getElementById('added_minutes_input').value = minutes;
+    }
+
+    function openReopenModal(examId, title, defaultDuration, tzCode) {
+        document.getElementById('reopen-exam-title').textContent = title;
+        document.getElementById('reopen_duration_input').value = defaultDuration || 60;
+        document.getElementById('reopenExamForm').action = '/guru/ujian/' + examId + '/buka-kembali';
+
+        const modal = document.getElementById('reopen-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeReopenModal() {
+        const modal = document.getElementById('reopen-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function setQuickReopen(minutes) {
+        document.getElementById('reopen_duration_input').value = minutes;
+    }
+
+    // Tutup modal jika user menekan ESC atau klik backdrop
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeExtendTimeModal();
+            closeReopenModal();
+        }
+    });
+
+    document.getElementById('extend-time-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeExtendTimeModal();
+    });
+
+    document.getElementById('reopen-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeReopenModal();
+    });
+</script>
+@endpush
 @endsection

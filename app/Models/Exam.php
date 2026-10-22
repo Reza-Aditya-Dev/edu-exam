@@ -284,17 +284,17 @@ class Exam extends Model
                 $passStatus = $totalScore >= $this->passing_grade ? 'pass' : 'fail';
                 $gradingStatus = $hasPendingEssay ? 'pending_review' : 'graded';
 
-                $submittedAt = now();
-                $timeSpent = 0;
-                if ($participant->started_at) {
-                    $timeSpent = (int) $participant->started_at->diffInMinutes($submittedAt);
-                }
+                // Gunakan end_carbon atau now() sebagai waktu submitted_at resmi
+                $submittedAt = $this->end_carbon ?? now();
 
                 $participant->update([
                     'status'             => 'timed_out',
                     'submitted_at'       => $submittedAt,
                     'is_late_submission' => true,
                 ]);
+
+                // Hitung durasi pengerjaan yang valid sesuai durasi ujian & sesi
+                $timeSpent = $participant->calculateTimeSpentMinutes($submittedAt);
 
                 ExamResult::updateOrCreate(
                     ['exam_id' => $this->id, 'student_id' => $participant->student_id],

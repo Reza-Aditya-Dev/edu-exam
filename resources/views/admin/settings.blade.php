@@ -163,12 +163,27 @@
                             </div>
                         </div>
 
-                        <!-- Kontak & Email -->
-                        <div class="flex flex-col gap-1.5 sm:col-span-2">
-                            <label class="font-label-md text-label-md text-on-surface font-semibold">Kontak &amp; Email Resmi Helpdesk CBT</label>
+                        <!-- Email Resmi Admin / Helpdesk CBT -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+                                <span>Email Bantuan / Admin CBT</span>
+                                <span class="text-outline font-normal text-body-sm">Ditampilkan di footer welcome</span>
+                            </label>
                             <div class="flex items-center bg-surface rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary shadow-sm border border-slate-200/60">
-                                <span class="material-symbols-outlined text-outline text-[20px] mr-3">contact_mail</span>
-                                <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface" type="text" name="school_contact" value="{{ old('school_contact', \App\Models\SchoolSetting::get('school_contact', 'info@smanusantara.sch.id / +62 21-7201928')) }}" />
+                                <span class="material-symbols-outlined text-outline text-[20px] mr-3">mail</span>
+                                <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface" type="email" name="school_email" value="{{ old('school_email', \App\Models\SchoolSetting::get('school_email', 'admin@eduexam.id')) }}" placeholder="Contoh: admin@eduexam.id" />
+                            </div>
+                        </div>
+
+                        <!-- Nomor WhatsApp / Telepon Bantuan -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between">
+                                <span>WhatsApp / Telepon Bantuan</span>
+                                <span class="text-outline font-normal text-body-sm">Ditampilkan di footer welcome</span>
+                            </label>
+                            <div class="flex items-center bg-surface rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-primary shadow-sm border border-slate-200/60">
+                                <span class="material-symbols-outlined text-outline text-[20px] mr-3">call</span>
+                                <input class="w-full bg-transparent border-none outline-none font-body-md text-body-md text-on-surface" type="text" name="school_phone" value="{{ old('school_phone', \App\Models\SchoolSetting::get('school_phone', '0812-3456-7890')) }}" placeholder="Contoh: 0812-3456-7890" />
                             </div>
                         </div>
 
@@ -544,7 +559,8 @@
             document.querySelector('[name="school_npsn"]').value = '20103482';
             document.querySelector('[name="school_accreditation"]').value = 'A (Unggul)';
             document.querySelector('[name="school_address"]').value = 'Jl. Garuda No. 45, Kebayoran Baru, Jakarta Selatan, DKI Jakarta 12120';
-            document.querySelector('[name="school_contact"]').value = 'info@smanusantara.sch.id / +62 21-7201928';
+            if (document.querySelector('[name="school_email"]')) document.querySelector('[name="school_email"]').value = 'admin@eduexam.id';
+            if (document.querySelector('[name="school_phone"]')) document.querySelector('[name="school_phone"]').value = '0812-3456-7890';
             document.querySelector('[name="principal_name"]').value = 'Drs. H. Mulyadi, M.Pd';
             document.querySelector('[name="principal_nip"]').value = '19780512 200312 1 002';
             document.querySelector('[name="exam_default_duration"]').value = '60 Menit';
