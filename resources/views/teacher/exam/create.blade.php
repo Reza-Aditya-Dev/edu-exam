@@ -375,12 +375,21 @@
                         </div>
                     </label>
 
-                    <!-- Option 7: Kunci jawaban setelah selesai -->
+                    <!-- Option 7: Boleh lihat kembali soal & jawaban siswa -->
+                    <label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
+                        <input name="allow_review" value="1" {{ old('allow_review') == '1' ? 'checked' : '' }} class="mt-1 w-4 h-4 rounded text-primary-container focus:ring-0 focus:outline-none accent-primary" type="checkbox"/>
+                        <div class="flex flex-col">
+                            <span class="font-label-lg text-label-lg text-on-surface font-semibold">Izinkan siswa melihat kembali lembar soal &amp; jawaban</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Siswa dapat meninjau butir soal dan jawaban yang telah dikerjakannya</span>
+                        </div>
+                    </label>
+
+                    <!-- Option 8: Kunci jawaban setelah selesai -->
                     <label class="flex items-start gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
                         <input name="show_correct_answers" value="1" {{ old('show_correct_answers') == '1' ? 'checked' : '' }} class="mt-1 w-4 h-4 rounded text-primary-container focus:ring-0 focus:outline-none accent-primary" type="checkbox"/>
                         <div class="flex flex-col">
                             <span class="font-label-lg text-label-lg text-on-surface font-semibold">Tampilkan kunci pembahasan</span>
-                            <span class="font-body-sm text-body-sm text-on-surface-variant">Kunci dan penjelasan dapat ditinjau siswa</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Kunci dan penjelasan materi dapat ditinjau siswa</span>
                         </div>
                     </label>
                 </div>

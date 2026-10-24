@@ -80,6 +80,12 @@ Route::middleware(['auth', 'role:teacher'])->prefix('guru')->name('teacher.')->g
         Route::get('/',                [Teacher\QuestionController::class, 'index'])->name('index');
         Route::get('/buat',            [Teacher\QuestionController::class, 'create'])->name('create');
         Route::post('/',               [Teacher\QuestionController::class, 'store'])->name('store');
+        // Import Soal
+        Route::get('/template-import',        [Teacher\QuestionController::class, 'downloadTemplate'])->name('template');
+        Route::get('/import',                 [Teacher\QuestionController::class, 'importForm'])->name('import');
+        Route::post('/import/preview',        [Teacher\QuestionController::class, 'previewImport'])->name('import.preview');
+        Route::post('/import/confirm',        [Teacher\QuestionController::class, 'confirmImport'])->name('import.confirm');
+
         Route::get('/{question}/edit', [Teacher\QuestionController::class, 'edit'])->name('edit');
         Route::put('/{question}',      [Teacher\QuestionController::class, 'update'])->name('update');
         Route::delete('/{question}',   [Teacher\QuestionController::class, 'destroy'])->name('destroy');

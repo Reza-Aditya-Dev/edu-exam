@@ -256,5 +256,298 @@
         </div>
     </div>
     @endif
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- BAGIAN PENINJAUAN SOAL & JAWABAN SISWA -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="mt-8 pt-6 border-t border-surface-container" id="review-soal-jawaban">
+        @if($allowReview)
+            <!-- Section Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 bg-surface-container-lowest p-4 md:p-5 rounded-2xl border border-surface-container shadow-xs">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-fixed text-primary text-xs font-bold mb-1">
+                        <span class="material-symbols-outlined text-[15px]">fact_check</span>
+                        <span>Lembar Jawaban Siswa</span>
+                    </div>
+                    <h3 class="font-headline-sm text-base md:text-xl font-bold text-on-surface tracking-tight">
+                        Tinjauan Butir Soal &amp; Jawaban Anda
+                    </h3>
+                    <p class="font-body-sm text-xs md:text-sm text-on-surface-variant mt-0.5">
+                        Menampilkan butir soal ujian beserta pilihan dan jawaban yang telah Anda simpan saat mengerjakan ujian.
+                    </p>
+                </div>
+
+                <!-- Info Badges -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    @if($showCorrectAnswers)
+                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-secondary-container text-on-secondary-container font-label-sm text-xs font-semibold shadow-2xs">
+                            <span class="material-symbols-outlined text-[16px]">visibility</span>
+                            <span>Kunci &amp; Pembahasan Dibuka</span>
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-surface-container text-on-surface-variant font-label-sm text-xs font-semibold">
+                            <span class="material-symbols-outlined text-[16px]">visibility_off</span>
+                            <span>Kunci Jawaban Ditutup Guru</span>
+                        </span>
+                    @endif
+                    <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-surface-container-high text-on-surface font-label-sm text-xs font-bold">
+                        <span class="material-symbols-outlined text-[16px]">quiz</span>
+                        <span>{{ count($answers) }} Butir Soal</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Questions Stream -->
+            @php
+                $scorePerQ = count($answers) > 0 ? round(100 / count($answers), 1) : 0;
+            @endphp
+
+            <div class="flex flex-col gap-5">
+                @forelse($answers as $index => $answer)
+                    @php
+                        $qNum = $index + 1;
+                        $examQuestion = $answer->examQuestion;
+                        $q = $examQuestion ? $examQuestion->question : null;
+                        if (!$q) continue;
+
+                        $isEssay = $q->type === 'essay';
+                        $maxQScore = (float)($q->score ?? $scorePerQ);
+                        $obtainedScore = (float)$answer->score_obtained;
+                        $hasAnswered = !is_null($answer->selected_option_id) || !empty(trim($answer->answer_text ?? ''));
+                        $isCorrect = $answer->is_correct;
+                    @endphp
+
+                    <article id="soal-{{ $qNum }}" class="bg-surface-container-lowest rounded-2xl shadow-xs border border-surface-container overflow-hidden flex flex-col transition-all">
+                        <!-- Card Header -->
+                        <div class="px-4 md:px-5 py-3 bg-surface-container-low/70 border-b border-surface-container flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2.5 py-1 rounded-lg bg-surface-container-highest text-on-surface font-bold text-xs md:text-sm">
+                                    Soal No. {{ $qNum }}
+                                </span>
+                                <span class="text-xs text-on-surface-variant font-medium">
+                                    {{ $q->type === 'multiple_choice' ? 'Pilihan Ganda' : ($q->type === 'true_false' ? 'Benar / Salah' : ($q->type === 'essay' ? 'Esai / Uraian' : 'Isian')) }}
+                                </span>
+                                <span class="text-xs text-on-surface-variant">• Bobot: <strong class="text-on-surface">{{ $maxQScore }}</strong> poin</span>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <div>
+                                @if($isEssay)
+                                    @if($isCorrect === true)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">check</span>
+                                            <span>Dinilai Benar ({{ $obtainedScore }}/{{ $maxQScore }})</span>
+                                        </span>
+                                    @elseif($isCorrect === false && $obtainedScore > 0)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">tune</span>
+                                            <span>Nilai Sebagian ({{ $obtainedScore }}/{{ $maxQScore }})</span>
+                                        </span>
+                                    @elseif($isCorrect === false)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container text-error text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">close</span>
+                                            <span>Dinilai 0 (0/{{ $maxQScore }})</span>
+                                        </span>
+                                    @elseif($obtainedScore > 0)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">tune</span>
+                                            <span>Nilai ({{ $obtainedScore }}/{{ $maxQScore }})</span>
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">pending</span>
+                                            <span>Menunggu Koreksi Guru</span>
+                                        </span>
+                                    @endif
+                                @elseif($showCorrectAnswers)
+                                    @if($isCorrect)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+                                            <span class="material-symbols-outlined text-[14px]">check</span>
+                                            <span>Benar (+{{ $obtainedScore }})</span>
+                                        </span>
+                                    @elseif($hasAnswered)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container text-error text-xs font-bold">
+                                            <span class="material-symbols-outlined text-[14px]">close</span>
+                                            <span>Salah (0 Poin)</span>
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">
+                                            <span class="material-symbols-outlined text-[14px]">remove</span>
+                                            <span>Tidak Dijawab (0 Poin)</span>
+                                        </span>
+                                    @endif
+                                @else
+                                    {{-- Kunci jawaban tidak dibuka oleh guru --}}
+                                    @if($hasAnswered)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface text-xs font-medium border border-surface-container">
+                                            <span class="material-symbols-outlined text-[14px] text-primary">task_alt</span>
+                                            <span>Tersimpan</span>
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-medium">
+                                            <span class="material-symbols-outlined text-[14px]">remove</span>
+                                            <span>Tidak Dijawab</span>
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-4 md:p-6 flex flex-col gap-4">
+                            <!-- Question Text -->
+                            <div class="text-on-surface text-sm md:text-base leading-relaxed font-normal">
+                                {!! nl2br(e($q->question_text)) !!}
+                            </div>
+
+                            <!-- Question Image -->
+                            @if($q->question_image)
+                                <div class="p-2 rounded-xl bg-surface-container-low border border-surface-container inline-block self-start max-w-full">
+                                    <img src="{{ asset('storage/' . $q->question_image) }}" alt="Gambar Soal No {{ $qNum }}" class="max-h-72 rounded-lg object-contain">
+                                </div>
+                            @endif
+
+                            <!-- Options View (PG / True False) -->
+                            @if(in_array($q->type, ['multiple_choice', 'true_false']) && $q->options)
+                                <div class="grid grid-cols-1 gap-2.5 mt-1">
+                                    @foreach($q->options as $opt)
+                                        @php
+                                            $isSelected = ($answer->selected_option_id == $opt->id);
+                                            $isCorrectOpt = $showCorrectAnswers && (bool)$opt->is_correct;
+
+                                            // Tentukan gaya styling card opsi
+                                            if ($showCorrectAnswers) {
+                                                if ($isSelected && $isCorrectOpt) {
+                                                    $boxClass = 'bg-secondary-container/30 border-secondary/50 shadow-xs';
+                                                    $badgeLetter = 'bg-secondary text-white font-bold';
+                                                } elseif ($isSelected && !$isCorrectOpt) {
+                                                    $boxClass = 'bg-error-container/30 border-error/50 shadow-xs';
+                                                    $badgeLetter = 'bg-error text-white font-bold';
+                                                } elseif ($isCorrectOpt) {
+                                                    $boxClass = 'bg-secondary-container/20 border-secondary/40';
+                                                    $badgeLetter = 'bg-secondary text-white font-bold';
+                                                } else {
+                                                    $boxClass = 'bg-surface opacity-80 border-surface-container';
+                                                    $badgeLetter = 'bg-surface-container text-on-surface-variant';
+                                                }
+                                            } else {
+                                                // Jika kunci tidak ditampilkan: tandai pilihan siswa saja
+                                                if ($isSelected) {
+                                                    $boxClass = 'bg-primary-fixed/40 border-primary/50 shadow-xs';
+                                                    $badgeLetter = 'bg-primary text-white font-bold';
+                                                } else {
+                                                    $boxClass = 'bg-surface border-surface-container';
+                                                    $badgeLetter = 'bg-surface-container text-on-surface-variant';
+                                                }
+                                            }
+                                        @endphp
+
+                                        <div class="flex items-center justify-between p-3.5 rounded-xl border {{ $boxClass }} transition-all">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 {{ $badgeLetter }}">
+                                                    {{ $opt->label }}
+                                                </span>
+                                                <span class="text-xs md:text-sm text-on-surface font-medium leading-normal">
+                                                    {{ $opt->option_text }}
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-2 shrink-0 ml-3">
+                                                @if($showCorrectAnswers)
+                                                    @if($isSelected && $isCorrectOpt)
+                                                        <span class="px-2.5 py-1 rounded-lg bg-surface-container-lowest text-secondary text-[11px] md:text-xs shadow-2xs flex items-center gap-1 font-bold">
+                                                            <span class="material-symbols-outlined text-[15px]">done_all</span>
+                                                            <span>Pilihan Anda &amp; Kunci Benar</span>
+                                                        </span>
+                                                    @elseif($isSelected && !$isCorrectOpt)
+                                                        <span class="px-2.5 py-1 rounded-lg bg-error-container text-error text-[11px] md:text-xs flex items-center gap-1 font-bold">
+                                                            <span class="material-symbols-outlined text-[15px]">close</span>
+                                                            <span>Pilihan Anda (Salah)</span>
+                                                        </span>
+                                                    @elseif($isCorrectOpt)
+                                                        <span class="px-2.5 py-1 rounded-lg bg-surface-container-lowest text-secondary text-[11px] md:text-xs shadow-2xs flex items-center gap-1 font-bold">
+                                                            <span class="material-symbols-outlined text-[15px]">check_circle</span>
+                                                            <span>Kunci Jawaban</span>
+                                                        </span>
+                                                    @endif
+                                                @else
+                                                    @if($isSelected)
+                                                        <span class="px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] md:text-xs flex items-center gap-1 font-semibold shadow-2xs">
+                                                            <span class="material-symbols-outlined text-[14px]">check</span>
+                                                            <span>Jawaban Anda</span>
+                                                        </span>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif($q->type === 'essay')
+                                <!-- Essay Written Answer -->
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-center justify-between text-xs text-on-surface-variant font-medium">
+                                        <span class="font-semibold text-on-surface flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px] text-primary">edit_note</span>
+                                            <span>Jawaban yang Anda Tulis:</span>
+                                        </span>
+                                        <span>{{ !empty(trim($answer->answer_text ?? '')) ? str_word_count($answer->answer_text) . ' kata' : 'Kosong' }}</span>
+                                    </div>
+                                    <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container text-on-surface text-xs md:text-sm leading-relaxed whitespace-pre-wrap">
+                                        {{ $answer->answer_text ?: '(Anda tidak menuliskan jawaban untuk soal ini)' }}
+                                    </div>
+                                </div>
+                            @else
+                                <!-- Short Answer View -->
+                                <div class="flex flex-col gap-2">
+                                    <span class="text-xs font-semibold text-on-surface flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[16px] text-primary">edit</span>
+                                        <span>Jawaban Isian Singkat Anda:</span>
+                                    </span>
+                                    <div class="p-3.5 rounded-xl bg-surface-container-low border border-surface-container text-on-surface text-xs md:text-sm font-semibold">
+                                        {{ $answer->answer_text ?: '(Kosong / Tidak diisi)' }}
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Explanation / Discussion Box (Jika diizinkan guru) -->
+                            @if($showCorrectAnswers && $q->explanation)
+                                <div class="mt-2 p-3.5 md:p-4 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-1.5">
+                                    <div class="flex items-center gap-1.5 text-primary text-xs md:text-sm font-bold">
+                                        <span class="material-symbols-outlined text-[18px]">lightbulb</span>
+                                        <span>Pembahasan &amp; Penjelasan Soal:</span>
+                                    </div>
+                                    <p class="text-xs md:text-sm text-on-surface leading-relaxed pl-6">
+                                        {{ $q->explanation }}
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="p-8 text-center bg-surface-container-lowest rounded-2xl border border-surface-container">
+                        <span class="material-symbols-outlined text-outline text-4xl mb-2">assignment_late</span>
+                        <p class="font-bold text-on-surface text-sm md:text-base">Data soal untuk ujian ini tidak ditemukan.</p>
+                    </div>
+                @endforelse
+            </div>
+        @else
+            <!-- Notice when Teacher Does NOT Allow Review -->
+            <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-xs border border-surface-container text-center flex flex-col items-center max-w-2xl mx-auto w-full">
+                <div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-3">
+                    <span class="material-symbols-outlined text-[28px]">lock</span>
+                </div>
+                <h3 class="font-headline-sm text-base md:text-lg font-bold text-on-surface">
+                    Peninjauan Soal &amp; Jawaban Belum Diizinkan
+                </h3>
+                <p class="font-body-sm text-xs md:text-sm text-on-surface-variant mt-2 max-w-md leading-relaxed">
+                    Guru pengampu belum mengizinkan Anda melihat kembali rincian butir soal dan jawaban untuk ujian ini. Silakan hubungi guru yang bersangkutan jika membutuhkan informasi lebih lanjut mengenai evaluasi hasil ujian.
+                </p>
+                <div class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">
+                    <span class="material-symbols-outlined text-[14px]">info</span>
+                    <span>Status Izin: Nonaktif</span>
+                </div>
+            </div>
+        @endif
+    </div>
 </div>
 @endsection

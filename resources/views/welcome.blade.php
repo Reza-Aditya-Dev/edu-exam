@@ -92,11 +92,29 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
 
+        /* Subtle organic floating animation */
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-subtle-float {
+            animation: subtleFloat 6s ease-in-out infinite;
+        }
+
+        /* Ambient glowing pulse */
+        @keyframes softGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        .animate-soft-glow {
+            animation: softGlow 8s ease-in-out infinite;
+        }
+
         /* Tab panel fade animation */
         @keyframes tabFadeIn {
             from {
                 opacity: 0;
-                transform: translateY(6px);
+                transform: translateY(8px);
             }
             to {
                 opacity: 1;
@@ -104,7 +122,36 @@
             }
         }
         .tab-fade-in {
-            animation: tabFadeIn 0.35s ease-out forwards;
+            animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Professional Scroll Reveal System */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-on-scroll.is-revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Subtle Stagger Delays for Cards */
+        .reveal-delay-1 { transition-delay: 80ms; }
+        .reveal-delay-2 { transition-delay: 160ms; }
+        .reveal-delay-3 { transition-delay: 240ms; }
+        .reveal-delay-4 { transition-delay: 320ms; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal-on-scroll {
+                opacity: 1 !important;
+                transform: none !important;
+                transition: none !important;
+            }
+            .animate-subtle-float, .animate-soft-glow {
+                animation: none !important;
+            }
         }
     </style>
 </head>
@@ -271,43 +318,42 @@
                 <!-- LEFT COLUMN: Content & Value Props -->
                 <div class="lg:col-span-5 xl:col-span-5 z-10 text-left pt-6 sm:pt-10 lg:pt-14 pb-4 lg:pb-12">
                     <!-- Pill Tag -->
-                    <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#eef4ff] text-[#2563eb] text-[11px] sm:text-xs font-semibold mb-5 sm:mb-6 border border-[#dbeafe] dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-900/50">
+                    <div class="reveal-on-scroll inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#eef4ff] text-[#2563eb] text-[11px] sm:text-xs font-semibold mb-5 sm:mb-6 border border-[#dbeafe] dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-900/50 shadow-xs">
                         <span>Platform Ujian Digital untuk Sekolah</span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#2563eb] dark:bg-blue-400"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#2563eb] dark:bg-blue-400 animate-pulse"></span>
                     </div>
 
                     <!-- Main Headline -->
-                    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold text-[#0b1c30] dark:text-white tracking-tight leading-[1.15] sm:leading-[1.12] mb-5 sm:mb-6">
+                    <h1 class="reveal-on-scroll reveal-delay-1 text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold text-[#0b1c30] dark:text-white tracking-tight leading-[1.15] sm:leading-[1.12] mb-5 sm:mb-6">
                         Ujian Digital,<br>
                         <span class="text-[#2563eb] dark:text-blue-400">Lebih Mudah,</span><br>
                         <span class="text-[#2563eb] dark:text-blue-400">Lebih Terukur.</span>
                     </h1>
 
                     <!-- Subtitle -->
-                    <p class="text-slate-500 dark:text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg mb-6 sm:mb-8 font-normal">
+                    <p class="reveal-on-scroll reveal-delay-2 text-slate-500 dark:text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg mb-6 sm:mb-8 font-normal">
                         EduExam hadir untuk membantu sekolah dalam melaksanakan ujian secara online dengan aman, praktis, dan efisien. Dilengkapi dengan fitur lengkap untuk guru, siswa, dan admin.
                     </p>
 
                     <!-- CTA Buttons -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-3.5 mb-8 sm:mb-10 w-full sm:w-auto">
-                      
-                            <a href="{{ route('login') }}" class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5">
-                                <span>Mulai Sekarang</span>
-                            </a>
+                    <div class="reveal-on-scroll reveal-delay-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-3.5 mb-8 sm:mb-10 w-full sm:w-auto">
+                        <a href="{{ route('login') }}" class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-blue-600/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-600/30 active:scale-95">
+                            <span>Mulai Sekarang</span>
+                        </a>
 
                         <button type="button" 
                                 onclick="openDemoModal()" 
-                                class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-[#f4f7fc] hover:bg-[#e9effa] text-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm border border-slate-200/80 dark:border-slate-700 flex items-center justify-center gap-2.5 transition">
+                                class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-[#f4f7fc] hover:bg-[#e9effa] text-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm border border-slate-200/80 dark:border-slate-700 flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-95">
                             <span>Pelajari Lebih Lanjut</span>
-                            <span class="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-[10px] pl-0.5">▶</span>
+                            <span class="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-[10px] pl-0.5 shadow-xs">▶</span>
                         </button>
                     </div>
 
                     <!-- 3 Horizontal Feature Highlights -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 pt-5 sm:pt-6 border-t border-slate-100 dark:border-slate-800/80 max-w-xl">
+                    <div class="reveal-on-scroll reveal-delay-4 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 pt-5 sm:pt-6 border-t border-slate-100 dark:border-slate-800/80 max-w-xl">
                         <!-- 100% Digital -->
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0">
+                        <div class="flex items-center gap-3 group">
+                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-xl">verified_user</span>
                             </div>
                             <div>
@@ -317,8 +363,8 @@
                         </div>
 
                         <!-- Real-time -->
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0">
+                        <div class="flex items-center gap-3 group">
+                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-xl">bolt</span>
                             </div>
                             <div>
@@ -328,8 +374,8 @@
                         </div>
 
                         <!-- Aman -->
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0">
+                        <div class="flex items-center gap-3 group">
+                            <div class="w-10 h-10 rounded-xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 flex items-center justify-center text-[#2563eb] flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-xl">lock</span>
                             </div>
                             <div>
@@ -347,7 +393,7 @@
                     <div class="relative w-full max-w-[640px] lg:max-w-none lg:absolute lg:top-0 lg:right-0 lg:bottom-0 lg:w-[48vw] xl:w-[50vw] 2xl:w-[52vw] flex justify-end items-start pointer-events-none sm:pointer-events-auto">
 
                         <!-- Decorative: Handwritten Cursive Slogan -->
-                        <div class="absolute top-2 sm:top-5 right-6 sm:right-12 md:right-16 lg:right-20 xl:right-28 2xl:right-36 z-20 pointer-events-none select-none text-right">
+                        <div class="animate-subtle-float absolute top-2 sm:top-5 right-6 sm:right-12 md:right-16 lg:right-20 xl:right-28 2xl:right-36 z-20 pointer-events-none select-none text-right">
                             <div class="font-script text-lg sm:text-2xl md:text-3xl font-bold text-[#1e3a8a] dark:text-blue-300 leading-[1.05] -rotate-6 tracking-wide drop-shadow-sm">
                                 Bersama<br>
                                 Membangun<br>
@@ -360,7 +406,7 @@
                         </div>
 
                         <!-- Decorative: Floating Tilted Pill Accent -->
-                        <div class="absolute top-10 sm:top-14 right-2 sm:right-4 w-4 sm:w-6 h-12 sm:h-20 rounded-full bg-[#46659c]/50 dark:bg-blue-500/30 rotate-[28deg] z-10 pointer-events-none"></div>
+                        <div class="animate-soft-glow absolute top-10 sm:top-14 right-2 sm:right-4 w-4 sm:w-6 h-12 sm:h-20 rounded-full bg-[#46659c]/50 dark:bg-blue-500/30 rotate-[28deg] z-10 pointer-events-none"></div>
 
                         <!-- Bottom right deep navy organic wave accent peeking out -->
                         <div class="absolute bottom-0 right-0 w-44 sm:w-72 md:w-80 h-32 sm:h-48 md:h-56 bg-[#0b1c30] dark:bg-[#0d1f38] rounded-tl-[80px] sm:rounded-tl-[120px] rounded-br-[0px] z-0 pointer-events-none opacity-95"></div>
@@ -369,7 +415,7 @@
                         <div class="relative z-10 drop-shadow-2xl w-full h-full flex justify-end">
                             <img src="{{ asset('images/hero_students_curved.png') }}" 
                                  alt="Siswa Mengikuti Ujian Digital EduExam" 
-                                 class="w-full h-auto lg:h-full lg:w-full object-cover object-left-top block select-none">
+                                 class="w-full h-auto lg:h-full lg:w-full object-cover object-left-top block select-none transition-transform duration-700 hover:scale-[1.01]">
                         </div>
                     </div>
                 </div>
@@ -381,48 +427,48 @@
     <!-- 4 FLOATING FEATURE CARDS (Directly Below Hero) -->
     <section class="relative z-20 -mt-2 sm:-mt-6 lg:-mt-8 mb-16 sm:mb-20 px-4 sm:px-6">
         <div class="max-w-7xl mx-auto">
-            <div class="bg-white dark:bg-[#0e1726] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/60 dark:shadow-black/50 border border-slate-100 dark:border-slate-800 p-6 sm:p-8 md:p-10 transition-colors duration-200">
+            <div class="reveal-on-scroll bg-white dark:bg-[#0e1726] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/60 dark:shadow-black/50 border border-slate-100 dark:border-slate-800 p-6 sm:p-8 md:p-10 transition-colors duration-200">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
                     
                     <!-- Feature 1: Ujian Online -->
-                    <div class="p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent first:pl-0 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 transition">
-                        <div class="w-12 h-12 rounded-2xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 text-[#2563eb] flex items-center justify-center mb-4 sm:mb-5">
+                    <div class="reveal-on-scroll reveal-delay-1 p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent first:pl-0 hover:bg-blue-50/40 dark:hover:bg-blue-950/40 transition-all duration-300 group hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-2xl bg-[#eaf4ff] dark:bg-blue-950/70 dark:text-blue-400 text-[#2563eb] flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-110 transition-transform duration-300">
                             <span class="material-symbols-outlined text-2xl">description</span>
                         </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2">Ujian Online</h3>
+                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Ujian Online</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Pelaksanaan ujian lebih fleksibel dengan sistem yang stabil, ringan, dan aman anti-kendala.
                         </p>
                     </div>
 
                     <!-- Feature 2: Bank Soal -->
-                    <div class="p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition">
-                        <div class="w-12 h-12 rounded-2xl bg-[#e6fbf4] dark:bg-emerald-950/70 dark:text-emerald-400 text-[#0d9488] flex items-center justify-center mb-4 sm:mb-5">
+                    <div class="reveal-on-scroll reveal-delay-2 p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent hover:bg-emerald-50/40 dark:hover:bg-emerald-950/40 transition-all duration-300 group hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-2xl bg-[#e6fbf4] dark:bg-emerald-950/70 dark:text-emerald-400 text-[#0d9488] flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-110 transition-transform duration-300">
                             <span class="material-symbols-outlined text-2xl">database</span>
                         </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2">Bank Soal</h3>
+                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Bank Soal</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Kelola ribuan soal dengan mudah, kelompokkan berdasarkan mata pelajaran, KD, dan jenjang kelas.
                         </p>
                     </div>
 
                     <!-- Feature 3: Penilaian Otomatis -->
-                    <div class="p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent hover:bg-purple-50/30 dark:hover:bg-purple-950/30 transition">
-                        <div class="w-12 h-12 rounded-2xl bg-[#f3edff] dark:bg-purple-950/70 dark:text-purple-400 text-[#7c3aed] flex items-center justify-center mb-4 sm:mb-5">
+                    <div class="reveal-on-scroll reveal-delay-3 p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent hover:bg-purple-50/40 dark:hover:bg-purple-950/40 transition-all duration-300 group hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-2xl bg-[#f3edff] dark:bg-purple-950/70 dark:text-purple-400 text-[#7c3aed] flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-110 transition-transform duration-300">
                             <span class="material-symbols-outlined text-2xl">monitoring</span>
                         </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2">Penilaian Otomatis</h3>
+                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Penilaian Otomatis</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Hemat waktu berhari-hari dengan koreksi otomatis seketika dan kalkulasi nilai akurat tuntas KKM.
                         </p>
                     </div>
 
                     <!-- Feature 4: Analitik Hasil -->
-                    <div class="p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent last:pr-0 hover:bg-amber-50/30 dark:hover:bg-amber-950/30 transition">
-                        <div class="w-12 h-12 rounded-2xl bg-[#fff6e6] dark:bg-amber-950/70 dark:text-amber-400 text-[#d97706] flex items-center justify-center mb-4 sm:mb-5">
+                    <div class="reveal-on-scroll reveal-delay-4 p-4 sm:p-5 lg:px-6 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100 sm:border-0 dark:border-slate-800/60 dark:bg-slate-800/20 sm:dark:bg-transparent last:pr-0 hover:bg-amber-50/40 dark:hover:bg-amber-950/40 transition-all duration-300 group hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-2xl bg-[#fff6e6] dark:bg-amber-950/70 dark:text-amber-400 text-[#d97706] flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-110 transition-transform duration-300">
                             <span class="material-symbols-outlined text-2xl">group</span>
                         </div>
-                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2">Analitik Hasil</h3>
+                        <h3 class="font-extrabold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Analitik Hasil</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Pantau daya serap butir soal, grafik ketuntasan kelas, dan rekapitulasi nilai siap cetak & ekspor Excel.
                         </p>
@@ -439,14 +485,14 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-center">
                 
                 <!-- Left: Teacher image mockup -->
-                <div class="lg:col-span-6 relative w-full max-w-lg mx-auto lg:max-w-none">
+                <div class="reveal-on-scroll lg:col-span-6 relative w-full max-w-lg mx-auto lg:max-w-none">
                     <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl border border-slate-100 dark:border-slate-800 aspect-[4/3] bg-slate-100 dark:bg-slate-800 group">
                         <img src="{{ asset('images/teacher_presenting.jpg') }}" 
                              alt="Guru Mengelola Ujian dengan EduExam" 
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
                         
                         <!-- Floating Badge on Teacher Photo -->
-                        <div class="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-white/95 dark:bg-[#0e1726]/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700 shadow-lg flex items-center justify-between">
+                        <div class="animate-subtle-float absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-white/95 dark:bg-[#0e1726]/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700 shadow-lg flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <div>
@@ -460,7 +506,7 @@
                 </div>
 
                 <!-- Right: Teacher Content -->
-                <div class="lg:col-span-6">
+                <div class="reveal-on-scroll reveal-delay-2 lg:col-span-6">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs font-semibold mb-4">
                         <span>Untuk Guru</span>
                     </div>
@@ -474,7 +520,7 @@
                     </p>
 
                     <div class="space-y-3.5 sm:space-y-4">
-                        <div class="flex items-start gap-3.5 sm:gap-4 p-4 rounded-2xl bg-white dark:bg-[#0e1726] border border-slate-100 dark:border-slate-800 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-700 transition">
+                        <div class="flex items-start gap-3.5 sm:gap-4 p-4 rounded-2xl bg-white dark:bg-[#0e1726] border border-slate-100 dark:border-slate-800 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
                             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <span class="material-symbols-outlined">dataset</span>
                             </div>
@@ -484,7 +530,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-start gap-3.5 sm:gap-4 p-4 rounded-2xl bg-white dark:bg-[#0e1726] border border-slate-100 dark:border-slate-800 shadow-sm hover:border-blue-200 dark:hover:border-blue-700 transition">
+                        <div class="flex items-start gap-3.5 sm:gap-4 p-4 rounded-2xl bg-white dark:bg-[#0e1726] border border-slate-100 dark:border-slate-800 shadow-sm hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
                             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <span class="material-symbols-outlined">live_tv</span>
                             </div>
@@ -729,7 +775,7 @@
     <section id="panduan" class="py-16 sm:py-24 px-4 sm:px-6 bg-[#f8faff] dark:bg-[#0a1220] border-t border-slate-100 dark:border-slate-800 transition-colors duration-200">
         <div class="max-w-7xl mx-auto">
             
-            <div class="text-center max-w-2xl mx-auto mb-14 sm:mb-16">
+            <div class="text-center max-w-2xl mx-auto mb-14 sm:mb-16 reveal-on-scroll">
                 <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2 block">Alur Kerja Praktis</span>
                 <h2 class="font-extrabold text-2xl sm:text-3xl md:text-4xl text-[#0b1c30] dark:text-white tracking-tight">
                     Panduan 4 Langkah Pelaksanaan Ujian
@@ -742,12 +788,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
                 
                 <!-- Step 1 -->
-                <div class="bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-md transition">
+                <div class="reveal-on-scroll reveal-delay-1 bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                             01
                         </div>
-                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2">Penyusunan Ujian</h4>
+                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Penyusunan Ujian</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Guru menginput soal ke bank soal, menentukan jadwal pelaksanaan, durasi waktu, serta token khusus ujian.
                         </p>
@@ -758,12 +804,12 @@
                 </div>
 
                 <!-- Step 2 -->
-                <div class="bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-md transition">
+                <div class="reveal-on-scroll reveal-delay-2 bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                             02
                         </div>
-                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2">Distribusi Token</h4>
+                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Distribusi Token</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Siswa membuka portal siswa dari smartphone atau komputer lab, lalu memasukkan token ujian untuk memulai tes.
                         </p>
@@ -774,12 +820,12 @@
                 </div>
 
                 <!-- Step 3 -->
-                <div class="bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-md transition">
+                <div class="reveal-on-scroll reveal-delay-3 bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                             03
                         </div>
-                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2">Pengerjaan & Autosave</h4>
+                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Pengerjaan & Autosave</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Siswa mengerjakan soal dengan timer yang berjalan. Setiap jawaban tersimpan otomatis ke server secara realtime.
                         </p>
@@ -790,12 +836,12 @@
                 </div>
 
                 <!-- Step 4 -->
-                <div class="bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-md transition">
+                <div class="reveal-on-scroll reveal-delay-4 bg-white dark:bg-[#0e1726] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative flex flex-col justify-between hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-extrabold text-lg flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                             04
                         </div>
-                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2">Koreksi & Analitik</h4>
+                        <h4 class="font-bold text-[#0b1c30] dark:text-white text-base mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Koreksi & Analitik</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             Saat waktu habis atau ujian dikumpulkan, nilai langsung terkoreksi. Guru dan admin dapat langsung mengunduh rekap.
                         </p>
@@ -814,8 +860,8 @@
 
     <!-- CALL TO ACTION BANNER -->
     <section class="py-16 sm:py-20 px-4 sm:px-6 bg-[#0b1c30] dark:bg-[#050b14] text-white relative overflow-hidden transition-colors duration-200">
-        <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="max-w-5xl mx-auto text-center relative z-10">
+        <div class="animate-soft-glow absolute -right-20 -bottom-20 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="max-w-5xl mx-auto text-center relative z-10 reveal-on-scroll">
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5">
                 Siap Melaksanakan Ujian Digital Sekolah yang Modern & Bebas Kendala?
             </h2>
@@ -823,11 +869,10 @@
                 Bergabunglah dengan ribuan siswa dan guru yang telah merasakan kemudahan evaluasi akademik digital terpadu bersama EduExam.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="{{ route('login') }}" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+                <a href="{{ route('login') }}" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all duration-300 shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1 flex items-center justify-center gap-2 active:scale-95">
                     <span>Masuk ke Akun Anda</span>
-                    
                 </a>
-                <button type="button" onclick="openDemoModal()" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-sm transition flex items-center justify-center gap-2">
+                <button type="button" onclick="openDemoModal()" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-95">
                     <span class="material-symbols-outlined text-sm">play_circle</span>
                     <span>Coba Simulasi CBT (Demo)</span>
                 </button>
@@ -1203,6 +1248,30 @@
 
             // 5. Inisialisasi Carousel Showcase Fitur 8 Detik
             startFeatureAutoTimer();
+
+            // 6. Professional Scroll Reveal Observer
+            if ('IntersectionObserver' in window) {
+                const revealObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-revealed');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, {
+                    threshold: 0.12,
+                    rootMargin: '0px 0px -40px 0px'
+                });
+
+                document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                    revealObserver.observe(el);
+                });
+            } else {
+                // Fallback jika browser lama
+                document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                    el.classList.add('is-revealed');
+                });
+            }
         });
 
         function closeMobileNav() {

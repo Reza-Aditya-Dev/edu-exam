@@ -443,10 +443,17 @@
                         </div>
                     </label>
                     <label class="p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 transition flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="allow_review" value="1" {{ optional($exam->settings)->allow_review ? 'checked' : '' }} class="mt-0.5 w-4 h-4 rounded text-indigo-600 accent-indigo-600">
+                        <div>
+                            <div class="font-bold text-xs text-slate-900">Izinkan Siswa Melihat Soal &amp; Jawaban</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">Siswa dapat melihat kembali lembar soal dan jawaban yang telah dikerjakan di halaman hasil.</div>
+                        </div>
+                    </label>
+                    <label class="p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 transition flex items-start gap-3 cursor-pointer sm:col-span-2">
                         <input type="checkbox" name="show_correct_answers" value="1" {{ optional($exam->settings)->show_correct_answers ? 'checked' : '' }} class="mt-0.5 w-4 h-4 rounded text-indigo-600 accent-indigo-600">
                         <div>
-                            <div class="font-bold text-xs text-slate-900">Tampilkan Kunci Jawaban</div>
-                            <div class="text-[11px] text-slate-500 mt-0.5">Hanya tampil setelah seluruh ujian selesai.</div>
+                            <div class="font-bold text-xs text-slate-900">Tampilkan Kunci Jawaban &amp; Pembahasan</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">Kunci jawaban dan pembahasan resmi ikut ditampilkan pada lembar tinjau soal siswa.</div>
                         </div>
                     </label>
                 </div>

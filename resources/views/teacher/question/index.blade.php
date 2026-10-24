@@ -20,10 +20,13 @@
             
             <!-- Action Buttons -->
             <div class="flex flex-wrap items-center gap-space-sm">
-                <button type="button" onclick="alert('Fitur Impor Soal format Excel/Word template sedang disiapkan. Gunakan Tambah Soal Baru untuk saat ini.')" class="inline-flex items-center gap-space-xs px-space-md py-2.5 rounded-xl bg-surface-container-low text-on-surface font-label-lg text-label-lg hover:bg-surface-container-high transition-all shadow-sm">
-                    <span class="material-symbols-outlined text-[20px] text-secondary">upload_file</span>
-                    <span>Impor Soal Excel / Word</span>
-                </button>
+                
+
+                <a href="{{ route('teacher.questions.import') }}" class="inline-flex items-center gap-space-xs px-space-md py-2.5 rounded-xl bg-surface-container-low text-on-surface font-label-lg text-label-lg hover:bg-surface-container-high transition-all shadow-sm border border-slate-200/60">
+                    <span class="material-symbols-outlined text-[20px] text-primary">upload_file</span>
+                    <span>Import Soal</span>
+                </a>
+
                 <a href="{{ route('teacher.questions.create') }}" class="inline-flex items-center gap-space-xs px-space-md py-2.5 rounded-xl bg-primary text-white font-label-lg text-label-lg hover:bg-primary-dark active:scale-95 transition-all shadow-sm">
                     <span class="material-symbols-outlined text-[20px]">add_circle</span>
                     <span>+ Tambah Soal Baru</span>

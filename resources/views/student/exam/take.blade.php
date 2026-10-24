@@ -10,6 +10,21 @@
         return [
             'id' => $eq->id,
             'number' => $idx + 1,
+            'question_id' => $eq->question->id,
+            'type' => $eq->question->type,
+            'score' => (float)($eq->question->score ?? 1),
+            'question_text' => $eq->question->question_text,
+            'image_url' => $eq->question->image_url,
+            'options' => $eq->question->options ? $eq->question->options->map(function($opt) {
+                return [
+                    'id' => $opt->id,
+                    'label' => $opt->label,
+                    'option_text' => $opt->option_text,
+                    'image_url' => $opt->image_url,
+                ];
+            })->values() : [],
+            'selected_option_id' => $ans ? $ans->selected_option_id : null,
+            'answer_text' => $ans ? ($ans->answer_text ?? '') : '',
             'has_answer' => (bool)$hasAns,
             'is_marked' => $ans ? (bool)$ans->is_marked : false,
         ];
@@ -258,7 +273,7 @@
 
                     <!-- Question Count Badge -->
                     <div class="bg-surface-container-high px-2.5 md:px-3.5 py-1 md:py-1.5 rounded-full text-on-surface text-xs md:text-sm font-semibold shrink-0">
-                        <span class="text-primary font-bold">{{ $currentIndex }}</span><span class="text-on-surface-variant">/{{ $totalQ }}</span>
+                        <span id="header-current-q" class="text-primary font-bold">{{ $currentIndex }}</span><span class="text-on-surface-variant">/{{ $totalQ }}</span>
                     </div>
 
                     <!-- Vertical Separator -->
@@ -367,10 +382,10 @@
             <!-- Meta & Flag Row -->
             <div class="flex items-center justify-between gap-2 mb-3 md:mb-4">
                 <div class="flex items-center gap-2">
-                    <span class="bg-primary text-on-primary font-label-md text-xs md:text-sm font-bold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg shadow-sm">
+                    <span id="question-number-pill" class="bg-primary text-on-primary font-label-md text-xs md:text-sm font-bold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg shadow-sm">
                         No. {{ $currentIndex }}
                     </span>
-                    <span class="bg-surface-container text-on-surface-variant text-[11px] md:text-xs font-medium px-2.5 py-1 md:py-1.5 rounded-full">
+                    <span id="question-score-pill" class="bg-surface-container text-on-surface-variant text-[11px] md:text-xs font-medium px-2.5 py-1 md:py-1.5 rounded-full">
                         Bobot: {{ (float)($currentExamQuestion->question->score ?? 1) }} Poin
                     </span>
                 </div>
@@ -392,83 +407,87 @@
 
             <!-- Question Prompt Card -->
             <div class="bg-surface-container-lowest p-4 md:p-6 rounded-2xl shadow-sm border border-surface-container flex flex-col gap-3 md:gap-4 mb-4 md:mb-5">
-                <div class="question-text font-body-lg text-sm md:text-base lg:text-lg text-on-surface leading-relaxed">
+                <div id="question-prompt-text" class="question-text font-body-lg text-sm md:text-base lg:text-lg text-on-surface leading-relaxed">
                     {!! $currentExamQuestion->question->question_text !!}
                 </div>
 
-                @if($currentExamQuestion->question->image_url)
-                    <div class="w-full bg-surface-container-low rounded-xl p-2.5 md:p-4 flex flex-col items-center border border-surface-container/80 shadow-xs">
-                        <div class="relative group cursor-pointer max-w-full flex items-center justify-center" onclick="openImageModal('{{ $currentExamQuestion->question->image_url }}', 'Gambar Soal No. {{ $currentIndex }}')">
-                            <img src="{{ $currentExamQuestion->question->image_url }}" 
-                                 alt="Gambar Lampiran Soal No. {{ $currentIndex }}" 
-                                 class="rounded-lg max-h-72 md:max-h-96 object-contain shadow-sm bg-white hover:opacity-95 transition-opacity"
-                                 loading="lazy">
-                            <div class="absolute bottom-2 right-2 px-2.5 py-1 bg-inverse-surface/80 text-inverse-on-surface rounded-lg text-[10px] md:text-xs font-semibold flex items-center gap-1 backdrop-blur-xs opacity-90 group-hover:opacity-100 transition-opacity shadow-sm">
-                                <span class="material-symbols-outlined text-[14px]">zoom_in</span>
-                                <span>Klik untuk Perbesar</span>
+                <div id="question-image-container" class="{{ $currentExamQuestion->question->image_url ? '' : 'hidden' }}">
+                    @if($currentExamQuestion->question->image_url)
+                        <div class="w-full bg-surface-container-low rounded-xl p-2.5 md:p-4 flex flex-col items-center border border-surface-container/80 shadow-xs">
+                            <div class="relative group cursor-pointer max-w-full flex items-center justify-center" onclick="openImageModal('{{ $currentExamQuestion->question->image_url }}', 'Gambar Soal No. {{ $currentIndex }}')">
+                                <img id="question-image-img" src="{{ $currentExamQuestion->question->image_url }}" 
+                                     alt="Gambar Lampiran Soal No. {{ $currentIndex }}" 
+                                     class="rounded-lg max-h-72 md:max-h-96 object-contain shadow-sm bg-white hover:opacity-95 transition-opacity"
+                                     loading="lazy">
+                                <div class="absolute bottom-2 right-2 px-2.5 py-1 bg-inverse-surface/80 text-inverse-on-surface rounded-lg text-[10px] md:text-xs font-semibold flex items-center gap-1 backdrop-blur-xs opacity-90 group-hover:opacity-100 transition-opacity shadow-sm">
+                                    <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+                                    <span>Klik untuk Perbesar</span>
+                                </div>
+                            </div>
+                            <div class="w-full mt-2 flex items-center justify-between text-[11px] md:text-xs text-on-surface-variant px-1">
+                                <span class="flex items-center gap-1 font-medium">
+                                    <span class="material-symbols-outlined text-[14px]">image</span>
+                                    <span id="question-image-caption">Lampiran Gambar Soal {{ $currentIndex }}</span>
+                                </span>
+                                <a id="question-image-link" href="{{ $currentExamQuestion->question->image_url }}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-0.5">
+                                    <span>Buka Ukuran Asli</span>
+                                    <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                                </a>
                             </div>
                         </div>
-                        <div class="w-full mt-2 flex items-center justify-between text-[11px] md:text-xs text-on-surface-variant px-1">
-                            <span class="flex items-center gap-1 font-medium">
-                                <span class="material-symbols-outlined text-[14px]">image</span>
-                                <span>Lampiran Gambar Soal {{ $currentIndex }}</span>
-                            </span>
-                            <a href="{{ $currentExamQuestion->question->image_url }}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-0.5">
-                                <span>Buka Ukuran Asli</span>
-                                <span class="material-symbols-outlined text-[12px]">open_in_new</span>
-                            </a>
-                        </div>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
 
             <!-- Answer Options Form -->
             <form id="answer-form" class="flex flex-col gap-2.5 md:gap-3">
-                <input type="hidden" name="exam_question_id" value="{{ $currentExamQuestion->id }}">
+                <input type="hidden" name="exam_question_id" id="exam-question-id-input" value="{{ $currentExamQuestion->id }}">
 
-                @if(in_array($currentExamQuestion->question->type, ['multiple_choice', 'true_false']))
-                    <div class="flex flex-col gap-2.5 md:gap-3" role="radiogroup">
-                        @foreach($currentExamQuestion->question->options as $option)
-                            @php
-                                $isSelected = $currentAnswer && $currentAnswer->selected_option_id == $option->id;
-                            @endphp
-                            <label for="opt-{{ $option->id }}" class="option-card w-full min-h-[56px] md:min-h-[64px] px-3.5 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl border {{ $isSelected ? 'border-primary bg-surface-container shadow-sm' : 'border-surface-container bg-surface-container-lowest hover:bg-surface-container-low' }} cursor-pointer flex items-center justify-between transition-all duration-150 active:scale-[0.99]">
-                                <input type="radio" name="selected_option_id" id="opt-{{ $option->id }}" value="{{ $option->id }}" class="hidden option-input" {{ $isSelected ? 'checked' : '' }} onchange="selectOptionRadio(this, '{{ $option->label }}')">
-                                
-                                <div class="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                                    <div class="option-indicator w-8 h-8 md:w-9 md:h-9 rounded-full {{ $isSelected ? 'bg-primary text-on-primary shadow-sm font-bold' : 'bg-surface-container text-on-surface-variant font-semibold' }} flex items-center justify-center text-xs md:text-sm shrink-0 transition-colors">
-                                        {{ $option->label }}
+                <div id="answer-inputs-container">
+                    @if(in_array($currentExamQuestion->question->type, ['multiple_choice', 'true_false']))
+                        <div class="flex flex-col gap-2.5 md:gap-3" role="radiogroup">
+                            @foreach($currentExamQuestion->question->options as $option)
+                                @php
+                                    $isSelected = $currentAnswer && $currentAnswer->selected_option_id == $option->id;
+                                @endphp
+                                <label for="opt-{{ $option->id }}" class="option-card w-full min-h-[56px] md:min-h-[64px] px-3.5 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl border {{ $isSelected ? 'border-primary bg-surface-container shadow-sm' : 'border-surface-container bg-surface-container-lowest hover:bg-surface-container-low' }} cursor-pointer flex items-center justify-between transition-all duration-150 active:scale-[0.99]">
+                                    <input type="radio" name="selected_option_id" id="opt-{{ $option->id }}" value="{{ $option->id }}" class="hidden option-input" {{ $isSelected ? 'checked' : '' }} onchange="selectOptionRadio(this, '{{ $option->label }}')">
+                                    
+                                    <div class="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                                        <div class="option-indicator w-8 h-8 md:w-9 md:h-9 rounded-full {{ $isSelected ? 'bg-primary text-on-primary shadow-sm font-bold' : 'bg-surface-container text-on-surface-variant font-semibold' }} flex items-center justify-center text-xs md:text-sm shrink-0 transition-colors">
+                                            {{ $option->label }}
+                                        </div>
+                                        <div class="option-text text-xs md:text-sm lg:text-base {{ $isSelected ? 'text-primary font-bold' : 'text-on-surface' }} leading-relaxed flex-1">
+                                            {!! $option->option_text !!}
+                                            @if($option->image_url)
+                                                <div class="mt-2 inline-block max-w-full">
+                                                    <img src="{{ $option->image_url }}" 
+                                                         alt="Opsi {{ $option->label }}" 
+                                                         class="max-h-36 md:max-h-48 rounded-lg object-contain bg-white border border-surface-container shadow-xs cursor-pointer hover:opacity-95 transition-opacity"
+                                                         onclick="event.stopPropagation(); openImageModal('{{ $option->image_url }}', 'Gambar Opsi {{ $option->label }} - Soal No. {{ $currentIndex }}')"
+                                                         title="Klik untuk memperbesar gambar opsi">
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="option-text text-xs md:text-sm lg:text-base {{ $isSelected ? 'text-primary font-bold' : 'text-on-surface' }} leading-relaxed flex-1">
-                                        {!! $option->option_text !!}
-                                        @if($option->image_url)
-                                            <div class="mt-2 inline-block max-w-full">
-                                                <img src="{{ $option->image_url }}" 
-                                                     alt="Opsi {{ $option->label }}" 
-                                                     class="max-h-36 md:max-h-48 rounded-lg object-contain bg-white border border-surface-container shadow-xs cursor-pointer hover:opacity-95 transition-opacity"
-                                                     onclick="event.stopPropagation(); openImageModal('{{ $option->image_url }}', 'Gambar Opsi {{ $option->label }} - Soal No. {{ $currentIndex }}')"
-                                                     title="Klik untuk memperbesar gambar opsi">
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
 
-                                <span class="check-icon material-symbols-outlined text-[20px] md:text-[22px] text-primary shrink-0 transition-opacity {{ $isSelected ? 'opacity-100' : 'opacity-0' }}" style="font-variation-settings: 'FILL' 1;">
-                                    check_circle
-                                </span>
+                                    <span class="check-icon material-symbols-outlined text-[20px] md:text-[22px] text-primary shrink-0 transition-opacity {{ $isSelected ? 'opacity-100' : 'opacity-0' }}" style="font-variation-settings: 'FILL' 1;">
+                                        check_circle
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @else
+                        <!-- Essay / Short Answer Field -->
+                        <div class="bg-surface-container-lowest p-3.5 md:p-5 rounded-2xl border border-surface-container flex flex-col gap-2 md:gap-3">
+                            <label for="answer-text-input" class="text-xs md:text-sm font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-primary text-[18px] md:text-[20px]">edit_note</span>
+                                <span>Tuliskan Jawaban Uraian Anda:</span>
                             </label>
-                        @endforeach
-                    </div>
-                @else
-                    <!-- Essay / Short Answer Field -->
-                    <div class="bg-surface-container-lowest p-3.5 md:p-5 rounded-2xl border border-surface-container flex flex-col gap-2 md:gap-3">
-                        <label for="answer-text-input" class="text-xs md:text-sm font-bold text-on-surface flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-primary text-[18px] md:text-[20px]">edit_note</span>
-                            <span>Tuliskan Jawaban Uraian Anda:</span>
-                        </label>
-                        <textarea name="answer_text" id="answer-text-input" rows="6" class="w-full p-3 md:p-4 bg-surface-container-low text-on-surface text-sm md:text-base rounded-xl border border-surface-container focus:outline-none focus:bg-surface-container-lowest focus:border-primary transition-all resize-y placeholder:text-outline" placeholder="Ketik jawaban lengkap di sini...">{{ $currentAnswer ? $currentAnswer->answer_text : '' }}</textarea>
-                    </div>
-                @endif
+                            <textarea name="answer_text" id="answer-text-input" rows="6" class="w-full p-3 md:p-4 bg-surface-container-low text-on-surface text-sm md:text-base rounded-xl border border-surface-container focus:outline-none focus:bg-surface-container-lowest focus:border-primary transition-all resize-y placeholder:text-outline" placeholder="Ketik jawaban lengkap di sini...">{{ $currentAnswer ? $currentAnswer->answer_text : '' }}</textarea>
+                        </div>
+                    @endif
+                </div>
             </form>
 
             <!-- Visual Encouragement Banner -->
@@ -476,7 +495,7 @@
                 <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-[18px] md:text-[20px]" style="font-variation-settings: 'FILL' 1;">verified</span>
                 </div>
-                <p class="font-body-sm text-xs md:text-sm text-on-surface-variant leading-snug">
+                <p id="bottom-banner-text" class="font-body-sm text-xs md:text-sm text-on-surface-variant leading-snug">
                     Anda sedang mengerjakan nomor <strong>{{ $currentIndex }} dari {{ $totalQ }} soal</strong>. Fokus dan teliti sebelum beralih ke nomor selanjutnya!
                 </p>
             </div>
@@ -486,18 +505,22 @@
         <footer class="fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-t border-surface-container shadow-[0_-4px_16px_rgba(11,28,48,0.06)] pt-2.5 pb-safe">
             <div class="max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 md:px-6 flex flex-col gap-2 md:gap-2.5">
                 <div class="grid grid-cols-12 gap-2 md:gap-3 items-center">
-                    <!-- Previous Button -->
-                    @if($currentIndex > 1)
-                        <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex - 1]) }}" class="col-span-3 h-11 md:h-12 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform">
-                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
-                            <span class="hidden sm:inline">Sebelum</span>
-                        </a>
-                    @else
-                        <button type="button" disabled class="col-span-3 h-11 md:h-12 rounded-xl bg-surface-container/60 text-on-surface-variant/40 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold cursor-not-allowed">
-                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
-                            <span class="hidden sm:inline">Sebelum</span>
-                        </button>
-                    @endif
+                    <!-- Previous Button Container -->
+                    <div id="footer-prev-btn-container" class="col-span-3">
+                        @if($currentIndex > 1)
+                            <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex - 1]) }}" 
+                               onclick="navigateToQuestion({{ $currentIndex - 1 }}); return false;"
+                               class="w-full h-11 md:h-12 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform">
+                                <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
+                                <span class="hidden sm:inline">Sebelum</span>
+                            </a>
+                        @else
+                            <button type="button" disabled class="w-full h-11 md:h-12 rounded-xl bg-surface-container/60 text-on-surface-variant/40 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold cursor-not-allowed">
+                                <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
+                                <span class="hidden sm:inline">Sebelum</span>
+                            </button>
+                        @endif
+                    </div>
 
                     <!-- Center "Daftar Soal" Trigger Button -->
                     <button type="button" onclick="toggleQuestionSheet()" class="col-span-6 h-11 md:h-12 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs md:text-sm font-semibold px-2 md:px-4 flex items-center justify-center gap-1.5 md:gap-2 active:scale-95 transition-all shadow-sm">
@@ -509,17 +532,21 @@
                     </button>
 
                     <!-- Next Button / Finish on last question -->
-                    @if($currentIndex < $totalQ)
-                        <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex + 1]) }}" class="col-span-3 h-11 md:h-12 rounded-xl bg-primary hover:bg-primary-container text-on-primary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform shadow-sm">
-                            <span class="hidden sm:inline">Berikut</span>
-                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_right</span>
-                        </a>
-                    @else
-                        <button type="button" onclick="openSubmitModal()" class="col-span-3 h-11 md:h-12 rounded-xl bg-secondary hover:opacity-90 text-on-secondary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-bold transition-transform shadow-md">
-                            <span>Selesai</span>
-                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">check</span>
-                        </button>
-                    @endif
+                    <div id="footer-next-btn-container" class="col-span-3">
+                        @if($currentIndex < $totalQ)
+                            <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $currentIndex + 1]) }}" 
+                               onclick="navigateToQuestion({{ $currentIndex + 1 }}); return false;"
+                               class="w-full h-11 md:h-12 rounded-xl bg-primary hover:bg-primary-container text-on-primary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform shadow-sm">
+                                <span class="hidden sm:inline">Berikut</span>
+                                <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_right</span>
+                            </a>
+                        @else
+                            <button type="button" onclick="openSubmitModal()" class="w-full h-11 md:h-12 rounded-xl bg-secondary hover:opacity-90 text-on-secondary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-bold transition-transform shadow-md">
+                                <span>Selesai</span>
+                                <span class="material-symbols-outlined text-[18px] md:text-[20px]">check</span>
+                            </button>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Discreet Finish Exam Link -->
@@ -573,6 +600,7 @@
                         @endphp
                         <a href="{{ route('student.exam.take', ['exam' => $exam->id, 'q' => $loop->iteration]) }}" 
                            id="grid-box-{{ $eq->id }}"
+                           onclick="navigateToQuestion({{ $loop->iteration }}); return false;"
                            class="grid-item h-11 md:h-12 rounded-xl flex items-center justify-center font-headline-sm text-xs md:text-sm font-bold transition-all active:scale-95 shadow-sm
                            @if($isActive)
                                bg-primary text-on-primary ring-2 ring-primary ring-offset-2
@@ -793,13 +821,19 @@
     <!-- Interactive Examination Script -->
     <script>
         const examId = {{ $exam->id }};
-        const eqId = {{ $currentExamQuestion->id }};
-        const currentIndex = {{ $currentIndex }};
+        let eqId = {{ $currentExamQuestion->id }};
+        let currentIndex = {{ $currentIndex }};
         const totalQuestions = {{ $totalQ }};
         let remainingSeconds = {{ $remainingSeconds }};
         let isFlagged = {{ $isMarked ? 'true' : 'false' }};
         let saveTimeout = null;
         let isExamClosedLocally = false;
+        let isInternalNavigating = false;
+
+        // Clear internal navigation flag when newly loaded
+        if (sessionStorage.getItem('exam_internal_nav') === '1') {
+            sessionStorage.removeItem('exam_internal_nav');
+        }
 
         // In-memory Questions Status Tracker
         let examQuestionsData = @json($questionsData);
@@ -961,6 +995,312 @@
             }
         }
 
+        // Escape HTML utility for safely rendering user options
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Render Question client-side without full page reload
+        function renderQuestion(targetNumber) {
+            const num = parseInt(targetNumber, 10);
+            if (isNaN(num) || num < 1 || num > totalQuestions) return;
+
+            const qData = examQuestionsData[num - 1];
+            if (!qData) return;
+
+            // Update state variables
+            currentIndex = num;
+            eqId = qData.id;
+            isFlagged = !!qData.is_marked;
+
+            // 1. Header question count badge
+            const headerCount = document.getElementById('header-current-q');
+            if (headerCount) headerCount.textContent = num;
+
+            // 2. Question number badge & score pill
+            const numPill = document.getElementById('question-number-pill');
+            if (numPill) numPill.textContent = 'No. ' + num;
+
+            const scorePill = document.getElementById('question-score-pill');
+            if (scorePill) scorePill.textContent = 'Bobot: ' + qData.score + ' Poin';
+
+            // 3. Flag / Ragu button
+            const flagBtn = document.getElementById('flag-btn');
+            const flagIcon = document.getElementById('flag-icon');
+            const flagText = document.getElementById('flag-text');
+            if (flagBtn && flagIcon && flagText) {
+                if (isFlagged) {
+                    flagBtn.className = 'flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-tertiary-container text-on-tertiary font-bold shadow-sm text-xs md:text-sm transition-all active:scale-95';
+                    flagIcon.textContent = 'bookmark';
+                    flagIcon.style.fontVariationSettings = "'FILL' 1";
+                    flagText.textContent = 'Ragu';
+                } else {
+                    flagBtn.className = 'flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-surface-container-low text-tertiary font-semibold hover:bg-surface-container text-xs md:text-sm transition-all active:scale-95';
+                    flagIcon.textContent = 'bookmark_border';
+                    flagIcon.style.fontVariationSettings = '';
+                    flagText.textContent = 'Ragu-ragu';
+                }
+            }
+
+            // 4. Autosave status text
+            const statusEl = document.getElementById('autosave-status');
+            if (statusEl) statusEl.textContent = 'Jawaban tersimpan otomatis';
+
+            // 5. Question prompt text
+            const promptEl = document.getElementById('question-prompt-text');
+            if (promptEl) promptEl.innerHTML = qData.question_text || '';
+
+            // 6. Question image attachment
+            const imgWrap = document.getElementById('question-image-container');
+            if (imgWrap) {
+                if (qData.image_url) {
+                    imgWrap.classList.remove('hidden');
+                    imgWrap.innerHTML = `
+                        <div class="w-full bg-surface-container-low rounded-xl p-2.5 md:p-4 flex flex-col items-center border border-surface-container/80 shadow-xs">
+                            <div class="relative group cursor-pointer max-w-full flex items-center justify-center" onclick="openImageModal('${escapeHtml(qData.image_url)}', 'Gambar Soal No. ${num}')">
+                                <img id="question-image-img" src="${escapeHtml(qData.image_url)}" 
+                                     alt="Gambar Lampiran Soal No. ${num}" 
+                                     class="rounded-lg max-h-72 md:max-h-96 object-contain shadow-sm bg-white hover:opacity-95 transition-opacity"
+                                     loading="lazy">
+                                <div class="absolute bottom-2 right-2 px-2.5 py-1 bg-inverse-surface/80 text-inverse-on-surface rounded-lg text-[10px] md:text-xs font-semibold flex items-center gap-1 backdrop-blur-xs opacity-90 group-hover:opacity-100 transition-opacity shadow-sm">
+                                    <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+                                    <span>Klik untuk Perbesar</span>
+                                </div>
+                            </div>
+                            <div class="w-full mt-2 flex items-center justify-between text-[11px] md:text-xs text-on-surface-variant px-1">
+                                <span class="flex items-center gap-1 font-medium">
+                                    <span class="material-symbols-outlined text-[14px]">image</span>
+                                    <span id="question-image-caption">Lampiran Gambar Soal ${num}</span>
+                                </span>
+                                <a id="question-image-link" href="${escapeHtml(qData.image_url)}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-0.5">
+                                    <span>Buka Ukuran Asli</span>
+                                    <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                                </a>
+                            </div>
+                        </div>`;
+                } else {
+                    imgWrap.classList.add('hidden');
+                    imgWrap.innerHTML = '';
+                }
+            }
+
+            // 7. Hidden input for exam_question_id
+            const eqInput = document.getElementById('exam-question-id-input');
+            if (eqInput) eqInput.value = qData.id;
+
+            // 8. Answer Inputs (Multiple Choice or Essay)
+            const inputsContainer = document.getElementById('answer-inputs-container');
+            if (inputsContainer) {
+                if (qData.type === 'multiple_choice' || qData.type === 'true_false') {
+                    let optionsHtml = '<div class="flex flex-col gap-2.5 md:gap-3" role="radiogroup">';
+                    (qData.options || []).forEach(opt => {
+                        const isSelected = qData.selected_option_id && String(qData.selected_option_id) === String(opt.id);
+                        const cardBorderBg = isSelected 
+                            ? 'border-primary bg-surface-container shadow-sm' 
+                            : 'border-surface-container bg-surface-container-lowest hover:bg-surface-container-low';
+                        const indClass = isSelected
+                            ? 'bg-primary text-on-primary shadow-sm font-bold'
+                            : 'bg-surface-container text-on-surface-variant font-semibold';
+                        const textClass = isSelected ? 'text-primary font-bold' : 'text-on-surface';
+                        const checkOpacity = isSelected ? 'opacity-100' : 'opacity-0';
+
+                        let optImgHtml = '';
+                        if (opt.image_url) {
+                            optImgHtml = `
+                                <div class="mt-2 inline-block max-w-full">
+                                    <img src="${escapeHtml(opt.image_url)}" 
+                                         alt="Opsi ${escapeHtml(opt.label)}" 
+                                         class="max-h-36 md:max-h-48 rounded-lg object-contain bg-white border border-surface-container shadow-xs cursor-pointer hover:opacity-95 transition-opacity"
+                                         onclick="event.stopPropagation(); openImageModal('${escapeHtml(opt.image_url)}', 'Gambar Opsi ${escapeHtml(opt.label)} - Soal No. ${num}')"
+                                         title="Klik untuk memperbesar gambar opsi">
+                                </div>`;
+                        }
+
+                        optionsHtml += `
+                            <label for="opt-${opt.id}" class="option-card w-full min-h-[56px] md:min-h-[64px] px-3.5 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl border ${cardBorderBg} cursor-pointer flex items-center justify-between transition-all duration-150 active:scale-[0.99]">
+                                <input type="radio" name="selected_option_id" id="opt-${opt.id}" value="${opt.id}" class="hidden option-input" ${isSelected ? 'checked' : ''} onchange="selectOptionRadio(this, '${escapeHtml(opt.label)}')">
+                                <div class="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                                    <div class="option-indicator w-8 h-8 md:w-9 md:h-9 rounded-full ${indClass} flex items-center justify-center text-xs md:text-sm shrink-0 transition-colors">
+                                        ${escapeHtml(opt.label)}
+                                    </div>
+                                    <div class="option-text text-xs md:text-sm lg:text-base ${textClass} leading-relaxed flex-1">
+                                        ${opt.option_text || ''}
+                                        ${optImgHtml}
+                                    </div>
+                                </div>
+                                <span class="check-icon material-symbols-outlined text-[20px] md:text-[22px] text-primary shrink-0 transition-opacity ${checkOpacity}" style="font-variation-settings: 'FILL' 1;">
+                                    check_circle
+                                </span>
+                            </label>`;
+                    });
+                    optionsHtml += '</div>';
+                    inputsContainer.innerHTML = optionsHtml;
+                } else {
+                    // Essay
+                    const val = escapeHtml(qData.answer_text || '');
+                    inputsContainer.innerHTML = `
+                        <div class="bg-surface-container-lowest p-3.5 md:p-5 rounded-2xl border border-surface-container flex flex-col gap-2 md:gap-3">
+                            <label for="answer-text-input" class="text-xs md:text-sm font-bold text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-primary text-[18px] md:text-[20px]">edit_note</span>
+                                <span>Tuliskan Jawaban Uraian Anda:</span>
+                            </label>
+                            <textarea name="answer_text" id="answer-text-input" rows="6" class="w-full p-3 md:p-4 bg-surface-container-low text-on-surface text-sm md:text-base rounded-xl border border-surface-container focus:outline-none focus:bg-surface-container-lowest focus:border-primary transition-all resize-y placeholder:text-outline" placeholder="Ketik jawaban lengkap di sini...">${val}</textarea>
+                        </div>`;
+                    
+                    const newEssayInput = document.getElementById('answer-text-input');
+                    if (newEssayInput) {
+                        newEssayInput.addEventListener('input', function() {
+                            qData.answer_text = this.value;
+                            qData.has_answer = this.value.trim().length > 0;
+                            calculateAndSyncStatus();
+                            updateNavigatorState({
+                                selected_option_id: null,
+                                answer_text: this.value,
+                                is_marked: isFlagged
+                            });
+                            triggerAutoSave();
+                        });
+                    }
+                }
+            }
+
+            // 9. Bottom banner encouragement
+            const bannerText = document.getElementById('bottom-banner-text');
+            if (bannerText) {
+                bannerText.innerHTML = `Anda sedang mengerjakan nomor <strong>${num} dari ${totalQuestions} soal</strong>. Fokus dan teliti sebelum beralih ke nomor selanjutnya!`;
+            }
+
+            // 10. Footer buttons (Sebelum & Berikut / Selesai)
+            const prevContainer = document.getElementById('footer-prev-btn-container');
+            if (prevContainer) {
+                if (num > 1) {
+                    prevContainer.innerHTML = `
+                        <a href="{{ route('student.exam.take', ['exam' => $exam->id]) }}?q=${num - 1}" 
+                           onclick="navigateToQuestion(${num - 1}); return false;"
+                           class="w-full h-11 md:h-12 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform">
+                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
+                            <span class="hidden sm:inline">Sebelum</span>
+                        </a>`;
+                } else {
+                    prevContainer.innerHTML = `
+                        <button type="button" disabled class="w-full h-11 md:h-12 rounded-xl bg-surface-container/60 text-on-surface-variant/40 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold cursor-not-allowed">
+                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_left</span>
+                            <span class="hidden sm:inline">Sebelum</span>
+                        </button>`;
+                }
+            }
+
+            const nextContainer = document.getElementById('footer-next-btn-container');
+            if (nextContainer) {
+                if (num < totalQuestions) {
+                    nextContainer.innerHTML = `
+                        <a href="{{ route('student.exam.take', ['exam' => $exam->id]) }}?q=${num + 1}" 
+                           onclick="navigateToQuestion(${num + 1}); return false;"
+                           class="w-full h-11 md:h-12 rounded-xl bg-primary hover:bg-primary-container text-on-primary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-semibold transition-transform shadow-sm">
+                            <span class="hidden sm:inline">Berikut</span>
+                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">chevron_right</span>
+                        </a>`;
+                } else {
+                    nextContainer.innerHTML = `
+                        <button type="button" onclick="openSubmitModal()" class="w-full h-11 md:h-12 rounded-xl bg-secondary hover:opacity-90 text-on-secondary active:scale-95 flex items-center justify-center gap-1 text-xs md:text-sm font-bold transition-transform shadow-md">
+                            <span>Selesai</span>
+                            <span class="material-symbols-outlined text-[18px] md:text-[20px]">check</span>
+                        </button>`;
+                }
+            }
+
+            // 11. Synchronize drawer grid active states
+            examQuestionsData.forEach((q, idx) => {
+                const box = document.getElementById(`grid-box-${q.id}`);
+                if (box) {
+                    const isTarget = (idx + 1) === num;
+                    box.className = 'grid-item h-11 md:h-12 rounded-xl flex items-center justify-center font-headline-sm text-xs md:text-sm font-bold transition-all active:scale-95 shadow-sm';
+                    if (isTarget) {
+                        box.classList.add('bg-primary', 'text-on-primary', 'ring-2', 'ring-primary', 'ring-offset-2');
+                    } else if (q.is_marked) {
+                        box.classList.add('bg-tertiary-fixed-dim', 'text-on-tertiary-fixed');
+                    } else if (q.has_answer) {
+                        box.classList.add('bg-secondary', 'text-on-secondary');
+                    } else {
+                        box.classList.add('bg-surface-container', 'text-on-surface-variant', 'hover:bg-surface-container-high');
+                    }
+                }
+            });
+
+            calculateAndSyncStatus();
+
+            // Scroll exam canvas smoothly to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Clean in-page question navigation helper (Never drops Fullscreen)
+        function navigateToQuestion(target) {
+            let targetNumber = target;
+            if (typeof target === 'string') {
+                const match = target.match(/[?&]q=(\d+)/);
+                if (match) {
+                    targetNumber = parseInt(match[1], 10);
+                } else {
+                    const parsed = parseInt(target, 10);
+                    if (!isNaN(parsed)) targetNumber = parsed;
+                }
+            }
+
+            if (isNaN(targetNumber) || targetNumber < 1 || targetNumber > totalQuestions) {
+                return false;
+            }
+
+            // Close navigation drawer if opened
+            const sheet = document.getElementById('question-sheet');
+            if (sheet && !sheet.classList.contains('hidden')) {
+                toggleQuestionSheet();
+            }
+
+            // Immediately flush any pending autosave for current question
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+
+                const form = document.getElementById('answer-form');
+                if (form) {
+                    const formData = new FormData(form);
+                    formData.append('is_marked', isFlagged ? 1 : 0);
+
+                    fetch("{{ route('student.exam.answer', $exam->id) }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: formData,
+                        keepalive: true
+                    }).catch(err => console.warn('Autosave flush notice:', err));
+                }
+            }
+
+            // In-page render without document reload
+            renderQuestion(targetNumber);
+
+            // Update browser URL silently without page reload
+            const newUrl = "{{ route('student.exam.take', ['exam' => $exam->id]) }}?q=" + targetNumber;
+            window.history.pushState({ q: targetNumber }, '', newUrl);
+
+            return false;
+        }
+
+        // Browser Back/Forward navigation support (popstate)
+        window.addEventListener('popstate', (e) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const q = parseInt(urlParams.get('q') || '1', 10);
+            renderQuestion(q);
+        });
+
         // Jump directly to first unanswered question
         function jumpToFirstUnanswered() {
             const firstUnans = examQuestionsData.find(q => !q.has_answer);
@@ -969,7 +1309,7 @@
                 if (firstUnans.number === currentIndex) {
                     return;
                 }
-                window.location.href = "{{ route('student.exam.take', ['exam' => $exam->id]) }}?q=" + firstUnans.number;
+                navigateToQuestion(firstUnans.number);
             } else {
                 closeSubmitModal();
             }
@@ -1021,6 +1361,7 @@
             const currentItem = examQuestionsData.find(q => q.id === eqId);
             if (currentItem) {
                 currentItem.has_answer = true;
+                currentItem.selected_option_id = parseInt(inputEl.value, 10);
             }
             calculateAndSyncStatus();
 
@@ -1075,9 +1416,15 @@
             essayInput.addEventListener('input', function() {
                 const currentItem = examQuestionsData.find(q => q.id === eqId);
                 if (currentItem) {
+                    currentItem.answer_text = this.value;
                     currentItem.has_answer = this.value.trim().length > 0;
                 }
                 calculateAndSyncStatus();
+                updateNavigatorState({
+                    selected_option_id: null,
+                    answer_text: this.value,
+                    is_marked: isFlagged
+                });
                 triggerAutoSave();
             });
         }
@@ -1182,9 +1529,35 @@
                 return false;
             }
 
+            // Set flags agar beforeunload atau proctoring event tidak menghalangi proses kumpul
+            isExamClosedLocally = true;
+            isInternalNavigating = true;
+
+            // Jika masih ada autosave yang tertunda debounce, kirim secara sinkron/langsung
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+                const form = document.getElementById('answer-form');
+                if (form) {
+                    const formData = new FormData(form);
+                    formData.append('is_marked', isFlagged ? 1 : 0);
+                    fetch("{{ route('student.exam.answer', $exam->id) }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: formData,
+                        keepalive: true
+                    }).catch(err => console.warn('Autosave flush on submit:', err));
+                }
+            }
+
             const btn = document.getElementById('btnConfirmSubmit');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Mengumpulkan Jawaban...</span>';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Mengumpulkan Jawaban...</span>';
+            }
         });
 
         // Modal for external events (Teacher Closed / Timeout)
@@ -1685,7 +2058,7 @@
             // 1. Tampilkan prompt fullscreen setelah 1 detik halaman dibuka jika belum fullscreen
             window.addEventListener('load', () => {
                 setTimeout(() => {
-                    if (!isFullscreenActive()) {
+                    if (!isFullscreenActive() && !isInternalNavigating) {
                         showFullscreenPrompt();
                     }
                 }, 800);
@@ -1693,6 +2066,7 @@
 
             // 2. Deteksi keluar dari Fullscreen (Esc / F11 / window resize)
             document.addEventListener('fullscreenchange', () => {
+                if (isInternalNavigating) return;
                 if (!isFullscreenActive() && !isExamClosedLocally && !hasTriggeredForceSubmit) {
                     reportViolationToServer('exit_fullscreen', 'Siswa keluar dari mode layar penuh (Fullscreen)');
                     showFullscreenPrompt();
@@ -1701,6 +2075,7 @@
 
             // 3. Deteksi Pindah Tab (Page Visibility API)
             document.addEventListener('visibilitychange', () => {
+                if (isInternalNavigating) return;
                 if (document.hidden) {
                     violationLeaveTimestamp = Date.now();
                 } else {
@@ -1712,16 +2087,18 @@
 
             // 4. Deteksi Window Blur (Klik ke aplikasi luar seperti WA, Notepad, kalkulator, Alt+Tab)
             window.addEventListener('blur', () => {
+                if (isInternalNavigating) return;
                 if (!violationLeaveTimestamp) {
                     violationLeaveTimestamp = Date.now();
                 }
             });
 
             window.addEventListener('focus', () => {
+                if (isInternalNavigating) return;
                 if (violationLeaveTimestamp && !isExamClosedLocally && !hasTriggeredForceSubmit) {
                     // Beri jeda kecil agar visibilitychange tidak double trigger
                     setTimeout(() => {
-                        if (violationLeaveTimestamp) {
+                        if (violationLeaveTimestamp && !isInternalNavigating) {
                             reportViolationToServer('window_blur', 'Siswa beralih fokus ke jendela/aplikasi lain (Alt+Tab/Aplikasi luar)');
                         }
                     }, 300);
@@ -1729,12 +2106,14 @@
             });
 
             // 5. Peringatan sebelum menutup / merefresh tab browser (beforeunload)
+            // Hanya muncul jika siswa menutup tab/window secara sengaja, bukan saat navigasi soal ujian
             window.addEventListener('beforeunload', (e) => {
-                if (!isExamClosedLocally && !hasTriggeredForceSubmit) {
-                    e.preventDefault();
-                    e.returnValue = 'Ujian sedang berlangsung! Jika Anda meninggalkan halaman ini, jawaban Anda dapat dikumpulkan otomatis.';
-                    return e.returnValue;
+                if (isInternalNavigating || isExamClosedLocally || hasTriggeredForceSubmit) {
+                    return; // Navigasi soal sah / ujian selesai, jangan tampilkan dialog keluar
                 }
+                e.preventDefault();
+                e.returnValue = 'Ujian sedang berlangsung! Jika Anda meninggalkan halaman ini, jawaban Anda dapat dikumpulkan otomatis.';
+                return e.returnValue;
             });
         }
 

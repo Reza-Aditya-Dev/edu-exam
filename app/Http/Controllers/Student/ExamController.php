@@ -121,13 +121,15 @@ class ExamController extends Controller
         $currentExamQuestion = $examQuestions[$currentIndex - 1] ?? $examQuestions->first();
 
         // Urutan pilihan jawaban PG TIDAK diacak (tetap urut A, B, C, D, E sesuai nomor/urutan asli)
-        if ($currentExamQuestion && $currentExamQuestion->question && $currentExamQuestion->question->relationLoaded('options')) {
-            $currentExamQuestion->question->setRelation(
-                'options',
-                $currentExamQuestion->question->options->sortBy(function ($opt) {
-                    return [$opt->sort_order ?? 0, $opt->label ?? '', $opt->id];
-                })->values()
-            );
+        foreach ($examQuestions as $eq) {
+            if ($eq && $eq->question && $eq->question->relationLoaded('options')) {
+                $eq->question->setRelation(
+                    'options',
+                    $eq->question->options->sortBy(function ($opt) {
+                        return [$opt->sort_order ?? 0, $opt->label ?? '', $opt->id];
+                    })->values()
+                );
+            }
         }
 
         // Ambil semua jawaban siswa
@@ -539,14 +541,64 @@ class ExamController extends Controller
     public function result(Exam $exam)
     {
         $student = Auth::user();
+
+        // 1. Validasi hak akses siswa ke kelas ujian
+        $this->authorizeExam($exam, $student);
+
+        // 2. Ambil hasil ujian siswa yang sedang login (siswa hanya boleh melihat miliknya sendiri)
         $result = ExamResult::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
-            ->with(['exam.subject'])
+            ->with(['exam.subject', 'participant'])
             ->firstOrFail();
 
-        $exam->load(['subject', 'settings']);
+        $exam->load(['subject', 'classroom', 'teacher', 'settings']);
 
-        return view('student.exam.result', compact('exam', 'result'));
+        // 3. Pengecekan izin dari guru
+        $settings = $exam->settings;
+        $allowReview = $settings ? (bool)$settings->allow_review : false;
+        $showCorrectAnswers = $settings ? (bool)$settings->show_correct_answers : false;
+
+        $answers = collect();
+        if ($allowReview) {
+            $participant = ExamParticipant::where('exam_id', $exam->id)
+                ->where('student_id', $student->id)
+                ->first();
+
+            if ($participant) {
+                $rawAnswers = StudentAnswer::where('exam_participant_id', $participant->id)
+                    ->with([
+                        'examQuestion.question.options' => function ($q) {
+                            $q->orderBy('sort_order', 'asc')->orderBy('id', 'asc');
+                        },
+                        'selectedOption'
+                    ])
+                    ->get()
+                    ->sortBy(function ($ans) {
+                        return $ans->examQuestion->question_order ?? 0;
+                    })
+                    ->values();
+
+                // Keamanan data: Jika guru TIDAK mengizinkan melihat kunci jawaban,
+                // bersihkan atribut is_correct dan explanation dari opsi/soal agar tidak bocor ke frontend/DOM
+                if (!$showCorrectAnswers) {
+                    $rawAnswers->each(function ($ans) {
+                        $q = $ans->examQuestion?->question;
+                        if ($q) {
+                            $q->explanation = null;
+                            if ($q->options) {
+                                foreach ($q->options as $opt) {
+                                    $opt->is_correct = false;
+                                }
+                            }
+                        }
+                    });
+                }
+
+                $answers = $rawAnswers;
+            }
+        }
+
+        return view('student.exam.result', compact('exam', 'result', 'allowReview', 'showCorrectAnswers', 'answers'));
     }
 
     // Riwayat ujian

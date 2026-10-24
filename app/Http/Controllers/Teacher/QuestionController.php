@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Subject;
+use App\Models\Classroom;
 use App\Models\ActivityLog;
+use App\Services\QuestionSpreadsheetParser;
+use App\Services\QuestionTemplateGenerator;
+use App\Services\QuestionImportValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class QuestionController extends Controller
 {
@@ -384,6 +389,217 @@ class QuestionController extends Controller
             }
         });
         return back()->with('success', 'Soal berhasil diduplikasi.');
+    }
+
+    /**
+     * Unduh template import soal dalam format Excel (.xlsx) atau CSV (.csv).
+     */
+    public function downloadTemplate(Request $request, QuestionTemplateGenerator $generator)
+    {
+        $format = strtolower($request->query('format', 'xlsx'));
+
+        if ($format === 'csv') {
+            $csvContent = $generator->generateCsv();
+            $filename = 'template_import_bank_soal_eduexam_' . date('Ymd') . '.csv';
+            return response($csvContent, 200, [
+                'Content-Type'        => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Pragma'              => 'no-cache',
+                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires'             => '0',
+            ]);
+        }
+
+        // Default XLSX
+        $xlsxContent = $generator->generateXlsx();
+        $filename = 'template_import_bank_soal_eduexam_' . date('Ymd') . '.xlsx';
+        return response($xlsxContent, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ]);
+    }
+
+    /**
+     * Tampilkan formulir upload import soal.
+     */
+    public function importForm(Request $request)
+    {
+        $subjects   = Subject::orderBy('name')->get();
+        $classrooms = Classroom::where('is_active', true)->orderBy('grade')->orderBy('name')->get();
+
+        $selectedSubjectId   = $request->query('subject_id');
+        $selectedClassroomId = $request->query('classroom_id');
+
+        return view('teacher.question.import', compact('subjects', 'classrooms', 'selectedSubjectId', 'selectedClassroomId'));
+    }
+
+    /**
+     * Proses unggah berkas dan tampilkan halaman pratinjau soal sebelum disimpan.
+     */
+    public function previewImport(
+        Request $request,
+        QuestionSpreadsheetParser $parser,
+        QuestionImportValidator $validator
+    ) {
+        $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'max:5120', // Maks 5 MB
+                function ($attribute, $value, $fail) {
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($ext, ['xlsx', 'csv', 'txt'])) {
+                        $fail('Berkas yang diunggah harus berformat Excel (.xlsx) atau CSV (.csv).');
+                    }
+                },
+            ],
+            'subject_id'   => 'required|exists:subjects,id',
+            'classroom_id' => 'nullable|exists:classrooms,id',
+            'topic'        => 'nullable|string|max:255',
+        ], [
+            'file.required'       => 'Silakan pilih berkas Excel atau CSV untuk diunggah.',
+            'file.max'            => 'Ukuran berkas maksimal 5 MB.',
+            'subject_id.required' => 'Mata pelajaran wajib dipilih untuk menetapkan target paket soal.',
+            'subject_id.exists'   => 'Mata pelajaran yang dipilih tidak valid.',
+            'classroom_id.exists' => 'Kelas target yang dipilih tidak valid.',
+        ]);
+
+        $uploadedFile = $request->file('file');
+        $originalName = $uploadedFile->getClientOriginalName();
+        $extension    = $uploadedFile->getClientOriginalExtension();
+
+        try {
+            $rawRows = $parser->parseFile($uploadedFile->getRealPath(), $extension);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', 'Gagal membaca berkas: ' . $e->getMessage());
+        }
+
+        $validationResult = $validator->validateAndMap($rawRows);
+
+        if (!$validationResult['success']) {
+            return back()->withInput()->with('error', $validationResult['error'] ?? 'Terjadi kesalahan saat memvalidasi berkas.');
+        }
+
+        if ($validationResult['total_count'] === 0) {
+            return back()->withInput()->with('error', 'Tidak ditemukan baris soal pada berkas yang diunggah. Pastikan format kolom sesuai template.');
+        }
+
+        $subject   = Subject::findOrFail($request->subject_id);
+        $classroom = $request->filled('classroom_id') ? Classroom::find($request->classroom_id) : null;
+        $topic     = $request->topic;
+
+        // Generate token konfirmasi unik untuk mencegah double submit
+        $confirmToken = Str::uuid()->toString();
+
+        return view('teacher.question.preview', [
+            'subject'          => $subject,
+            'classroom'        => $classroom,
+            'topic'            => $topic,
+            'originalFilename' => $originalName,
+            'confirmToken'     => $confirmToken,
+            'result'           => $validationResult,
+        ]);
+    }
+
+    /**
+     * Konfirmasi dan simpan soal valid ke database menggunakan database transaction.
+     */
+    public function confirmImport(Request $request)
+    {
+        $request->validate([
+            'subject_id'    => 'required|exists:subjects,id',
+            'classroom_id'  => 'nullable|exists:classrooms,id',
+            'topic'         => 'nullable|string|max:255',
+            'confirm_token' => 'required|string',
+            'payload'       => 'required|string',
+        ]);
+
+        $teacherId = Auth::id();
+        $token = $request->confirm_token;
+        $cacheKey = "import_soal_executed_{$teacherId}_{$token}";
+
+        // Cegah eksekusi ganda / replay submit
+        if (session()->has($cacheKey)) {
+            return redirect()->route('teacher.questions.index')
+                ->with('warning', 'Data import ini telah diproses sebelumnya untuk mencegah duplikasi data.');
+        }
+
+        $questions = json_decode($request->payload, true);
+        if (!is_array($questions) || empty($questions)) {
+            return redirect()->route('teacher.questions.index')
+                ->with('error', 'Data soal yang dikonfirmasi kosong atau tidak valid.');
+        }
+
+        $insertedCount = 0;
+
+        DB::transaction(function () use ($request, $questions, $teacherId, &$insertedCount) {
+            foreach ($questions as $qData) {
+                // Lewati jika ditandai tidak valid
+                if (empty($qData['is_valid'])) {
+                    continue;
+                }
+
+                $type = $qData['type'] ?? 'multiple_choice';
+                $questionText = trim($qData['question_text'] ?? '');
+                if (empty($questionText)) {
+                    continue;
+                }
+
+                $topic = !empty($qData['topic']) ? trim($qData['topic']) : ($request->topic ?: null);
+                $score = isset($qData['score']) && is_numeric($qData['score']) ? floatval($qData['score']) : 1.0;
+                $difficulty = in_array($qData['difficulty'] ?? '', ['easy', 'medium', 'hard']) ? $qData['difficulty'] : 'medium';
+                $explanation = !empty($qData['explanation']) ? trim($qData['explanation']) : null;
+
+                $question = Question::create([
+                    'subject_id'    => $request->subject_id,
+                    'classroom_id'  => $request->classroom_id ?: null,
+                    'created_by'    => $teacherId,
+                    'type'          => $type,
+                    'question_text' => $questionText,
+                    'question_image'=> null,
+                    'topic'         => $topic,
+                    'difficulty'    => $difficulty,
+                    'score'         => $score,
+                    'explanation'   => $explanation,
+                    'is_active'     => true,
+                ]);
+
+                // Simpan options jika tipe multiple_choice atau true_false
+                if (in_array($type, ['multiple_choice', 'true_false']) && !empty($qData['options']) && is_array($qData['options'])) {
+                    foreach ($qData['options'] as $idx => $opt) {
+                        $optText = trim($opt['text'] ?? '');
+                        if ($optText === '') continue;
+
+                        $label = !empty($opt['label']) ? $opt['label'] : chr(65 + $idx);
+                        $isCorrect = (bool)($opt['is_correct'] ?? false);
+
+                        QuestionOption::create([
+                            'question_id' => $question->id,
+                            'label'       => $label,
+                            'option_text' => $optText,
+                            'is_correct'  => $isCorrect,
+                            'sort_order'  => (int)($opt['sort_order'] ?? $idx),
+                        ]);
+                    }
+                }
+
+                $insertedCount++;
+            }
+
+            $subjectName = Subject::find($request->subject_id)?->name ?? 'Mata Pelajaran';
+            ActivityLog::log('question_imported', "Berhasil mengimpor {$insertedCount} butir soal ke Bank Soal {$subjectName}");
+        });
+
+        // Tandai token telah digunakan di session
+        session()->put($cacheKey, true);
+
+        $pkgKey = 'pkg_' . ($request->subject_id ?? 0) . '_' . ($request->classroom_id ?? 'all');
+
+        return redirect()->route('teacher.questions.index', ['package' => $pkgKey])
+            ->with('success', "Alhamdulillah! Berhasil mengimpor {$insertedCount} butir soal ke Bank Soal.");
     }
 
     private function authorizeQuestion(Question $question)
